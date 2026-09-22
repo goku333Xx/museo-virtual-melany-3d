@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { PotatoBattery } from './models/Potato';
 import { EnergyCables } from './models/Cables';
 import { SwitchExhibit } from './models/SwitchAndLED';
-import { MuseumRoom } from './models/Environment';
+import { MuseumRoom, type WallBox } from './models/Environment';
 import { OpticsExhibit } from './models/OpticsExhibit';
 import { NewtonsCradle } from './models/NewtonsCradle';
 import { TeslaCoil } from './models/TeslaCoil';
@@ -203,22 +203,22 @@ export class World {
         // -------------------------------------------------------------
         const quizPapa: QuizData = {
             id: 1,
-            title: "Energía Química y Redox",
-            question: "¿Cómo logran dos simples papas encender la lamparita LED del circuito?",
+            title: "Sala 01: Pila de Papa",
+            question: "¿Cómo logran dos simples papas encender la lamparita del circuito?",
             options: [
-                "Porque las papas absorben calor y generan chispas de vapor caliente.",
-                "Porque los metales (zinc y cobre) reaccionan con el jugo ácido liberando electrones que viajan por el cable.",
-                "Porque las papas tienen microchips de silicio enterrados adentro."
+                "Porque las papas absorben calor del aire y sacan vapor.",
+                "Porque el jugo ácido hace correr a los electrones entre el zinc y el cobre por el cable.",
+                "Porque las papas tienen pilitas de litio escondidas adentro."
             ],
             correctIndex: 1,
-            explanation: "¡Exacto! El ácido fosfórico de la pulpa actúa como electrolito, provocando una reacción redox que empuja electrones del zinc hacia el cobre."
+            explanation: "¡Exacto! El jugo natural de la papa ayuda a que los electrones salten de un metal al otro a través del cable, creando una corriente eléctrica de verdad."
         };
 
         const papaInteractable: Omit<Interactable, 'object'> = {
             id: 1,
             title: "Sala 01: Pila de Papa",
             tag: "🔋 ENERGÍA QUÍMICA A ELÉCTRICA",
-            description: "¡Dos metales distintos (cobre y zinc) sumergidos en el jugo de la papa reaccionan liberando electrones! Al conectar dos celdas en serie se obtienen ~1.94V, suficiente para encender el diodo LED verde.",
+            description: "¡El jugo ácido de las papas despierta a los electrones! El jugo hace que viajen del clavo de zinc al clavo de cobre como chicos corriendo al recreo, sumando casi 2 Voltios para encender la luz verde.",
             badge: "🏅 +100 XP · Medalla Química",
             getModeText: () => {
                 const isOn = this.switchExhibit.getState() && this.isPlugged;
@@ -257,22 +257,22 @@ export class World {
         // -------------------------------------------------------------
         const quizTesla: QuizData = {
             id: 2,
-            title: "Electromagnetismo y Tesla",
-            question: "¿Por qué el tubo fluorescente se enciende en el aire cerca de la Bobina sin cables ni pilas?",
+            title: "Sala 02: Bobina de Tesla",
+            question: "¿Por qué el tubo fluorescente se enciende flotando en el aire cerca de la Bobina sin cables ni pilas?",
             options: [
-                "Porque la bobina genera un campo electromagnético de alta frecuencia que viaja por el aire e ioniza el gas del tubo.",
-                "Porque el vidrio del tubo tiene pequeñas baterías invisibles que se calientan con el aire.",
-                "Porque el sonido del relámpago empuja la luz hacia adentro del tubo."
+                "Porque la bobina envía ondas invisibles de energía que hacen brillar al gas del tubo.",
+                "Porque el vidrio tiene pequeñas baterías invisibles que se calientan.",
+                "Porque el sonido del trueno empuja luz adentro del tubo."
             ],
             correctIndex: 0,
-            explanation: "¡Fabuloso! Nikola Tesla demostró la transmisión inalámbrica: el campo electromagnético de alta tensión ioniza y excita los átomos de gas dentro del tubo haciéndolos brillar."
+            explanation: "¡Fabuloso! Nikola Tesla demostró la transmisión inalámbrica: ondas invisibles viajan por el aire y despiertan el gas dentro del tubo para que brille."
         };
 
         const teslaInteractable: Omit<Interactable, 'object'> = {
             id: 2,
             title: "Sala 02: Bobina de Tesla",
-            tag: "⚡ ALTA TENSIÓN Y TRANSMISIÓN INALÁMBRICA",
-            description: "Nikola Tesla descubrió que la electricidad puede viajar por el aire sin necesidad de cables. La bobina genera un campo electromagnético de alta frecuencia tan potente que enciende el tubo fluorescente a distancia y desata arcos de plasma.",
+            tag: "⚡ ALTA TENSIÓN Y ENERGÍA SIN CABLES",
+            description: "Nikola Tesla descubrió cómo enviar energía sin ningún cable. La bobina crea ondas invisibles en el aire que despiertan el gas dentro del tubo fluorescente haciéndolo brillar flotando en el aire.",
             badge: "🏅 +100 XP · Medalla de Tesla",
             getModeText: () => `MODO: ${this.teslaCoil.getCurrentModeInfo().name.toUpperCase()}`,
             quiz: quizTesla,
@@ -287,7 +287,7 @@ export class World {
                         if (success) this.hud.completeMission(2);
                     });
                 } else {
-                    this.hud.showAchievementToast('Bobina de Tesla: ¡Completado!', 'Ya dominás el electromagnetismo resonante.');
+                    this.hud.showAchievementToast('Bobina de Tesla: ¡Completado!', 'Ya dominás la transmisión de energía inalámbrica.');
                 }
             }
         };
@@ -301,22 +301,22 @@ export class World {
         // -------------------------------------------------------------
         const quizWind: QuizData = {
             id: 3,
-            title: "Energía Eólica y Dinamo de Faraday",
-            question: "¿Cómo transforma el aerogenerador la fuerza del viento en luz para la maqueta de la ciudad?",
+            title: "Sala 03: Aerogenerador Faraday",
+            question: "¿Cómo transforma el molino la fuerza del viento en luz para iluminar la ciudad?",
             options: [
-                "El viento empuja las aspas, las aspas hacen girar imanes dentro de bobinas de cobre y se induce corriente eléctrica.",
-                "Las aspas atrapan nubes de tormenta y las exprimen sobre la ciudad.",
-                "El viento enfría los cables y el frío se convierte en electricidad líquida."
+                "El viento hace girar imanes dentro de bobinas de cobre, empujando electricidad limpia a las casas.",
+                "Las aspas atrapan nubes de tormenta y las exprimen sobre los edificios.",
+                "El viento enfría los cables y el frío se convierte en luz líquida."
             ],
             correctIndex: 0,
-            explanation: "¡Brillante! Según la Ley de Inducción de Faraday, cuando un imán gira cerca de una bobina de cobre, los electrones se ponen en movimiento generando electricidad limpia."
+            explanation: "¡Brillante! El movimiento del viento hace rotar imanes de fuerza, y esos imanes empujan a los electrones por los cables para iluminar las casitas."
         };
 
         const windInteractable: Omit<Interactable, 'object'> = {
             id: 3,
             title: "Sala 03: Aerogenerador & Mini Ciudad",
-            tag: "🌪️ ENERGÍA CINÉTICA A ELÉCTRICA (EÓLICA)",
-            description: "¡El viento mueve las aspas de perfil aerodinámico! La rotación hace girar imanes de neodimio dentro de bobinas de cobre en el dinamo transparente, generando voltaje que ilumina toda la maqueta de la ciudad.",
+            tag: "🌪️ ENERGÍA DEL VIENTO A LUZ (EÓLICA)",
+            description: "¡El viento hace girar aspas gigantes y mueve imanes dentro de bobinas de alambre de cobre! Ese baile de imanes empuja a millones de electrones por los cables para iluminar toda la maqueta de la ciudad.",
             badge: "🏅 +100 XP · Medalla Eólica",
             getModeText: () => `POTENCIA: ${this.windTurbine.getCurrentModeInfo().name.toUpperCase()}`,
             quiz: quizWind,
@@ -345,22 +345,22 @@ export class World {
         // -------------------------------------------------------------
         const quizSolar: QuizData = {
             id: 4,
-            title: "Energía Solar y Efecto Fotoeléctrico",
-            question: "¿Qué ocurre dentro de las celdas de silicio del panel solar cuando la luz del foco incide sobre ellas?",
+            title: "Sala 04: Panel Solar Fotovoltaico",
+            question: "¿Qué le hace la luz del foco al panel solar para que gire la hélice del avioncito?",
             options: [
                 "El panel absorbe agua del aire y la evapora a presión.",
-                "Los fotones de luz chocan contra los átomos de silicio y desprenden electrones, creando una corriente eléctrica que hace girar la hélice.",
-                "El panel se calienta y el calor empuja las palas con vapor."
+                "Los fotones de luz chocan contra el silicio y empujan a los electrones hacia el motor.",
+                "El panel se calienta y el humo caliente empuja la hélice."
             ],
             correctIndex: 1,
-            explanation: "¡Excelente! Es el Efecto Fotoeléctrico descubierto por Heinrich Hertz y explicado por Albert Einstein: la luz solar (fotones) arranca electrones del silicio generando electricidad directa."
+            explanation: "¡Excelente! Los paquetitos de luz (fotones) chocan contra el silicio azul y ponen en movimiento a los electrones, generando electricidad directa."
         };
 
         const solarInteractable: Omit<Interactable, 'object'> = {
             id: 4,
             title: "Sala 04: Panel Solar Fotovoltaico",
-            tag: "☀️ ENERGÍA LUMÍNICA A MECÁNICA (SOLAR)",
-            description: "¡Los fotones de la luz golpean los átomos de silicio del panel solar desprendiendo electrones! Esta corriente continua alimenta directamente el motor eléctrico que hace girar la hélice de aviación a alta velocidad.",
+            tag: "☀️ DE LUZ SOLAR A MOVIMIENTO (SOLAR)",
+            description: "¡La luz del sol viaja en paquetitos diminutos llamados fotones! Cuando chocan contra la placa azul de silicio, golpean a los electrones como pelotitas de pool y los hacen correr hacia el motor para girar la hélice del avión.",
             badge: "🏅 +100 XP · Medalla Solar",
             getModeText: () => `INCIDENCIA: ${this.solarPanel.getCurrentModeInfo().name.toUpperCase()}`,
             quiz: quizSolar,
@@ -389,22 +389,22 @@ export class World {
         // -------------------------------------------------------------
         const quizVanDeGraaff: QuizData = {
             id: 5,
-            title: "Electricidad Estática y Fricción",
-            question: "¿Por qué las tiras conductoras de la cúpula levitan en el aire cuando el generador está encendido?",
+            title: "Sala 05: Generador Van de Graaff",
+            question: "¿Por qué las tiras de colores levitan y flotan en el aire en la esfera plateada?",
             options: [
-                "Porque el generador sopla aire comprimido por pequeños agujeros invisibles.",
-                "Porque la cúpula y las tiras se cargan con el mismo signo eléctrico (+), y las cargas iguales se repelen con fuerza desafiando la gravedad.",
-                "Porque el aluminio se vuelve magnético y es atraído por el techo del museo."
+                "Porque la esfera sopla aire comprimido por agujeros invisibles.",
+                "Porque todas las tiras se llenan de la misma carga eléctrica (+) y las cargas iguales se repelen con fuerza.",
+                "Porque el aluminio se vuelve un imán atraído por el techo del museo."
             ],
             correctIndex: 1,
-            explanation: "¡Exacto! Ley de Coulomb: cargas de igual polaridad se repelen mutuamente. Como la cúpula y las tiras comparten la misma carga eléctrica positiva, se rechazan y levitan."
+            explanation: "¡Exacto! Cargas eléctricas iguales se rechazan con fuerza. Como la esfera y las tiras tienen la misma carga, ¡se empujan entre sí y flotan en el aire!"
         };
 
         const vanDeGraaffInteractable: Omit<Interactable, 'object'> = {
             id: 5,
             title: "Sala 05: Generador de Van de Graaff",
-            tag: "⚡ ENERGÍA MECÁNICA A ELECTROSTÁTICA",
-            description: "Una correa de caucho en movimiento transporta electrones por fricción mecánica hasta acumular más de 150.000 Voltios en la esfera de aluminio. ¡Las cargas del mismo signo se repelen haciendo levitar las cintas en el aire!",
+            tag: "⚡ ELECTRICIDAD ESTÁTICA Y FRICCIÓN",
+            description: "¡Como cuando frotás un globo en tu buzo de lana y se te paran los pelos! La cinta junta tanta carga igual en la esfera plateada que las tiras se rechazan entre sí y flotan en el aire desafiando la gravedad.",
             badge: "🏅 +100 XP · Medalla Estática",
             getModeText: () => `ESTADO: ${this.vanDeGraaff.getCurrentModeInfo().name.toUpperCase()}`,
             quiz: quizVanDeGraaff,
@@ -437,22 +437,22 @@ export class World {
         // -------------------------------------------------------------
         const quizNewton: QuizData = {
             id: 6,
-            title: "Conservación de la Energía y Momento",
-            question: "Al soltar 2 esferas de acero, ¿por qué salen despedidas exactamente 2 esferas del otro lado y no 1 sola a doble velocidad?",
+            title: "Sala 06: Cuna de Newton",
+            question: "Al soltar 2 bolas de acero, ¿por qué salen despedidas 2 bolas del otro lado y no 1 sola a doble velocidad?",
             options: [
-                "Porque las esferas centrales tienen resortes que cuentan cuántas bolas cayeron.",
-                "Porque deben conservarse al mismo tiempo la energía cinética (½·m·v²) y la cantidad de movimiento (m·v).",
-                "Porque el acero solo puede recordar números pares de golpes."
+                "Porque las bolas del medio tienen resortes que cuentan los golpes.",
+                "Porque la energía y la cantidad de movimiento viajan exactas de un extremo al otro sin perderse.",
+                "Porque el acero solo entiende números pares de rebote."
             ],
             correctIndex: 1,
-            explanation: "¡Magistral! La física exige que tanto la masa en movimiento como la energía cinética total se conserven exactamente en un choque elástico perfecto."
+            explanation: "¡Magistral! La física demuestra que tanto la masa como la velocidad del golpe deben salir iguales del otro lado en el choque."
         };
 
         const newtonInteractable: Omit<Interactable, 'object'> = {
             id: 6,
             title: "Sala 06: Cuna de Newton",
-            tag: "⚖️ ENERGÍA CINÉTICA Y CONSERVACIÓN",
-            description: "¡La energía no se crea ni se destruye! En choques perfectamente elásticos entre esferas de acero templado, la velocidad y la energía cinética viajan como ondas invisibles a través de las bolas intermedias sin moverlas.",
+            tag: "⚖️ LA ENERGÍA VIAJA COMO UNA OLA",
+            description: "¡La energía nunca desaparece, solo viaja! Si levantás y soltás 2 bolas de acero, el golpe viaja como una ola invisible atravesando a las bolas del medio sin moverlas, y hace saltar exactamente a 2 bolas del otro lado.",
             badge: "🏅 +100 XP · Medalla de Choques",
             getModeText: () => `MODO: ${this.cradle.getCurrentModeInfo().name.toUpperCase()}`,
             quiz: quizNewton,
@@ -481,22 +481,22 @@ export class World {
         // -------------------------------------------------------------
         const quizDynamo: QuizData = {
             id: 7,
-            title: "Inducción Electromagnética y Efecto Joule",
-            question: "Cuando hacés girar la manivela con la fuerza de tus brazos, ¿cómo se convierte tu energía física en luz en la bombilla?",
+            title: "Sala 07: Dínamo Manual con Manivela",
+            question: "Cuando girás la manivela con tus brazos, ¿cómo se convierte tu energía física en luz en la bombilla?",
             options: [
-                "Los engranajes frotan cables calientes y el calor sale en forma de chispas por el vidrio.",
-                "Tu trabajo muscular hace girar bobinas de cobre entre imanes permanentes, induciendo una corriente de electrones que calienta el filamento de tungsteno hasta encenderlo.",
-                "La manivela absorbe aire frío y lo sopla dentro de la bombilla para que brille."
+                "Los engranajes frotan cables calientes y salen chispas.",
+                "Tu movimiento hace girar bobinas entre imanes, generando electricidad que calienta el filamento hasta brillar.",
+                "La manivela sopla aire frío dentro del vidrio de la bombilla."
             ],
             correctIndex: 1,
-            explanation: "¡Excelente! Ley de Inducción de Faraday y Efecto Joule: la rotación mecánica mueve las bobinas en el campo magnético generando voltaje. La corriente de electrones choca contra los átomos de tungsteno, calentándolo a más de 2000°C hasta emitir luz blanca incandescente."
+            explanation: "¡Excelente! Tu trabajo muscular hace girar bobinas de cobre entre imanes, creando corriente eléctrica. Esa corriente calienta el filamento a más de 2000°C hasta que resplandece."
         };
 
         const dynamoInteractable: Omit<Interactable, 'object'> = {
             id: 7,
             title: "Sala 07: Dínamo Manual con Manivela",
-            tag: "⚙️ TRABAJO MUSCULAR A LUZ INCANDESCENTE",
-            description: "¡Convertí tu propia energía en electricidad! Al girar la manivela, los engranajes transparentes multiplican la velocidad a 5x, haciendo girar el rotor de cobre entre imanes permanentes. El voltímetro mide la tensión generada y enciende la lámpara vintage Edison.",
+            tag: "⚙️ FUERZA MUSCULAR A LUZ EN LA BOMBILLA",
+            description: "¡Convertí tu propia fuerza física en luz! Al girar la manivela, los engranajes multiplican 5 veces tu velocidad haciendo girar bobinas entre imanes. ¡Esa corriente calienta el filamento de tungsteno hasta brillar con luz dorada!",
             badge: "🏅 +100 XP · Medalla del Dínamo",
             getModeText: () => `POTENCIA: ${this.dynamoExhibit.getCurrentModeInfo().name.toUpperCase()}`,
             quiz: quizDynamo,
@@ -525,22 +525,22 @@ export class World {
         // -------------------------------------------------------------
         const opticsQuiz: QuizData = {
             id: 8,
-            title: "Exhibición de Óptica: Descomposición Espectral",
+            title: "Galería Especial: Prisma Óptico",
             question: "¿Por qué el cristal triangular separa la luz blanca en todos los colores del arcoíris?",
             options: [
-                "Porque el cristal tiene acuarelas transparentes adentro.",
-                "Porque la luz blanca está compuesta por todas las frecuencias visibles y cada una viaja a velocidad diferente dentro del vidrio.",
+                "Porque el cristal tiene tintas de acuarela transparentes adentro.",
+                "Porque la luz blanca tiene todos los colores mezclados y cada color viaja a velocidad diferente dentro del vidrio.",
                 "Porque el láser se apaga con el frío del vidrio."
             ],
             correctIndex: 1,
-            explanation: "¡Exacto! Refracción y dispersión cromática: el cristal frena más a las frecuencias altas (violeta) que a las bajas (rojo), abriendo el abanico espectral."
+            explanation: "¡Exacto! La luz blanca es una mezcla de todos los colores. El vidrio frena a cada color a una velocidad distinta, abriendo el abanico del arcoíris."
         };
 
         const opticsInteractable: Omit<Interactable, 'object'> = {
             id: 8,
             title: "Galería Especial: Prisma Óptico",
-            tag: "🌈 MUESTRA DE CALIBRACIÓN LUMÍNICA",
-            description: "Exhibición técnica y de referencia conmemorativa. Isaac Newton demostró en 1666 que la luz blanca contiene todas las longitudes de onda del espectro visible. ¡Probá la luz blanca y los láseres monocromáticos!",
+            tag: "🌈 EL SECRETO DEL ARCOÍRIS",
+            description: "Isaac Newton descubrió en 1666 que la luz blanca contiene mezclados todos los colores del arcoíris. ¡Al entrar al cristal triangular, cada color se separa y crea el arcoíris en la pantalla!",
             badge: "💎 Exhibición de Muestra e Historia",
             getModeText: () => `LÁSER: ${this.optics.getCurrentModeInfo().name.toUpperCase()}`,
             quiz: opticsQuiz,
@@ -559,30 +559,58 @@ export class World {
         });
 
         // -------------------------------------------------------------
-        // ROBOT GUÍA MEL-BOT (ATRIO CENTRAL)
+        // ROBOT GUÍA MEL-BOT (ATRIO CENTRAL - ID: 99)
         // -------------------------------------------------------------
+        const getNextRoom = () => {
+            const rooms = [
+                { id: 1, name: "Sala 01: Pila de Papa", pos: new THREE.Vector3(-7.5, 1.8, 0) },
+                { id: 2, name: "Sala 02: Bobina de Tesla", pos: new THREE.Vector3(7.5, 1.8, 0) },
+                { id: 3, name: "Sala 03: Aerogenerador", pos: new THREE.Vector3(0, 1.8, -7.5) },
+                { id: 4, name: "Sala 04: Panel Solar", pos: new THREE.Vector3(5.5, 1.8, -5.5) },
+                { id: 5, name: "Sala 05: Generador Van de Graaff", pos: new THREE.Vector3(-5.5, 1.8, -5.5) },
+                { id: 6, name: "Sala 06: Cuna de Newton", pos: new THREE.Vector3(0, 1.8, 7.5) },
+                { id: 7, name: "Sala 07: Dínamo Manual", pos: new THREE.Vector3(5.5, 1.8, 4.8) }
+            ];
+            for (const r of rooms) {
+                if (!this.hud.isMissionCompleted(r.id)) return r;
+            }
+            return rooms[0];
+        };
+
         const robotInteractable: Omit<Interactable, 'object'> = {
-            id: 0,
+            id: 99,
             title: "Mel-Bot: Asistente Robótico",
-            tag: "🤖 GUÍA DEL MUSEO",
-            description: "¡Hola Científico! Soy Mel-Bot, tu asistente en el Museo de la Energía. Explorá las 7 salas temáticas, buscá los orbes ocultos y demostrá tu conocimiento respondiendo los desafíos.",
-            badge: "ℹ️ Guía Interactiva",
-            getModeText: () => "ESTADO: EN LÍNEA",
+            tag: "🤖 GUÍA INTERACTIVA DEL MUSEO",
+            description: "¡Hola Científico! Soy Mel-Bot, tu asistente de expedición. Te acompaño volando a las 7 salas temáticas y respondo tus dudas sobre los experimentos.",
+            badge: "ℹ️ Asistente de Expedición",
+            getModeText: () => this.robotGuide.isGuiding() ? "ESTADO: GUIANDO A SALA 🚀" : "ESTADO: LISTO PARA GUIAR",
             quiz: {
-                id: 0,
+                id: 99,
                 title: "Guía del Museo",
                 question: "¿Estás listo para completar la gran expedición científica?",
                 options: ["¡Sí, vamos a explorar las salas!", "Necesito investigar más"],
                 correctIndex: 0,
-                explanation: "¡Excelente! Caminá por los pasillos hacia cada sala temática."
+                explanation: "¡Excelente! Seguí a Mel-Bot hacia cada sala temática."
             },
             onInteract: () => {
-                const tip = this.robotGuide.talk();
-                this.hud.showAchievementToast('Consejo de Mel-Bot', tip, '🤖');
+                const nextRoom = getNextRoom();
+                const speech = `¡Hola, <b>${this.hud.getStudentName()}</b>! 🤖 Soy Mel-Bot, tu asistente de expedición.<br><br>¿Querés que te guíe volando a la <b>${nextRoom.name}</b> para completar tus misiones? ¡Seguime de cerca! 🚀`;
+
+                this.hud.openMelDialog(
+                    speech,
+                    () => {
+                        this.robotGuide.startGuiding(nextRoom.id, nextRoom.name, nextRoom.pos);
+                        this.hud.showAchievementToast('¡Mel-Bot te Guía! 🚀', `Seguí a Mel-Bot volando hacia la ${nextRoom.name}`, '🤖');
+                    },
+                    () => {
+                        this.hud.openJournal();
+                    }
+                );
             },
             onChallenge: () => {
-                const tip = this.robotGuide.talk();
-                this.hud.showAchievementToast('Consejo de Mel-Bot', tip, '🤖');
+                const nextRoom = getNextRoom();
+                this.robotGuide.startGuiding(nextRoom.id, nextRoom.name, nextRoom.pos);
+                this.hud.showAchievementToast('¡SÍGUEME! 🚀', `¡Mel-Bot vuela guiándote a la ${nextRoom.name}!`, '🚀');
             }
         };
 
@@ -627,7 +655,7 @@ export class World {
 
         // Actualizar Mel-Bot y Orbes coleccionables con posición del jugador
         if (playerPos) {
-            if (this.robotGuide) this.robotGuide.update(time, playerPos);
+            if (this.robotGuide) this.robotGuide.update(time, playerPos, delta);
             if (this.orbsManager) this.orbsManager.update(time, playerPos);
         }
     }
@@ -650,5 +678,9 @@ export class World {
 
     public getCollidables(): THREE.Mesh[] {
         return this.room ? this.room.getCollidables() : [];
+    }
+
+    public getWallBoxes(): WallBox[] {
+        return this.room ? this.room.getInternalWallBoxes() : [];
     }
 }

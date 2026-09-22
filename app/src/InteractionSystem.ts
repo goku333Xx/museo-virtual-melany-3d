@@ -21,6 +21,10 @@ export class InteractionSystem {
         this.crosshairEl = document.getElementById('crosshair');
     }
 
+    private lastTargetId: number | null = null;
+    private lastModeText: string | undefined = undefined;
+    private lastIsDone: boolean = false;
+
     public updateInteractables(list: Interactable[]) {
         this.allInteractables = list;
         this.interactableMeshes = list.map(i => i.object);
@@ -28,9 +32,13 @@ export class InteractionSystem {
 
     public update() {
         if (this.hud.isModalOpen) {
-            this.currentTarget = null;
-            this.hud.hideExhibitCard();
-            this.crosshairEl?.classList.remove('interactive');
+            if (this.currentTarget) {
+                this.currentTarget = null;
+                this.lastTargetId = null;
+                this.lastModeText = undefined;
+                this.hud.hideExhibitCard();
+                this.crosshairEl?.classList.remove('interactive');
+            }
             return;
         }
 
@@ -57,40 +65,45 @@ export class InteractionSystem {
                     
                     // Texto dinámico de modo en tiempo real
                     const modeText = found.getModeText ? found.getModeText() : found.modeText;
-                    
-                    // Doble canal de acción desacoplado: [E] Probar / [R] Responder (Adaptado para PC o Móvil)
-                    const isRobot = found.id === 99;
+                    const isRobot = found.id === 99 || found.id === 0;
                     const isDone = this.hud.isMissionCompleted(found.id);
-                    const isMobile = window.innerWidth <= 768 || ('ontouchstart' in window && !window.matchMedia('(pointer: fine)').matches);
-                    
-                    const badgeText = isRobot ? found.badge : (isDone ? "✅ ¡Misión Cumplida! (Medalla Ganada)" : found.badge);
 
-                    let actionEText: string;
-                    let actionRText: string;
+                    // Optimización 60+ FPS: Solo actualizar el DOM si cambió el objetivo, el modo o el estado
+                    if (this.lastTargetId !== found.id || this.lastModeText !== modeText || this.lastIsDone !== isDone) {
+                        this.lastTargetId = found.id;
+                        this.lastModeText = modeText;
+                        this.lastIsDone = isDone;
 
-                    if (isRobot) {
-                        actionEText = isMobile ? "💬 Hablar con Mel-Bot" : "💬 [E] Hablar con Mel-Bot";
-                        actionRText = isMobile ? "💡 Pedir Consejo" : "💡 [R] Pedir Consejo";
-                    } else {
-                        actionEText = isDone 
-                            ? (isMobile ? "⚡ Manipular física" : "⚡ [E] Probar / Manipular física")
-                            : (isMobile ? "⚡ Probar Experimento" : "⚡ [E] Probar Experimento");
-                        actionRText = isDone
-                            ? "⭐ Desafío Aprobado (+100 XP)"
-                            : (isMobile ? "📝 Responder Desafío (+100 XP)" : "📝 [R] Responder Desafío (+100 XP)");
+                        const isMobile = window.innerWidth <= 768 || ('ontouchstart' in window && !window.matchMedia('(pointer: fine)').matches);
+                        const badgeText = isRobot ? found.badge : (isDone ? "✅ ¡Misión Cumplida! (Medalla Ganada)" : found.badge);
+
+                        let actionEText: string;
+                        let actionRText: string;
+
+                        if (isRobot) {
+                            actionEText = isMobile ? "💬 Hablar con Mel-Bot" : "💬 [E] Hablar con Mel-Bot";
+                            actionRText = isMobile ? "🚀 Pedir Guía" : "🚀 [R] Pedir Guía";
+                        } else {
+                            actionEText = isDone 
+                                ? (isMobile ? "⚡ Manipular física" : "⚡ [E] Probar / Manipular física")
+                                : (isMobile ? "⚡ Probar Experimento" : "⚡ [E] Probar Experimento");
+                            actionRText = isDone
+                                ? "⭐ Desafío Aprobado (+100 XP)"
+                                : (isMobile ? "📝 Responder Desafío (+100 XP)" : "📝 [R] Responder Desafío (+100 XP)");
+                        }
+
+                        this.hud.showExhibitCard(
+                            found.title,
+                            found.tag,
+                            found.description,
+                            badgeText,
+                            modeText,
+                            actionEText,
+                            actionRText,
+                            isDone,
+                            isRobot
+                        );
                     }
-
-                    this.hud.showExhibitCard(
-                        found.title,
-                        found.tag,
-                        found.description,
-                        badgeText,
-                        modeText,
-                        actionEText,
-                        actionRText,
-                        isDone,
-                        isRobot
-                    );
                     return;
                 }
             }
@@ -99,6 +112,8 @@ export class InteractionSystem {
         // Si no está mirando un experimento o su pedestal
         if (this.currentTarget) {
             this.currentTarget = null;
+            this.lastTargetId = null;
+            this.lastModeText = undefined;
             this.hud.hideExhibitCard();
             this.crosshairEl?.classList.remove('interactive');
         }

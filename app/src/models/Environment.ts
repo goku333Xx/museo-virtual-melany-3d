@@ -1,5 +1,12 @@
 import * as THREE from 'three';
 
+export interface WallBox {
+    minX: number;
+    maxX: number;
+    minZ: number;
+    maxZ: number;
+}
+
 interface FloatingHaloData {
     group: THREE.Group;
     spotLight: THREE.SpotLight;
@@ -13,6 +20,7 @@ export class MuseumRoom {
     private collidables: THREE.Mesh[] = [];
     private pedestalMeshes: THREE.Object3D[] = [];
     private floatingHalos: FloatingHaloData[] = [];
+    private internalWallBoxes: WallBox[] = [];
 
     constructor() {
         this.group = new THREE.Group();
@@ -21,6 +29,7 @@ export class MuseumRoom {
         this.buildFloorRunwayAndZones();
         this.buildCentralAtriumBeacon();
         this.buildRoomPortals();
+        this.buildEnclosedRooms();
         this.buildCeilingTruss();
         this.buildPedestals();
         this.buildLightingAndDecor();
@@ -380,14 +389,14 @@ export class MuseumRoom {
     // --- ARCOS ARQUITECTÓNICOS Y LETREROS DE LAS SALAS ---
     private buildRoomPortals() {
         const portalConfigs = [
-            { pos: [-7.5, 0], rotY: Math.PI / 2, title: "SALA 01: ELECTROQUÍMICA", sub: "Pila de Papa · Reacción Redox", color: "#4ade80" },
-            { pos: [7.5, 0], rotY: -Math.PI / 2, title: "SALA 02: ALTA TENSIÓN Y TESLA", sub: "Transformador Resonante · Inducción", color: "#38bdf8" },
-            { pos: [0, -7.5], rotY: 0, title: "SALA 03: ENERGÍA EÓLICA & FARADAY", sub: "Cinética a Eléctrica · Mini Ciudad", color: "#00f0ff" },
-            { pos: [5.5, -5.5], rotY: -Math.PI / 4, title: "SALA 04: ENERGÍA SOLAR", sub: "Efecto Fotovoltaico · Celdas de Silicio", color: "#fde047" },
-            { pos: [-5.5, -5.5], rotY: Math.PI / 4, title: "SALA 05: GENERADOR ELECTROSTÁTICO", sub: "Fricción y Cargas · 150.000V", color: "#c084fc" },
-            { pos: [0, 7.5], rotY: Math.PI, title: "SALA 06: ENERGÍA MECÁNICA", sub: "Conservación de Momento · Choques", color: "#f59e0b" },
-            { pos: [5.5, 4.8], rotY: -3 * Math.PI / 4, title: "SALA 07: DÍNAMO MECÁNICO", sub: "Inducción y Manivela · Efecto Joule", color: "#f97316" },
-            { pos: [0, 19.0], rotY: Math.PI, title: "GALERÍA ESPECIAL: PRISMA ÓPTICO", sub: "Dispersión Espectral · Calibración", color: "#d946ef" }
+            { pos: [-7.5, 0], rotY: Math.PI / 2, title: "SALA 01: PILA DE PAPA", sub: "Química a Eléctrica · Jugo Ácido", color: "#4ade80" },
+            { pos: [7.5, 0], rotY: -Math.PI / 2, title: "SALA 02: BOBINA DE TESLA", sub: "Alta Tensión · Electricidad sin Cables", color: "#38bdf8" },
+            { pos: [0, -7.5], rotY: 0, title: "SALA 03: AEROGENERADOR", sub: "Energía del Viento · Imanes y Mini Ciudad", color: "#00f0ff" },
+            { pos: [5.5, -5.5], rotY: -Math.PI / 4, title: "SALA 04: ENERGÍA SOLAR", sub: "Fotones y Luz · Motor del Avión", color: "#fde047" },
+            { pos: [-5.5, -5.5], rotY: Math.PI / 4, title: "SALA 05: GENERADOR ELECTROSTÁTICO", sub: "Fricción y Cargas · Cintas Voladoras", color: "#c084fc" },
+            { pos: [0, 7.5], rotY: Math.PI, title: "SALA 06: CUNA DE NEWTON", sub: "Energía de Choque · Olas Invisibles", color: "#f59e0b" },
+            { pos: [5.5, 4.8], rotY: -3 * Math.PI / 4, title: "SALA 07: DÍNAMO MANUAL", sub: "Fuerza Muscular a Luz · Manivela y Bombilla", color: "#f97316" },
+            { pos: [0, 19.0], rotY: Math.PI, title: "GALERÍA ESPECIAL: PRISMA ÓPTICO", sub: "El Secreto del Arcoíris · Newton", color: "#d946ef" }
         ];
 
         const archMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.85, roughness: 0.3 });
@@ -429,6 +438,194 @@ export class MuseumRoom {
 
             this.group.add(portal);
         });
+    }
+
+    // --- SALAS DE VERDAD CERRADAS Y BIEN ILUMINADAS ---
+    private buildEnclosedRooms() {
+        const wallMat = new THREE.MeshStandardMaterial({
+            color: 0x151c28,
+            roughness: 0.8,
+            metalness: 0.15
+        });
+        const trimMat = new THREE.MeshStandardMaterial({
+            color: 0xc49b55,
+            roughness: 0.3,
+            metalness: 0.8
+        });
+        const coveMat = new THREE.MeshStandardMaterial({
+            color: 0xffedd5,
+            emissive: 0xfbbf24,
+            emissiveIntensity: 0.35,
+            roughness: 0.5
+        });
+
+        const wallHeight = 4.5;
+
+        // Función para levantar muros reales con molduras doradas e iluminación perimetral
+        const createWall = (minX: number, maxX: number, minZ: number, maxZ: number) => {
+            const w = Math.max(0.12, maxX - minX);
+            const d = Math.max(0.12, maxZ - minZ);
+            const posX = (minX + maxX) / 2;
+            const posZ = (minZ + maxZ) / 2;
+
+            const wallGeom = new THREE.BoxGeometry(w, wallHeight, d);
+            const wallMesh = new THREE.Mesh(wallGeom, wallMat);
+            wallMesh.position.set(posX, wallHeight / 2, posZ);
+            wallMesh.castShadow = true;
+            wallMesh.receiveShadow = true;
+            this.group.add(wallMesh);
+            this.collidables.push(wallMesh);
+
+            // Moldura en zócalo
+            const baseMesh = new THREE.Mesh(new THREE.BoxGeometry(w + 0.04, 0.22, d + 0.04), trimMat);
+            baseMesh.position.set(posX, 0.11, posZ);
+            this.group.add(baseMesh);
+
+            // Moldura superior iluminada
+            const topMesh = new THREE.Mesh(new THREE.BoxGeometry(w + 0.05, 0.18, d + 0.05), coveMat);
+            topMesh.position.set(posX, wallHeight - 0.09, posZ);
+            this.group.add(topMesh);
+
+            this.internalWallBoxes.push({ minX, maxX, minZ, maxZ });
+        };
+
+        // Dintel superior sobre las puertas de 3.2m de ancho
+        const createDoorLintel = (minX: number, maxX: number, minZ: number, maxZ: number) => {
+            const w = Math.max(0.12, maxX - minX);
+            const d = Math.max(0.12, maxZ - minZ);
+            const doorHeight = 3.8;
+            const h = wallHeight - doorHeight;
+            const posX = (minX + maxX) / 2;
+            const posZ = (minZ + maxZ) / 2;
+            const posY = doorHeight + h / 2;
+
+            const lintelMesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), wallMat);
+            lintelMesh.position.set(posX, posY, posZ);
+            this.group.add(lintelMesh);
+
+            const topMesh = new THREE.Mesh(new THREE.BoxGeometry(w + 0.05, 0.18, d + 0.05), coveMat);
+            topMesh.position.set(posX, wallHeight - 0.09, posZ);
+            this.group.add(topMesh);
+        };
+
+        // 1. FACHADAS DEL ATRIO CENTRAL CON VANOS DE PUERTA (3.2m)
+        // Pared Oeste (Puerta Sala 1 en Z = [-1.6, 1.6])
+        createWall(-7.65, -7.35, -5.8, -1.6);
+        createDoorLintel(-7.65, -7.35, -1.6, 1.6);
+        createWall(-7.65, -7.35, 1.6, 5.8);
+
+        // Pared Este (Puerta Sala 2 en Z = [-1.6, 1.6])
+        createWall(7.35, 7.65, -5.8, -1.6);
+        createDoorLintel(7.35, 7.65, -1.6, 1.6);
+        createWall(7.35, 7.65, 1.6, 4.0);
+
+        // Pared Norte (Puerta Sala 3 en X = [-1.6, 1.6])
+        createWall(-5.8, -1.6, -7.65, -7.35);
+        createDoorLintel(-1.6, 1.6, -7.65, -7.35);
+        createWall(1.6, 5.8, -7.65, -7.35);
+
+        // Pared Sur (Puerta Sala 6 en X = [-1.6, 1.6])
+        createWall(-5.8, -1.6, 7.35, 7.65);
+        createDoorLintel(-1.6, 1.6, 7.35, 7.65);
+        createWall(1.6, 4.2, 7.35, 7.65);
+
+        // 2. PAREDES DIVISORIAS Y TRASERAS DE CADA SALA
+        // Sala 01: Pila de Papa (Oeste: X = -15, Z = 0)
+        createWall(-23.5, -7.5, -5.95, -5.65); // Muro Norte divisor con Sala 5
+        createWall(-23.5, -7.5, 5.65, 5.95);   // Muro Sur divisor
+        createWall(-23.65, -23.35, -5.8, 5.8); // Muro Trasero Oeste
+
+        // Sala 02: Bobina de Tesla (Este: X = 16, Z = 0)
+        createWall(7.5, 24.5, -5.95, -5.65); // Muro Norte divisor con Sala 4
+        createWall(7.5, 24.5, 5.0, 5.3);     // Muro Sur divisor con Sala 7
+        createWall(24.35, 24.65, -5.8, 5.0); // Muro Trasero Este
+
+        // Sala 03: Aerogenerador (Norte: X = 0, Z = -15)
+        createWall(-5.95, -5.65, -23.5, -7.5); // Muro Oeste divisor con Sala 5
+        createWall(5.65, 5.95, -23.5, -7.5);   // Muro Este divisor con Sala 4
+        createWall(-5.8, 5.8, -23.65, -23.35); // Muro Trasero Norte
+
+        // Sala 04: Panel Solar (Noreste: X = 12, Z = -12)
+        createWall(5.8, 20.5, -20.65, -20.35); // Muro Trasero Norte
+        createWall(20.35, 20.65, -20.5, -5.8); // Muro Trasero Este
+
+        // Sala 05: Generador Van de Graaff (Noroeste: X = -12, Z = -12)
+        createWall(-20.5, -5.8, -20.65, -20.35); // Muro Trasero Norte
+        createWall(-20.65, -20.35, -20.5, -5.8); // Muro Trasero Oeste
+
+        // Sala 06: Cuna de Newton (Sur: X = 0, Z = 14)
+        createWall(-5.95, -5.65, 7.5, 19.0); // Muro Oeste divisor
+        createWall(5.65, 5.95, 7.5, 19.0);   // Muro Este divisor
+        // Muro divisorio hacia Galería Especial con vano de puerta en X = [-1.6, 1.6]
+        createWall(-5.8, -1.6, 18.85, 19.15);
+        createDoorLintel(-1.6, 1.6, 18.85, 19.15);
+        createWall(1.6, 5.8, 18.85, 19.15);
+
+        // Sala 07: Dínamo Manual (Sureste: X = 12, Z = 10)
+        createWall(5.8, 20.5, 16.35, 16.65); // Muro Trasero Sur
+        createWall(20.35, 20.65, 5.2, 16.5);  // Muro Trasero Este
+        createWall(5.65, 5.95, 7.5, 16.5);   // Muro Oeste divisor con pasillo
+
+        // Galería Especial: Prisma Óptico (Sur Profundo: X = 0, Z = 24)
+        createWall(-5.95, -5.65, 19.0, 29.5); // Muro Oeste
+        createWall(5.65, 5.95, 19.0, 29.5);   // Muro Este
+        createWall(-5.8, 5.8, 29.35, 29.65);  // Muro Trasero Sur
+
+        // 3. ILUMINACIÓN BRILLANTE DE GALERÍA DE MUSEO PARA CADA SALA
+        const roomConfigs = [
+            { x: -15, z: 0, color: 0x4ade80, name: "Sala 1: Papa" },
+            { x: 16, z: 0, color: 0x38bdf8, name: "Sala 2: Tesla" },
+            { x: 0, z: -15, color: 0x00f0ff, name: "Sala 3: Eólica" },
+            { x: 12, z: -12, color: 0xfde047, name: "Sala 4: Solar" },
+            { x: -12, z: -12, color: 0xc084fc, name: "Sala 5: Van de Graaff" },
+            { x: 0, z: 14, color: 0xf59e0b, name: "Sala 6: Newton" },
+            { x: 12, z: 10, color: 0xf97316, name: "Sala 7: Dínamo" },
+            { x: 0, z: 24, color: 0xd946ef, name: "Galería Óptica" }
+        ];
+
+        roomConfigs.forEach(rc => {
+            // Luz cenital cálida de galería (3200K) que inunda toda la sala
+            const roomLight = new THREE.PointLight(0xfff7ed, 2.4, 18.0, 1.2);
+            roomLight.position.set(rc.x, 4.2, rc.z);
+            this.group.add(roomLight);
+
+            // Foco de acento con el color de la temática reflejado en el techo/pared
+            const accentLight = new THREE.PointLight(rc.color, 1.2, 8.0, 2.0);
+            accentLight.position.set(rc.x, 3.8, rc.z);
+            this.group.add(accentLight);
+
+            // Apliques luminosos decorativos en las paredes de cada sala
+            this.createWallSconce(rc.x - 3.5, 2.4, rc.z - 3.5, rc.color);
+            this.createWallSconce(rc.x + 3.5, 2.4, rc.z + 3.5, rc.color);
+        });
+
+        // Iluminación adicional del Atrio Central para que resplandezca cálido y acogedor
+        const atriumLight1 = new THREE.PointLight(0xfffbeb, 2.6, 18.0, 1.3);
+        atriumLight1.position.set(0, 4.4, 0);
+        this.group.add(atriumLight1);
+    }
+
+    private createWallSconce(x: number, y: number, z: number, colorHex: number) {
+        const sconceGroup = new THREE.Group();
+        sconceGroup.position.set(x, y, z);
+
+        // Soporte de latón
+        const mountMat = new THREE.MeshStandardMaterial({ color: 0x856638, roughness: 0.3, metalness: 0.8 });
+        const mount = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.45, 0.08), mountMat);
+        sconceGroup.add(mount);
+
+        // Barra de neón difusa
+        const neonMat = new THREE.MeshStandardMaterial({
+            color: colorHex,
+            emissive: colorHex,
+            emissiveIntensity: 0.7,
+            roughness: 0.4
+        });
+        const strip = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.4, 0.04), neonMat);
+        strip.position.set(0, 0, 0.05);
+        sconceGroup.add(strip);
+
+        this.group.add(sconceGroup);
     }
 
     private generateSignTexture(title: string, subtitle: string, hexColor: string): THREE.CanvasTexture {
@@ -801,5 +998,9 @@ export class MuseumRoom {
 
     public getPedestalMeshes(): THREE.Object3D[] {
         return this.pedestalMeshes;
+    }
+
+    public getInternalWallBoxes(): WallBox[] {
+        return this.internalWallBoxes;
     }
 }

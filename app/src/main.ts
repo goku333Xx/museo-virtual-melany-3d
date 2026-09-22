@@ -143,14 +143,26 @@ function getGroundHeight(x: number, z: number, currentCamY: number): number {
 }
 
 function isInsidePedestalObstacle(x: number, z: number, camY: number): boolean {
-    // Si el jugador está en el aire por encima del pedestal o parado sobre él, no hay obstáculo
-    if (camY >= 2.75) return false;
-    const bodyMargin = 0.22; // Margen reducido para poder acercarse a 22 cm de los experimentos
-    for (let i = 0; i < pedestals.length; i++) {
-        const p = pedestals[i];
-        if (x >= p.minX - bodyMargin && x <= p.maxX + bodyMargin &&
-            z >= p.minZ - bodyMargin && z <= p.maxZ + bodyMargin) {
-            return true;
+    const bodyMargin = 0.22;
+    // Pedestales (bloquean si el jugador no saltó por encima)
+    if (camY < 2.75) {
+        for (let i = 0; i < pedestals.length; i++) {
+            const p = pedestals[i];
+            if (x >= p.minX - bodyMargin && x <= p.maxX + bodyMargin &&
+                z >= p.minZ - bodyMargin && z <= p.maxZ + bodyMargin) {
+                return true;
+            }
+        }
+    }
+    // Paredes interiores de las salas cerradas (altura 4.5m)
+    if (camY < 4.5) {
+        const wallBoxes = world.getWallBoxes();
+        for (let i = 0; i < wallBoxes.length; i++) {
+            const w = wallBoxes[i];
+            if (x >= w.minX - bodyMargin && x <= w.maxX + bodyMargin &&
+                z >= w.minZ - bodyMargin && z <= w.maxZ + bodyMargin) {
+                return true;
+            }
         }
     }
     return false;

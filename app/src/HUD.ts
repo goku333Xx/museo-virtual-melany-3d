@@ -76,6 +76,23 @@ export class HUD {
     private achDesc: HTMLElement | null;
     private toastTimeout: number | null = null;
 
+    // Mel-Bot Dialog Modal
+    private melDialogModal: HTMLElement | null;
+    private melDialogTitle: HTMLElement | null;
+    private melDialogText: HTMLElement | null;
+    private melGuideBtn: HTMLButtonElement | null;
+    private melMapBtn: HTMLButtonElement | null;
+    private melCloseBtn: HTMLButtonElement | null;
+    private melGuideCallback: (() => void) | null = null;
+    private melMapCallback: (() => void) | null = null;
+
+    // Minimap Performance Cache
+    private lastMinimapX: number = -9999;
+    private lastMinimapZ: number = -9999;
+    private lastMinimapRot: number = -9999;
+    private lastMinimapMissionsCount: number = -1;
+    private lastMinimapTime: number = 0;
+
     // Callbacks for PointerLock synchronization
     public onOpenModal?: () => void;
     public onCloseModal?: () => void;
@@ -148,10 +165,39 @@ export class HUD {
         this.achTitle = document.getElementById('ach-title') as HTMLElement | null;
         this.achDesc = document.getElementById('ach-desc') as HTMLElement | null;
 
+        this.melDialogModal = document.getElementById('mel-dialog-modal');
+        this.melDialogTitle = document.getElementById('mel-dialog-title');
+        this.melDialogText = document.getElementById('mel-dialog-text');
+        this.melGuideBtn = document.getElementById('mel-guide-btn') as HTMLButtonElement | null;
+        this.melMapBtn = document.getElementById('mel-map-btn') as HTMLButtonElement | null;
+        this.melCloseBtn = document.getElementById('mel-close-btn') as HTMLButtonElement | null;
+
         this.setupEventListeners();
     }
 
     private setupEventListeners() {
+        if (this.melGuideBtn) {
+            this.melGuideBtn.onclick = () => {
+                this.closeMelDialog();
+                this.melGuideCallback?.();
+            };
+        }
+        if (this.melMapBtn) {
+            this.melMapBtn.onclick = () => {
+                this.closeMelDialog();
+                if (this.melMapCallback) {
+                    this.melMapCallback();
+                } else {
+                    this.openJournal();
+                }
+            };
+        }
+        if (this.melCloseBtn) {
+            this.melCloseBtn.onclick = () => {
+                this.closeMelDialog();
+            };
+        }
+
         this.quizContinueBtn.onclick = () => {
             this.closeQuiz();
             if (this.completedMissions.size === 6 && !this.celebrationTriggered) {
@@ -754,9 +800,58 @@ export class HUD {
         this.pauseModal.classList.add('hidden');
     }
 
-    // --- SQUIRCLE MINIMAP ---
+    // --- DIÁLOGO INTERACTIVO CON MEL-BOT ---
+    public openMelDialog(speechText: string, onGuide: () => void, onViewMap?: () => void) {
+        if (!this.melDialogModal) return;
+        this.isModalOpen = true;
+        this.melGuideCallback = onGuide;
+        this.melMapCallback = onViewMap || null;
+        this.hideExhibitCard();
+        this.onOpenModal?.();
+
+        if (document.exitPointerLock) {
+            document.exitPointerLock();
+        }
+
+        if (this.melDialogTitle) {
+            this.melDialogTitle.innerText = `¡Hola, ${this.studentName}!`;
+        }
+        if (this.melDialogText) {
+            this.melDialogText.innerHTML = speechText;
+        }
+
+        this.melDialogModal.classList.remove('hidden');
+    }
+
+    public closeMelDialog() {
+        if (!this.melDialogModal) return;
+        this.melDialogModal.classList.add('hidden');
+        this.isModalOpen = false;
+        this.onCloseModal?.();
+    }
+
+    // --- SQUIRCLE MINIMAP (Optimizado 60+ FPS) ---
     public updateMinimap(playerX: number, playerZ: number, playerRotationY: number) {
-        if (!this.ctx) return;
+        if (!this.ctx || !this.minimapCanvas) return;
+        // Evitar cálculos si el minimapa está oculto (móviles o resize)
+        if (this.minimapCanvas.offsetParent === null) return;
+
+        const now = performance.now();
+        const moved = Math.abs(playerX - this.lastMinimapX) > 0.06 || Math.abs(playerZ - this.lastMinimapZ) > 0.06;
+        const rotated = Math.abs(playerRotationY - this.lastMinimapRot) > 0.03;
+        const missionsChanged = this.completedMissions.size !== this.lastMinimapMissionsCount;
+
+        // Si no hubo cambio y no pasaron al menos 800ms, omitir redibujado de canvas 2D
+        if (!missionsChanged && (!moved && !rotated) && (now - this.lastMinimapTime < 800)) return;
+        // Limitar frecuencia máxima de actualización a ~20 FPS (cada 50ms)
+        if (!missionsChanged && (now - this.lastMinimapTime < 50)) return;
+
+        this.lastMinimapTime = now;
+        this.lastMinimapX = playerX;
+        this.lastMinimapZ = playerZ;
+        this.lastMinimapRot = playerRotationY;
+        this.lastMinimapMissionsCount = this.completedMissions.size;
+
         const width = this.minimapCanvas.width;
         const height = this.minimapCanvas.height;
 
