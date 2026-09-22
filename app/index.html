@@ -54,7 +54,7 @@
           <h2 class="mission-main-title">Misiones del Museo</h2>
         </div>
         <button id="mission-toggle-btn" class="glass-pill mission-counter-pill" aria-label="Progreso y alternar misiones">
-          <span id="mission-counter-badge">0/3</span>
+          <span id="mission-counter-badge">0/4</span>
         </button>
       </div>
 
@@ -89,6 +89,14 @@
               <span class="task-status">Alterná los 4 modos de colisión</span>
             </div>
           </div>
+
+          <div class="task pending" id="mission-4">
+            <div class="dot">4</div>
+            <div class="task-info">
+              <span class="task-title">Bobina de Tesla</span>
+              <span class="task-status">Transmití energía y encendé el tubo</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -104,6 +112,7 @@
         <span class="leg-item"><i style="background:#00f0ff;"></i> Papa</span>
         <span class="leg-item"><i style="background:#d946ef;"></i> Óptica</span>
         <span class="leg-item"><i style="background:#fde047;"></i> Newton</span>
+        <span class="leg-item"><i style="background:#38bdf8;"></i> Tesla</span>
       </div>
     </div>
 
@@ -214,17 +223,18 @@
       <div class="glass-pill xp-badge" style="margin-bottom: 12px; font-size: 13px;">⭐ EXPEDICIÓN 100% COMPLETADA</div>
       <h1 id="victory-title" style="color: #ffffff; font-size: 24px; font-weight: 800; margin-bottom: 10px;">¡FELICITACIONES, CIENTÍFICO DE ÉLITE!</h1>
       <p style="color: var(--text-muted); font-size: 13px; line-height: 1.6; margin-bottom: 20px;">
-        Descubriste cómo fluyen los electrones en la <b>Pila de Papa</b>, cómo se abren los colores en el <b>Prisma Óptico</b> y cómo viaja la energía en la <b>Cuna de Newton</b>.
+        Descubriste cómo fluyen los electrones en la <b>Pila de Papa</b>, cómo se abren los colores en el <b>Prisma Óptico</b>, cómo viaja la energía en la <b>Cuna de Newton</b> y la inducción inalámbrica en la <b>Bobina de Tesla</b>.
       </p>
 
       <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 24px; flex-wrap: wrap;">
         <div class="glass-pill" style="border-color: #4ade80; color: #bbf7d0;">⚡ Medalla de Energía</div>
         <div class="glass-pill" style="border-color: #d946ef; color: #f5d0fe;">🌈 Medalla de Luz</div>
         <div class="glass-pill" style="border-color: #00f0ff; color: #cffafe;">⚖️ Medalla de Choques</div>
+        <div class="glass-pill" style="border-color: #38bdf8; color: #bae6fd;">⚡ Medalla de Tesla</div>
       </div>
 
       <div class="glass-pill rank-badge" style="font-size: 13px; padding: 8px 20px; margin-bottom: 24px; background: rgba(0, 240, 255, 0.15); display: inline-flex;">
-        RANGO MÁXIMO ALCANZADO: MAESTRO FÍSICO DEL COSMOS ⭐ 300 XP
+        RANGO MÁXIMO ALCANZADO: GRAN MAESTRO CIENTÍFICO ⭐ 400 XP
       </div>
 
       <div>
@@ -243,13 +253,14 @@
           <span style="font-size: 24px;">📖</span>
           <h2 style="font-size: 20px; font-weight: 800; color: #ffffff;">DIARIO DEL CIENTÍFICO</h2>
         </div>
-        <button id="journal-close-btn" class="glass-pill" style="cursor: pointer;">✕ Cerrar [J]</button>
+        <button id="journal-close-btn" class="glass-pill" style="cursor: pointer;">✕ Cerrar <span class="pc-only">[J]</span></button>
       </div>
 
       <div style="display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap;">
         <button class="glass-pill journal-tab active" data-tab="tab-potato" style="cursor: pointer;">⚡ Pila de Papa (1.94V)</button>
         <button class="glass-pill journal-tab" data-tab="tab-optics" style="cursor: pointer;">🌈 Prisma Óptico</button>
         <button class="glass-pill journal-tab" data-tab="tab-newton" style="cursor: pointer;">⚖️ Cuna de Newton</button>
+        <button class="glass-pill journal-tab" data-tab="tab-tesla" style="cursor: pointer;">⚡ Bobina de Tesla</button>
       </div>
 
       <!-- Tab 1: Papa -->
@@ -299,6 +310,22 @@
           </p>
         </div>
       </div>
+
+      <!-- Tab 4: Tesla -->
+      <div class="journal-content-tab hidden" id="tab-tesla">
+        <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
+          <span class="pill-concept-label">⚡ RESONANCIA ELECTROMAGNÉTICA</span>
+          <p>
+            Inventada por <b>Nikola Tesla en 1891</b>, la bobina es un transformador resonante sintonizado. Transforma pulsos de bajo voltaje en <b>cientos de miles de voltios a alta frecuencia</b>, ionizando el gas del aire y desatando rayos de plasma luminiscentes.
+          </p>
+        </div>
+        <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
+          <span class="pill-concept-label">💡 INDUCCIÓN INALÁMBRICA</span>
+          <p>
+            El campo electromagnético alterno que rodea al toroide viaja a través del aire. Al acercar un tubo fluorescente o de gas neón, las ondas electromagnéticas excitan los átomos de fósforo y mercurio en su interior, <b>encendiendo la lámpara sin cables ni contacto físico</b>.
+          </p>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -323,7 +350,7 @@
       <div class="start-logo">🌌</div>
       <h1>MUSEO VIRTUAL MELANY</h1>
       <p class="start-desc">
-        Una experiencia interactiva de física y ciencia en 3D bajo las estrellas. Caminá por la sala, descubrí los 3 experimentos interactivos y poné a prueba tu conocimiento.
+        Una experiencia interactiva de física y ciencia en 3D bajo las estrellas. Caminá por la sala, descubrí los 4 experimentos interactivos y poné a prueba tu conocimiento.
       </p>
 
       <div class="student-input-container" style="margin: 18px auto 22px auto; max-width: 360px; text-align: left;">
@@ -344,10 +371,12 @@
         <div class="feat-box glass-pill"><span>🥔</span> Pila de Papa</div>
         <div class="feat-box glass-pill"><span>🌈</span> Prisma Óptico</div>
         <div class="feat-box glass-pill"><span>⚖️</span> Cuna de Newton</div>
+        <div class="feat-box glass-pill"><span>⚡</span> Bobina de Tesla</div>
       </div>
 
       <button id="play-btn" class="action-btn start-btn">ENTRAR A LA EXPEDICIÓN</button>
-      <small class="start-hints">Usa WASD para caminar, mouse para mirar, [E] para probar y [R] para responder</small>
+      <small class="start-hints pc-only">Usa WASD para caminar, mouse para mirar, [E] para interactuar y [R] para responder</small>
+      <small class="start-hints mobile-only">Usa el joystick para caminar, desliza para mirar y los botones táctiles para interactuar</small>
     </div>
   </div>
 

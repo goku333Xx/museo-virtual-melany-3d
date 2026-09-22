@@ -272,4 +272,27 @@ export class SoundSynthesizer {
             osc.stop(t + 0.055);
         });
     }
+
+    // 10. Descarga eléctrica de arco de plasma (Bobina de Tesla)
+    public playTeslaZap(intensity: number = 1.0): void {
+        if (this.isMuted) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(2200 + Math.random() * 900, now);
+        osc.frequency.exponentialRampToValueAtTime(160, now + 0.075);
+
+        gain.gain.setValueAtTime(0.16 * intensity, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.075);
+
+        osc.start(now);
+        osc.stop(now + 0.08);
+    }
 }

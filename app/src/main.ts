@@ -121,7 +121,8 @@ hud.onCloseModal = () => {
 const pedestals = [
     { minX: -1.2, maxX: 1.2, minZ: -1.2, maxZ: 1.2, height: 1.2 },       // Papa (Centro)
     { minX: -1.2, maxX: 1.2, minZ: -16.2, maxZ: -13.8, height: 1.2 },    // Óptica (Fondo)
-    { minX: -1.2, maxX: 1.2, minZ: 13.8, maxZ: 16.2, height: 1.2 }       // Newton (Entrada)
+    { minX: -1.2, maxX: 1.2, minZ: 13.8, maxZ: 16.2, height: 1.2 },      // Newton (Entrada)
+    { minX: 14.8, maxX: 17.2, minZ: -1.2, maxZ: 1.2, height: 1.2 }       // Tesla (Ala Este)
 ];
 
 function getGroundHeight(x: number, z: number, currentCamY: number): number {

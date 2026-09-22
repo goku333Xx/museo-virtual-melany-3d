@@ -154,7 +154,7 @@ export class HUD {
     private setupEventListeners() {
         this.quizContinueBtn.onclick = () => {
             this.closeQuiz();
-            if (this.completedMissions.size === 3 && !this.celebrationTriggered) {
+            if (this.completedMissions.size === 4 && !this.celebrationTriggered) {
                 this.triggerGrandCelebration();
             }
         };
@@ -258,25 +258,36 @@ export class HUD {
             };
         }
 
-        // Navegación de pestañas en el Diario
+        // Navegación de pestañas en el Diario con soporte táctil inmediato
         const journalTabs = document.querySelectorAll<HTMLButtonElement>('.journal-tab');
+        const switchTab = (tabBtn: HTMLButtonElement) => {
+            const targetTabId = tabBtn.getAttribute('data-tab');
+            if (!targetTabId) return;
+
+            journalTabs.forEach(t => t.classList.remove('active'));
+            tabBtn.classList.add('active');
+
+            const contentTabs = document.querySelectorAll<HTMLElement>('.journal-content-tab');
+            contentTabs.forEach(content => {
+                if (content.id === targetTabId) {
+                    content.classList.remove('hidden');
+                    content.style.display = 'block';
+                } else {
+                    content.classList.add('hidden');
+                    content.style.display = 'none';
+                }
+            });
+        };
+
         journalTabs.forEach(tabBtn => {
-            tabBtn.onclick = () => {
-                const targetTabId = tabBtn.getAttribute('data-tab');
-                if (!targetTabId) return;
-
-                journalTabs.forEach(t => t.classList.remove('active'));
-                tabBtn.classList.add('active');
-
-                const contentTabs = document.querySelectorAll<HTMLElement>('.journal-content-tab');
-                contentTabs.forEach(content => {
-                    if (content.id === targetTabId) {
-                        content.classList.remove('hidden');
-                    } else {
-                        content.classList.add('hidden');
-                    }
-                });
-            };
+            tabBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                switchTab(tabBtn);
+            });
+            tabBtn.addEventListener('pointerdown', (e) => {
+                e.stopPropagation();
+                switchTab(tabBtn);
+            });
         });
     }
 
@@ -557,9 +568,10 @@ export class HUD {
 
         // Notificación de logro con toast y sonido
         const achievements: Record<number, { title: string; desc: string }> = {
-            1: { title: 'Pila de Papa: Circuito Estable', desc: '¡Has cerrado el circuito generando ~1.94V electroquímicos!' },
+            1: { title: 'Pila de Papa: Circuito Estable', desc: '¡Has cerrado el circuito generando ~1.96V electroquímicos reales!' },
             2: { title: 'Prisma Óptico: Descomposición Espectral', desc: '¡Comprobaste la dispersión cromática de la luz blanca!' },
-            3: { title: 'Cuna de Newton: Choque Elástico', desc: '¡Comprobaste la conservación del momento lineal!' }
+            3: { title: 'Cuna de Newton: Choque Elástico', desc: '¡Comprobaste la conservación del momento lineal!' },
+            4: { title: 'Bobina de Tesla: Inducción Inalámbrica', desc: '¡Encendiste el tubo a distancia con ondas electromagnéticas!' }
         };
 
         if (achievements[missionId]) {
@@ -571,7 +583,9 @@ export class HUD {
         this.xp += amount;
         this.scoreText.innerText = `⭐ ${this.xp} XP`;
 
-        if (this.xp >= 300) {
+        if (this.xp >= 400) {
+            this.rankText.innerText = 'Nivel 4: Gran Maestro Científico';
+        } else if (this.xp >= 300) {
             this.rankText.innerText = 'Nivel 3: Maestro Físico';
         } else if (this.xp >= 100) {
             this.rankText.innerText = 'Nivel 2: Investigador';
@@ -581,13 +595,13 @@ export class HUD {
     private updateProgressText() {
         const count = this.completedMissions.size;
         if (this.progressText) {
-            this.progressText.innerText = count === 3 
+            this.progressText.innerText = count === 4 
                 ? '🏆 ¡EXPEDICIÓN COMPLETA! Felicitaciones Científico' 
-                : `Progreso: ${count} de 3 estaciones completadas`;
+                : `Progreso: ${count} de 4 estaciones completadas`;
         }
         if (this.missionCounterBadge) {
-            this.missionCounterBadge.innerText = count === 3 ? '3/3 ⭐' : `${count}/3`;
-            if (count === 3) {
+            this.missionCounterBadge.innerText = count === 4 ? '4/4 ⭐' : `${count}/4`;
+            if (count === 4) {
                 this.missionCounterBadge.parentElement?.classList.add('all-done');
             }
         }

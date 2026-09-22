@@ -5,6 +5,7 @@ import { SwitchExhibit } from './models/SwitchAndLED';
 import { MuseumRoom } from './models/Environment';
 import { OpticsExhibit } from './models/OpticsExhibit';
 import { NewtonsCradle } from './models/NewtonsCradle';
+import { TeslaCoil } from './models/TeslaCoil';
 import { RobotGuide } from './models/RobotGuide';
 import { QuantumOrbsManager } from './models/QuantumOrbs';
 import { SoundSynthesizer } from './SoundSynthesizer';
@@ -39,6 +40,7 @@ export class World {
     private switchExhibit!: SwitchExhibit;
     private optics!: OpticsExhibit;
     private cradle!: NewtonsCradle;
+    private teslaCoil!: TeslaCoil;
     private robotGuide!: RobotGuide;
     private orbsManager!: QuantumOrbsManager;
 
@@ -293,12 +295,61 @@ export class World {
             this.interactables.push({ object: mesh, ...newtonInteractable });
         });
 
-        // 6. VINCULAR LOS PEDESTALES / ATRILES DIRECTAMENTE A CADA EXPERIMENTO
+        // 5. ESTACIÓN 04: BOBINA DE TESLA (Ala Este: 16, 1.2, 0)
+        this.teslaCoil = new TeslaCoil();
+        const teslaMesh = this.teslaCoil.getMesh();
+        teslaMesh.position.set(16, 1.2, 0);
+        this.scene.add(teslaMesh);
+
+        const quizTesla: QuizData = {
+            id: 4,
+            title: "Electromagnetismo y Tesla",
+            question: "¿Por qué el tubo fluorescente se enciende en el aire cerca de la Bobina sin cables ni pilas?",
+            options: [
+                "Porque la bobina genera un campo electromagnético de alta frecuencia que viaja por el aire y excita el gas del tubo.",
+                "Porque el vidrio del tubo tiene pequeñas baterías invisibles que se calientan con el aire.",
+                "Porque el sonido del relámpago empuja la luz hacia adentro del tubo."
+            ],
+            correctIndex: 0,
+            explanation: "¡Fabuloso! Nikola Tesla demostró la transmisión inalámbrica: el campo electromagnético de alta tensión ioniza y excita los átomos de gas dentro del tubo haciéndolos brillar."
+        };
+
+        const teslaInteractable: Omit<Interactable, 'object'> = {
+            id: 4,
+            title: "Estación 04: Bobina de Tesla",
+            tag: "⚡ ELECTROMAGNETISMO Y ALTA TENSIÓN",
+            description: "Nikola Tesla descubrió que la electricidad puede viajar por el aire sin necesidad de cables. La bobina genera un campo electromagnético de alta frecuencia tan potente que enciende el tubo fluorescente a distancia y desata arcos de plasma.",
+            badge: "🏅 +100 XP · Medalla de Tesla",
+            getModeText: () => `MODO: ${this.teslaCoil.getCurrentModeInfo().name.toUpperCase()}`,
+            quiz: quizTesla,
+            onInteract: () => {
+                const newMode = this.teslaCoil.cycleMode();
+                this.hud.setCardModePill(`MODO: ${newMode.name.toUpperCase()}`);
+            },
+            onChallenge: () => {
+                if (!this.hud.isMissionCompleted(4)) {
+                    this.hud.openQuiz(quizTesla, (success) => {
+                        if (success) {
+                            this.hud.completeMission(4);
+                        }
+                    });
+                } else {
+                    this.hud.showAchievementToast('Bobina de Tesla: ¡Completada!', 'Ya obtuviste la medalla de esta estación. Podés seguir probando los modos de plasma.');
+                }
+            }
+        };
+
+        this.teslaCoil.getInteractables().forEach((mesh: THREE.Object3D) => {
+            this.interactables.push({ object: mesh, ...teslaInteractable });
+        });
+
+        // 6. VINCULAR LOS 4 PEDESTALES / ATRILES DIRECTAMENTE A CADA EXPERIMENTO
         const pedestals = this.room.getPedestalMeshes();
-        if (pedestals.length >= 3) {
+        if (pedestals.length >= 4) {
             this.interactables.push({ object: pedestals[0], ...papaInteractable });
             this.interactables.push({ object: pedestals[1], ...opticsInteractable });
             this.interactables.push({ object: pedestals[2], ...newtonInteractable });
+            this.interactables.push({ object: pedestals[3], ...teslaInteractable });
         }
 
         // 7. COMPAÑERO ROBÓTICO NPC: MEL-BOT
@@ -362,6 +413,12 @@ export class World {
         if (this.cradle) {
             const dist = playerPos ? playerPos.distanceTo(new THREE.Vector3(0, 1.2, 15)) : undefined;
             this.cradle.update(time, dist);
+        }
+
+        // Actualizar bobina de tesla con audio posicional y arcos de plasma
+        if (this.teslaCoil) {
+            const distTesla = playerPos ? playerPos.distanceTo(new THREE.Vector3(16, 1.2, 0)) : undefined;
+            this.teslaCoil.update(time, distTesla);
         }
 
         // Actualizar Mel-Bot y Orbes coleccionables con posición del jugador

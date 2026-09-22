@@ -262,8 +262,29 @@ export class MuseumRoom {
         rightGuide.position.set(1.0, 0.008, 0);
         this.group.add(rightGuide);
 
+        // Pasarela Este hacia la Estación 04 (Bobina de Tesla)
+        const eastRunwayGeom = new THREE.PlaneGeometry(16, 2.0);
+        const eastRunway = new THREE.Mesh(eastRunwayGeom, runwayMat);
+        eastRunway.rotation.x = -Math.PI / 2;
+        eastRunway.position.set(8.0, 0.005, 0);
+        eastRunway.receiveShadow = true;
+        this.group.add(eastRunway);
+
+        // Guías de latón pasarela Este
+        const eastGuideGeom = new THREE.BoxGeometry(16, 0.01, 0.04);
+        const topEastGuide = new THREE.Mesh(eastGuideGeom, brassMat);
+        topEastGuide.position.set(8.0, 0.008, -1.0);
+        const botEastGuide = new THREE.Mesh(eastGuideGeom, brassMat);
+        botEastGuide.position.set(8.0, 0.008, 1.0);
+        this.group.add(topEastGuide, botEastGuide);
+
         // Círculos concéntricos de demarcación de zona científica bajo cada pedestal
-        const stationZPositions = [15, 0, -15];
+        const stationZones = [
+            [0, 15],
+            [0, 0],
+            [0, -15],
+            [16, 0]
+        ];
         const ringGeom = new THREE.RingGeometry(2.2, 2.25, 64);
         const ringMat = new THREE.MeshBasicMaterial({ 
             color: 0x38bdf8, 
@@ -272,10 +293,10 @@ export class MuseumRoom {
             opacity: 0.35
         });
 
-        stationZPositions.forEach(z => {
+        stationZones.forEach(([zx, zz]) => {
             const circle = new THREE.Mesh(ringGeom, ringMat);
             circle.rotation.x = -Math.PI / 2;
-            circle.position.set(0, 0.012, z);
+            circle.position.set(zx, 0.012, zz);
             this.group.add(circle);
         });
     }
@@ -288,33 +309,33 @@ export class MuseumRoom {
             metalness: 0.75
         });
 
-        const beamH = 0.35;
-        const beamW = 0.25;
-        const beamY = 13.9;
+        const width = 72;
+        const depth = 72;
+        const beamGeomX = new THREE.BoxGeometry(width, 0.4, 0.4);
+        const beamGeomZ = new THREE.BoxGeometry(0.4, 0.4, depth);
 
         // Vigas transversales
-        const zStations = [-24, -15, 0, 15, 24];
-        zStations.forEach(z => {
-            const beamX = new THREE.Mesh(new THREE.BoxGeometry(72, beamH, beamW), trussMat);
-            beamX.position.set(0, beamY, z);
-            this.group.add(beamX);
-        });
+        for (let x = -24; x <= 24; x += 12) {
+            const beam = new THREE.Mesh(beamGeomZ, trussMat);
+            beam.position.set(x, 14, 0);
+            this.group.add(beam);
+        }
 
         // Vigas longitudinales
-        const xStations = [-16, 0, 16];
-        xStations.forEach(x => {
-            const beamZ = new THREE.Mesh(new THREE.BoxGeometry(beamW, beamH, 72), trussMat);
-            beamZ.position.set(x, beamY, 0);
-            this.group.add(beamZ);
-        });
+        for (let z = -24; z <= 24; z += 12) {
+            const beam = new THREE.Mesh(beamGeomX, trussMat);
+            beam.position.set(0, 14, z);
+            this.group.add(beam);
+        }
     }
 
+    // --- PEDESTALES DE EXHIBICIÓN ---
     private buildPedestals() {
-        const pedestalWidth = 2.4;
         const pedestalHeight = 1.2;
+        const pedestalWidth = 2.4;
         const pedestalDepth = 2.4;
-        
-        // Mesa en grafito / pizarra oscura mate elegante
+
+        // Base de pedestal de granito oscuro pulido
         const baseGeom = new THREE.BoxGeometry(pedestalWidth, pedestalHeight, pedestalDepth);
         const baseMaterial = new THREE.MeshStandardMaterial({ 
             color: 0x1c2331, 
@@ -332,7 +353,8 @@ export class MuseumRoom {
         const positions = [
             [0, 0],    // Estación 1: Papa Batería (Centro)
             [0, -15],  // Estación 2: Prisma Óptica (Fondo)
-            [0, 15]    // Estación 3: Cuna de Newton (Entrada)
+            [0, 15],   // Estación 3: Cuna de Newton (Entrada)
+            [16, 0]    // Estación 4: Bobina de Tesla (Ala Este)
         ];
 
         positions.forEach((pos, idx) => {
@@ -418,25 +440,80 @@ export class MuseumRoom {
     }
 
     private buildLightingAndDecor() {
-        // Luz ambiental suave de museo (temperatura natural)
-        const hemiLight = new THREE.HemisphereLight(0xf1f5f9, 0x1e2430, 0.8);
-        hemiLight.position.set(0, 30, 0);
+        // 1. Luz hemisférica natural y cálida de museo (5200K estilo galería de ciencias)
+        const hemiLight = new THREE.HemisphereLight(0xfff7ed, 0x1e293b, 1.25);
+        hemiLight.position.set(0, 32, 0);
         this.group.add(hemiLight);
 
-        // Luz direccional estelar suave
-        const moonLight = new THREE.DirectionalLight(0xdbeafe, 1.2);
-        moonLight.position.set(20, 28, 15);
-        moonLight.castShadow = true;
-        moonLight.shadow.mapSize.width = 1024;
-        moonLight.shadow.mapSize.height = 1024;
-        moonLight.shadow.camera.near = 0.5;
-        moonLight.shadow.camera.far = 80;
-        moonLight.shadow.camera.left = -38;
-        moonLight.shadow.camera.right = 38;
-        moonLight.shadow.camera.top = 38;
-        moonLight.shadow.camera.bottom = -38;
-        moonLight.shadow.bias = -0.0005;
-        this.group.add(moonLight);
+        // 2. Luz solar direccional cálida (proyectada desde el Sol Celestial)
+        const sunPos = new THREE.Vector3(24, 38, -26);
+        const sunLight = new THREE.DirectionalLight(0xfffaea, 2.2);
+        sunLight.position.copy(sunPos);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.width = 1024;
+        sunLight.shadow.mapSize.height = 1024;
+        sunLight.shadow.camera.near = 0.5;
+        sunLight.shadow.camera.far = 100;
+        sunLight.shadow.camera.left = -38;
+        sunLight.shadow.camera.right = 38;
+        sunLight.shadow.camera.top = 38;
+        sunLight.shadow.camera.bottom = -38;
+        sunLight.shadow.bias = -0.0004;
+        this.group.add(sunLight);
+
+        // 3. SOL CELESTIAL REALISTA 3D EN LA CÚPULA CÓSMICA
+        const sunGroup = new THREE.Group();
+        sunGroup.position.copy(sunPos);
+
+        // Núcleo solar incandescente
+        const sunCoreGeom = new THREE.SphereGeometry(3.6, 32, 32);
+        const sunCoreMat = new THREE.MeshBasicMaterial({
+            color: 0xfffbeb,
+            transparent: false
+        });
+        const sunCore = new THREE.Mesh(sunCoreGeom, sunCoreMat);
+        sunGroup.add(sunCore);
+
+        // Corona solar atmosférica difusa (gradiente procedural de alta fidelidad)
+        const coronaCanvas = document.createElement('canvas');
+        coronaCanvas.width = 256;
+        coronaCanvas.height = 256;
+        const cCtx = coronaCanvas.getContext('2d')!;
+        const grad = cCtx.createRadialGradient(128, 128, 10, 128, 128, 128);
+        grad.addColorStop(0, 'rgba(255, 255, 255, 1.0)');
+        grad.addColorStop(0.18, 'rgba(254, 240, 138, 0.85)');
+        grad.addColorStop(0.45, 'rgba(251, 146, 60, 0.4)');
+        grad.addColorStop(0.8, 'rgba(234, 88, 12, 0.1)');
+        grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        cCtx.fillStyle = grad;
+        cCtx.fillRect(0, 0, 256, 256);
+        const coronaTex = new THREE.CanvasTexture(coronaCanvas);
+
+        const coronaGeom = new THREE.PlaneGeometry(28, 28);
+        const coronaMat = new THREE.MeshBasicMaterial({
+            map: coronaTex,
+            transparent: true,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+        const coronaMesh = new THREE.Mesh(coronaGeom, coronaMat);
+        coronaMesh.lookAt(0, 0, 0); // Orientado hacia el centro del museo
+        sunGroup.add(coronaMesh);
+
+        // Corona exterior ultra amplia
+        const outerCoronaGeom = new THREE.PlaneGeometry(54, 54);
+        const outerCoronaMat = new THREE.MeshBasicMaterial({
+            map: coronaTex,
+            transparent: true,
+            opacity: 0.45,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+        const outerCorona = new THREE.Mesh(outerCoronaGeom, outerCoronaMat);
+        outerCorona.lookAt(0, 0, 0);
+        sunGroup.add(outerCorona);
+
+        this.group.add(sunGroup);
     }
 
     private createGalaxy() {
