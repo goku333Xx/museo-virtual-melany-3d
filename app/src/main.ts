@@ -170,6 +170,12 @@ const tryJump = () => {
 };
 
 const onKeyDown = (event: KeyboardEvent) => {
+    // Si el usuario está escribiendo en un input/textarea o el juego no arrancó, ignorar atajos del juego
+    const target = event.target as HTMLElement | null;
+    if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || !gameStarted) {
+        return;
+    }
+
     switch (event.code) {
         case 'ArrowUp':
         case 'KeyW': moveForward = true; break;
@@ -202,6 +208,11 @@ const onKeyDown = (event: KeyboardEvent) => {
 };
 
 const onKeyUp = (event: KeyboardEvent) => {
+    const target = event.target as HTMLElement | null;
+    if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA') {
+        return;
+    }
+
     switch (event.code) {
         case 'ArrowUp':
         case 'KeyW': moveForward = false; break;

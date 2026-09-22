@@ -28,12 +28,12 @@
       </div>
     </div>
 
-    <!-- Top Right: Score / XP & Utilities -->
-    <div class="panel score-panel">
-      <button class="glass-pill" id="journal-btn" style="cursor: pointer; background: rgba(0, 240, 255, 0.12); border-color: rgba(0, 240, 255, 0.4);">📖 DIARIO [J]</button>
-      <button class="glass-pill" id="mute-btn" style="cursor: pointer; background: rgba(253, 224, 71, 0.12); border-color: rgba(253, 224, 71, 0.4);">🔊 AUDIO ON</button>
-      <div class="glass-pill xp-badge" id="score-text">⭐ 0 XP</div>
-      <div class="glass-pill rank-badge" id="rank-text">Nivel 1: Aprendiz</div>
+    <!-- Top Right: Utilities -->
+    <div class="panel score-panel" style="gap: 8px;">
+      <button class="glass-pill" id="journal-btn" style="cursor: pointer; background: rgba(0, 240, 255, 0.12); border-color: rgba(0, 240, 255, 0.4);">
+        <span class="pc-only">📖 DIARIO [J]</span>
+        <span class="mobile-only">📖 DIARIO</span>
+      </button>
     </div>
 
     <!-- Top Center: Floating Achievement Toast -->
@@ -46,39 +46,55 @@
       </div>
     </div>
 
-    <!-- Left: Multi-Mission Tracker -->
-    <div class="panel mission-panel">
-      <div class="eyebrow">📋 EXPEDICIÓN CIENTÍFICA</div>
-      <h2>Misiones del Museo</h2>
-      <p class="mission-desc">Explorá cada experimento, interactuá con <b>[E]</b> y respondé las preguntas para obtener insignias.</p>
-      
-      <div class="mission-list">
-        <div class="task pending" id="mission-1">
-          <div class="dot">1</div>
-          <div class="task-info">
-            <span class="task-title">Pila de Papa</span>
-            <span class="task-status">Cerrá el circuito y mirá el LED</span>
-          </div>
+    <!-- Left: Multi-Mission Tracker (EXPEDICIÓN CIENTÍFICA) con XP y Rango integrados -->
+    <div class="panel mission-panel" id="mission-panel">
+      <div class="mission-header-bar">
+        <div class="mission-title-group">
+          <div class="eyebrow">📋 EXPEDICIÓN CIENTÍFICA</div>
+          <h2>Misiones del Museo</h2>
         </div>
+        <button id="mission-toggle-btn" class="glass-pill mission-toggle-mobile" aria-label="Alternar misiones">
+          <span id="mission-toggle-text">Ocultar ▲</span>
+        </button>
+      </div>
 
-        <div class="task pending" id="mission-2">
-          <div class="dot">2</div>
-          <div class="task-info">
-            <span class="task-title">Prisma Óptico</span>
-            <span class="task-status">Investigá la separación de la luz</span>
-          </div>
-        </div>
-
-        <div class="task pending" id="mission-3">
-          <div class="dot">3</div>
-          <div class="task-info">
-            <span class="task-title">Cuna de Newton</span>
-            <span class="task-status">Alterná los 4 modos de colisión</span>
-          </div>
-        </div>
+      <!-- Stats unificadas de XP y Rango dentro de Expedición Científica -->
+      <div class="mission-stats-bar">
+        <div class="glass-pill xp-badge" id="score-text">⭐ 0 XP</div>
+        <div class="glass-pill rank-badge" id="rank-text">Nivel 1: Aprendiz</div>
       </div>
       
-      <div class="reward" id="mission-progress-text">Progreso: 0 de 3 estaciones completadas</div>
+      <div class="mission-body" id="mission-body">
+        <p class="mission-desc">Explorá cada experimento, interactuá y respondé las preguntas para obtener insignias.</p>
+        
+        <div class="mission-list">
+          <div class="task pending" id="mission-1">
+            <div class="dot">1</div>
+            <div class="task-info">
+              <span class="task-title">Pila de Papa</span>
+              <span class="task-status">Cerrá el circuito y mirá el LED</span>
+            </div>
+          </div>
+
+          <div class="task pending" id="mission-2">
+            <div class="dot">2</div>
+            <div class="task-info">
+              <span class="task-title">Prisma Óptico</span>
+              <span class="task-status">Investigá la separación de la luz</span>
+            </div>
+          </div>
+
+          <div class="task pending" id="mission-3">
+            <div class="dot">3</div>
+            <div class="task-info">
+              <span class="task-title">Cuna de Newton</span>
+              <span class="task-status">Alterná los 4 modos de colisión</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="reward" id="mission-progress-text">Progreso: 0 de 3 estaciones completadas</div>
+      </div>
     </div>
 
     <!-- Right: Squircle Minimap -->
@@ -103,7 +119,7 @@
       <div class="card-pills-row top-row">
         <span class="glass-pill pill-category" id="card-tag">⚡ ELECTRICIDAD Y QUÍMICA</span>
         <span class="glass-pill pill-mode" id="card-mode">MODO ACTIVO</span>
-        <span class="glass-pill pill-keyhint">Acción: <b>[E]</b></span>
+        <span class="glass-pill pill-keyhint pc-only">Acción: <b>[E]</b></span>
       </div>
 
       <h3 id="card-title">Nombre del Experimento</h3>
@@ -127,8 +143,8 @@
       <span class="glass-pill">📍 Pabellón Abierto de Ciencias · Vista al Cosmos</span>
     </div>
 
-    <!-- Bottom Right: Controls Indicator -->
-    <div class="panel controls-panel">
+    <!-- Bottom Right: Controls Indicator (Solo en PC) -->
+    <div class="panel controls-panel pc-only">
       <div class="glass-pill ctrl-pill">
         <span class="ctrl-key">W A S D</span> Moverse &nbsp;·&nbsp; 
         <span class="ctrl-key">ESPACIO</span> Saltar &nbsp;·&nbsp; 
@@ -141,8 +157,8 @@
     </div>
   </div>
 
-  <!-- Controles Táctiles para Móviles / Tablets -->
-  <div id="touch-controls" class="touch-controls hidden">
+  <!-- Controles Táctiles para Móviles / Tablets (Limpio, sin teclas [E] ni [R]) -->
+  <div id="touch-controls" class="touch-controls hidden mobile-only">
     <div id="touch-joystick-zone" class="touch-zone-left">
       <div id="joystick-base" class="joystick-base">
         <div id="joystick-thumb" class="joystick-thumb"></div>
@@ -150,10 +166,10 @@
     </div>
     <div class="touch-zone-right">
       <button id="touch-interact-btn" class="touch-action-btn interact-btn" aria-label="Probar Experimento">
-        <span>⚡</span> PROBAR [E]
+        <span>⚡</span> PROBAR
       </button>
       <button id="touch-challenge-btn" class="touch-action-btn challenge-btn" aria-label="Responder Desafío">
-        <span>📝</span> DESAFÍO [R]
+        <span>📝</span> DESAFÍO
       </button>
       <button id="touch-jump-btn" class="touch-action-btn" aria-label="Saltar">
         <span>▲</span> SALTAR
@@ -290,7 +306,12 @@
       <div class="pause-icon">🖱️</div>
       <h2>Mouse liberado</h2>
       <p>El museo sigue en marcha. Hacé clic abajo para recuperar el control de la cámara y seguir caminando.</p>
-      <button id="resume-btn" class="action-btn">CONTINUAR</button>
+      <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 14px;">
+        <button id="resume-btn" class="action-btn">CONTINUAR</button>
+        <button id="pause-mute-btn" class="glass-pill" style="cursor: pointer; padding: 10px 16px; border-radius: 10px; font-weight: 700; color: #fde047; border-color: rgba(253, 224, 71, 0.4); background: rgba(253, 224, 71, 0.08);">
+          🔊 Audio: Activado
+        </button>
+      </div>
     </div>
   </div>
 

@@ -50,6 +50,12 @@ export class HUD {
     // Pause Modal
     private pauseModal: HTMLElement;
     private resumeBtn: HTMLButtonElement;
+    private pauseMuteBtn: HTMLButtonElement | null;
+
+    // Mission Panel & Mobile Toggle
+    private missionToggleBtn: HTMLButtonElement | null;
+    private missionBody: HTMLElement | null;
+    private isMissionCollapsed: boolean = false;
 
     // Audio & Journal Controls
     private muteBtn: HTMLButtonElement | null;
@@ -83,6 +89,17 @@ export class HUD {
         this.rankText = document.getElementById('rank-text') as HTMLElement;
         this.progressText = document.getElementById('mission-progress-text') as HTMLElement;
 
+        this.missionToggleBtn = document.getElementById('mission-toggle-btn') as HTMLButtonElement | null;
+        this.missionBody = document.getElementById('mission-body');
+
+        // En pantallas móviles comenzar con el panel de misiones colapsado para no tapar la vista
+        if (window.innerWidth <= 768 && this.missionBody && this.missionToggleBtn) {
+            this.isMissionCollapsed = true;
+            this.missionBody.classList.add('collapsed');
+            const toggleSpan = this.missionToggleBtn.querySelector('#mission-toggle-text');
+            if (toggleSpan) toggleSpan.textContent = 'Ver Misiones ▼';
+        }
+
         this.exhibitCard = document.getElementById('exhibit-card') as HTMLElement;
         this.cardTag = document.getElementById('card-tag') as HTMLElement;
         this.cardMode = document.getElementById('card-mode') as HTMLElement;
@@ -112,6 +129,7 @@ export class HUD {
 
         this.pauseModal = document.getElementById('pause-modal') as HTMLElement;
         this.resumeBtn = document.getElementById('resume-btn') as HTMLButtonElement;
+        this.pauseMuteBtn = document.getElementById('pause-mute-btn') as HTMLButtonElement | null;
 
         this.muteBtn = document.getElementById('mute-btn') as HTMLButtonElement | null;
         this.journalBtn = document.getElementById('journal-btn') as HTMLButtonElement | null;
@@ -149,6 +167,8 @@ export class HUD {
 
         // Atajos de teclado en el Quiz para evitar frustración (1, 2, 3, Enter, Escape)
         window.addEventListener('keydown', (e) => {
+            const target = e.target as HTMLElement | null;
+            if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA') return;
             if (this.quizOverlay.classList.contains('hidden')) return;
 
             // Salir o cerrar con Escape
@@ -183,7 +203,32 @@ export class HUD {
             }
         });
 
-        // Toggle Sonido / Silenciar
+        // Alternar Misiones (Especial para móviles)
+        if (this.missionToggleBtn && this.missionBody) {
+            this.missionToggleBtn.onclick = (e) => {
+                e.stopPropagation();
+                this.isMissionCollapsed = !this.isMissionCollapsed;
+                const toggleSpan = this.missionToggleBtn!.querySelector('#mission-toggle-text');
+                if (this.isMissionCollapsed) {
+                    this.missionBody!.classList.add('collapsed');
+                    if (toggleSpan) toggleSpan.textContent = 'Ver Misiones ▼';
+                } else {
+                    this.missionBody!.classList.remove('collapsed');
+                    if (toggleSpan) toggleSpan.textContent = 'Ocultar ▲';
+                }
+            };
+        }
+
+        // Toggle Sonido / Silenciar desde Pausa
+        if (this.pauseMuteBtn) {
+            this.pauseMuteBtn.onclick = (e) => {
+                e.stopPropagation();
+                const isMuted = SoundSynthesizer.getInstance().toggleMute();
+                this.updatePauseMuteBtn(isMuted);
+            };
+        }
+
+        // Toggle Sonido / Silenciar (si existe botón superior)
         if (this.muteBtn) {
             this.muteBtn.onclick = (e) => {
                 e.stopPropagation();
@@ -591,11 +636,20 @@ export class HUD {
 
     // --- PAUSE SCREEN ---
     public showPauseModal(onResumeClick: () => void) {
+        this.updatePauseMuteBtn(SoundSynthesizer.getInstance().getIsMuted());
         this.pauseModal.classList.remove('hidden');
         this.resumeBtn.onclick = () => {
             this.pauseModal.classList.add('hidden');
             onResumeClick();
         };
+    }
+
+    public updatePauseMuteBtn(isMuted: boolean) {
+        if (!this.pauseMuteBtn) return;
+        this.pauseMuteBtn.innerText = isMuted ? '🔇 Audio: Silenciado' : '🔊 Audio: Activado';
+        this.pauseMuteBtn.style.color = isMuted ? '#f87171' : '#fde047';
+        this.pauseMuteBtn.style.borderColor = isMuted ? 'rgba(239, 68, 68, 0.5)' : 'rgba(253, 224, 71, 0.4)';
+        this.pauseMuteBtn.style.background = isMuted ? 'rgba(239, 68, 68, 0.12)' : 'rgba(253, 224, 71, 0.08)';
     }
 
     public hidePauseModal() {

@@ -58,15 +58,17 @@ export class InteractionSystem {
                     // Texto dinámico de modo en tiempo real
                     const modeText = found.getModeText ? found.getModeText() : found.modeText;
                     
-                    // Doble canal de acción desacoplado: [E] Probar / [R] Responder
+                    // Doble canal de acción desacoplado: [E] Probar / [R] Responder (Adaptado para PC o Móvil)
                     const isDone = this.hud.isMissionCompleted(found.id);
+                    const isMobile = window.innerWidth <= 768 || ('ontouchstart' in window && !window.matchMedia('(pointer: fine)').matches);
+                    
                     const badgeText = isDone ? "✅ ¡Misión Cumplida! (Medalla Ganada)" : found.badge;
                     const actionEText = isDone 
-                        ? "⚡ [E] Probar / Manipular física" 
-                        : "⚡ [E] Probar Experimento";
+                        ? (isMobile ? "⚡ Manipular física" : "⚡ [E] Probar / Manipular física")
+                        : (isMobile ? "⚡ Probar Experimento" : "⚡ [E] Probar Experimento");
                     const actionRText = isDone
                         ? "⭐ Desafío Aprobado (+100 XP)"
-                        : "📝 [R] Responder Desafío (+100 XP)";
+                        : (isMobile ? "📝 Responder Desafío (+100 XP)" : "📝 [R] Responder Desafío (+100 XP)");
 
                     this.hud.showExhibitCard(
                         found.title,
