@@ -35,9 +35,12 @@ const renderer = new THREE.WebGLRenderer({
     antialias: true, 
     powerPreference: 'high-performance' 
 });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); // Optimizado para 60+ FPS sin desperdicio
+const targetPixelRatio = isTouchDevice 
+    ? Math.min(window.devicePixelRatio, 1.0) 
+    : Math.min(window.devicePixelRatio, 1.25);
+renderer.setPixelRatio(targetPixelRatio);
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.shadowMap.enabled = true;
+renderer.shadowMap.enabled = !isTouchDevice; // En móviles, deshabilitar sombras dinámicas para 60 FPS garantizados
 renderer.shadowMap.type = THREE.PCFShadowMap;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -88,7 +91,7 @@ nameInputElement?.addEventListener('keydown', (e) => {
     }
 });
 
-// Eventos de PointerLock
+// Eventos de PointerLock y Recuperación a prueba de fallos tras presionar Esc
 controls.addEventListener('lock', () => {
     startScreen.classList.add('hidden');
     hud.hidePauseModal();
@@ -100,6 +103,32 @@ controls.addEventListener('unlock', () => {
         hud.showPauseModal(() => {
             controls.lock();
         });
+    }
+});
+
+// Manejo de rechazo de PointerLock (cooldown del navegador tras presionar Esc)
+document.addEventListener('pointerlockerror', () => {
+    if (gameStarted && !hud.isModalOpen && !isTouchDevice) {
+        hud.showPauseModal(() => {
+            controls.lock();
+        });
+    }
+});
+
+// Permitir reanudar haciendo clic en el canvas 3D si el mouse quedó liberado
+renderer.domElement.addEventListener('click', () => {
+    if (gameStarted && !controls.isLocked && !hud.isModalOpen && !isTouchDevice) {
+        controls.lock();
+    }
+});
+
+// Permitir reanudar presionando Barra Espaciadora o Enter en la pantalla de pausa
+window.addEventListener('keydown', (e) => {
+    if (gameStarted && !controls.isLocked && !hud.isModalOpen && !isTouchDevice) {
+        if (e.code === 'Space' || e.code === 'Enter') {
+            e.preventDefault();
+            controls.lock();
+        }
     }
 });
 

@@ -55,6 +55,7 @@ export class World {
     private isPlugged: boolean = true;
     private plugMesh!: THREE.Mesh;
     private hud: HUD;
+    private lastPlayerPos = new THREE.Vector3(0, 1.68, 4.5);
 
     constructor(scene: THREE.Scene, hud: HUD) {
         this.scene = scene;
@@ -561,20 +562,37 @@ export class World {
         // -------------------------------------------------------------
         // ROBOT GUÍA MEL-BOT (ATRIO CENTRAL - ID: 99)
         // -------------------------------------------------------------
-        const getNextRoom = () => {
-            const rooms = [
-                { id: 1, name: "Sala 01: Pila de Papa", pos: new THREE.Vector3(-7.5, 1.8, 0) },
-                { id: 2, name: "Sala 02: Bobina de Tesla", pos: new THREE.Vector3(7.5, 1.8, 0) },
-                { id: 3, name: "Sala 03: Aerogenerador", pos: new THREE.Vector3(0, 1.8, -7.5) },
-                { id: 4, name: "Sala 04: Panel Solar", pos: new THREE.Vector3(5.5, 1.8, -5.5) },
-                { id: 5, name: "Sala 05: Generador Van de Graaff", pos: new THREE.Vector3(-5.5, 1.8, -5.5) },
-                { id: 6, name: "Sala 06: Cuna de Newton", pos: new THREE.Vector3(0, 1.8, 7.5) },
-                { id: 7, name: "Sala 07: Dínamo Manual", pos: new THREE.Vector3(5.5, 1.8, 4.8) }
-            ];
-            for (const r of rooms) {
-                if (!this.hud.isMissionCompleted(r.id)) return r;
+        const museumRooms = [
+            { id: 1, name: "Sala 01: Pila de Papa", center: new THREE.Vector3(-15, 0, 0), pedestalPos: new THREE.Vector3(-13.5, 1.75, 1.2) },
+            { id: 2, name: "Sala 02: Bobina de Tesla", center: new THREE.Vector3(16, 0, 0), pedestalPos: new THREE.Vector3(14.2, 1.75, 1.2) },
+            { id: 3, name: "Sala 03: Aerogenerador", center: new THREE.Vector3(0, 0, -15), pedestalPos: new THREE.Vector3(-1.2, 1.75, -13.2) },
+            { id: 4, name: "Sala 04: Panel Solar", center: new THREE.Vector3(12, 0, -12), pedestalPos: new THREE.Vector3(10.5, 1.75, -10.5) },
+            { id: 5, name: "Sala 05: Generador Van de Graaff", center: new THREE.Vector3(-12, 0, -12), pedestalPos: new THREE.Vector3(-10.5, 1.75, -10.5) },
+            { id: 6, name: "Sala 06: Cuna de Newton", center: new THREE.Vector3(0, 0, 14), pedestalPos: new THREE.Vector3(1.2, 1.75, 12.5) },
+            { id: 7, name: "Sala 07: Dínamo Manual", center: new THREE.Vector3(12, 0, 10), pedestalPos: new THREE.Vector3(10.5, 1.75, 8.5) },
+            { id: 8, name: "Galería Óptica (Conmemorativa)", center: new THREE.Vector3(0, 0, 24), pedestalPos: new THREE.Vector3(0, 1.75, 22.0) }
+        ];
+
+        const getCurrentPlayerRoom = (pos: THREE.Vector3) => {
+            for (let i = 0; i < museumRooms.length; i++) {
+                const r = museumRooms[i];
+                const dx = pos.x - r.center.x;
+                const dz = pos.z - r.center.z;
+                if (dx * dx + dz * dz < 60.0) { // Radio de sala cerrada
+                    return r;
+                }
             }
-            return rooms[0];
+            return null;
+        };
+
+        const getNextIncompleteRoom = (excludeId?: number) => {
+            for (let i = 0; i < 7; i++) {
+                const r = museumRooms[i];
+                if (r.id !== excludeId && !this.hud.isMissionCompleted(r.id)) {
+                    return r;
+                }
+            }
+            return museumRooms[7]; // Si todas están hechas, sugerir Galería Óptica
         };
 
         const robotInteractable: Omit<Interactable, 'object'> = {
@@ -593,13 +611,26 @@ export class World {
                 explanation: "¡Excelente! Seguí a Mel-Bot hacia cada sala temática."
             },
             onInteract: () => {
-                const nextRoom = getNextRoom();
-                const speech = `¡Hola, <b>${this.hud.getStudentName()}</b>! 🤖 Soy Mel-Bot, tu asistente de expedición.<br><br>¿Querés que te guíe volando a la <b>${nextRoom.name}</b> para completar tus misiones? ¡Seguime de cerca! 🚀`;
+                const currentRoom = getCurrentPlayerRoom(this.lastPlayerPos);
+                const nextRoom = getNextIncompleteRoom(currentRoom ? currentRoom.id : undefined);
+                const isAllCompleted = this.hud.getCompletedCount() >= 7;
+
+                let speech: string;
+
+                if (isAllCompleted) {
+                    speech = `🎉 ¡FELICITACIONES, <b>${this.hud.getStudentName()}</b>! 🏆<br><br>¡Ya completaste las 7 salas temáticas y sos un <b>Gran Maestro de la Energía Universal</b>!<br><br>¿Querés que volemos juntos a la <b>Galería Óptica</b> a ver el prisma de Newton o preferís ver tu diploma en el Diario? 🌈`;
+                } else if (currentRoom && !this.hud.isMissionCompleted(currentRoom.id)) {
+                    speech = `¡Ya estamos acá en la <b>${currentRoom.name}</b>, <b>${this.hud.getStudentName()}</b>! 🔬<br><br>Tu misión en esta sala es interactuar con el experimento y luego presionar el botón 🏆 <b>[DESAFÍO CIENTÍFICO]</b> para responder la pregunta y ganar tu medalla.<br><br>¿Querés que te lleve directamente a la siguiente sala (<b>${nextRoom.name}</b>) o preferís resolver esta primero? 🚀`;
+                } else if (currentRoom && this.hud.isMissionCompleted(currentRoom.id)) {
+                    speech = `¡Genial, <b>${this.hud.getStudentName()}</b>! 🌟 Ya ganaste la medalla de la <b>${currentRoom.name}</b>.<br><br>¿Volamos juntos a tu próxima misión en la <b>${nextRoom.name}</b>? ¡Seguime de cerca mientras te abro paso! 🚀`;
+                } else {
+                    speech = `¡Hola, <b>${this.hud.getStudentName()}</b>! 🤖 Soy Mel-Bot, tu asistente científico de expedición.<br><br>¿Querés que te guíe volando a la <b>${nextRoom.name}</b> para continuar investigando? ¡Seguime volando! 🚀`;
+                }
 
                 this.hud.openMelDialog(
                     speech,
                     () => {
-                        this.robotGuide.startGuiding(nextRoom.id, nextRoom.name, nextRoom.pos);
+                        this.robotGuide.startGuiding(nextRoom.id, nextRoom.name, nextRoom.pedestalPos, true);
                         this.hud.showAchievementToast('¡Mel-Bot te Guía! 🚀', `Seguí a Mel-Bot volando hacia la ${nextRoom.name}`, '🤖');
                     },
                     () => {
@@ -608,8 +639,9 @@ export class World {
                 );
             },
             onChallenge: () => {
-                const nextRoom = getNextRoom();
-                this.robotGuide.startGuiding(nextRoom.id, nextRoom.name, nextRoom.pos);
+                const currentRoom = getCurrentPlayerRoom(this.lastPlayerPos);
+                const nextRoom = getNextIncompleteRoom(currentRoom ? currentRoom.id : undefined);
+                this.robotGuide.startGuiding(nextRoom.id, nextRoom.name, nextRoom.pedestalPos, true);
                 this.hud.showAchievementToast('¡SÍGUEME! 🚀', `¡Mel-Bot vuela guiándote a la ${nextRoom.name}!`, '🚀');
             }
         };
@@ -622,38 +654,101 @@ export class World {
     public update(delta: number, playerPos?: THREE.Vector3) {
         const time = performance.now() * 0.001;
 
-        // Actualizar halos flotantes y atmósfera de la sala
+        if (playerPos) {
+            this.lastPlayerPos.copy(playerPos);
+        }
+
+        // Determinar sala activa más cercana para LOD de física y gestión de iluminación (Cero desperdicio)
+        let activeRoomIdx: number | null = null;
+        if (playerPos) {
+            let minDistanceSq = Infinity;
+            let closestIdx = -1;
+
+            const roomCenters = [
+                { x: -15, z: 0 },   // 0: Papa
+                { x: 16, z: 0 },    // 1: Tesla
+                { x: 0, z: -15 },   // 2: Eólica
+                { x: 12, z: -12 },  // 3: Solar
+                { x: -12, z: -12 }, // 4: Van de Graaff
+                { x: 0, z: 14 },    // 5: Newton
+                { x: 12, z: 10 },   // 6: Dínamo
+                { x: 0, z: 24 }     // 7: Óptica
+            ];
+
+            for (let i = 0; i < roomCenters.length; i++) {
+                const dx = playerPos.x - roomCenters[i].x;
+                const dz = playerPos.z - roomCenters[i].z;
+                const dSq = dx * dx + dz * dz;
+                if (dSq < minDistanceSq) {
+                    minDistanceSq = dSq;
+                    closestIdx = i;
+                }
+            }
+
+            // Si el jugador está a menos de 18 metros de la sala, esa sala está activa
+            if (minDistanceSq < 324) { // 18m * 18m
+                activeRoomIdx = closestIdx;
+            }
+        }
+
+        // Iluminación inteligente: solo la sala activa tiene focos dinámicos encendidos (ahorro del 80% de GPU)
         if (this.room) {
+            this.room.setActiveRoom(activeRoomIdx);
             this.room.update(time);
         }
 
-        // Actualizar circuito de papa
-        this.switchExhibit.update(delta, this.isPlugged);
-        const circuitActive = this.switchExhibit.getState() && this.isPlugged;
-        this.cables.update(time, circuitActive);
+        // SIMULACIÓN SELECTIVA (Active Room LOD): Solo 1 experimento se simula a la vez
+        // Sala 0: Pila de Papa y Cables
+        if (activeRoomIdx === 0) {
+            this.switchExhibit.update(delta, this.isPlugged);
+            const circuitActive = this.switchExhibit.getState() && this.isPlugged;
+            this.cables.update(time, circuitActive);
+        }
 
-        // Actualizar nuevos experimentos
-        if (this.windTurbine) this.windTurbine.update(time, delta);
-        if (this.solarPanel) this.solarPanel.update(time, delta);
-        if (this.vanDeGraaff) this.vanDeGraaff.update(time, delta);
-        if (this.dynamoExhibit) this.dynamoExhibit.update(time, delta);
-
-        // Actualizar bobina de tesla con audio posicional
-        if (this.teslaCoil) {
+        // Sala 1: Bobina de Tesla
+        if (this.teslaCoil && activeRoomIdx === 1) {
             const distTesla = playerPos ? playerPos.distanceTo(new THREE.Vector3(16, 1.2, 0)) : undefined;
             this.teslaCoil.update(time, distTesla);
         }
 
-        // Actualizar cuna de newton con audio posicional
-        if (this.cradle) {
+        // Sala 2: Aerogenerador Eólico
+        if (this.windTurbine) {
+            this.windTurbine.setSleep(activeRoomIdx !== 2);
+            if (activeRoomIdx === 2) {
+                this.windTurbine.update(time, delta);
+            }
+        }
+
+        // Sala 3: Panel Solar Fotovoltaico
+        if (this.solarPanel) {
+            this.solarPanel.setSleep(activeRoomIdx !== 3);
+            if (activeRoomIdx === 3) {
+                this.solarPanel.update(time, delta);
+            }
+        }
+
+        // Sala 4: Generador de Van de Graaff
+        if (this.vanDeGraaff && activeRoomIdx === 4) {
+            this.vanDeGraaff.update(time, delta);
+        }
+
+        // Sala 5: Cuna de Newton
+        if (this.cradle && activeRoomIdx === 5) {
             const dist = playerPos ? playerPos.distanceTo(new THREE.Vector3(0, 1.2, 14)) : undefined;
             this.cradle.update(time, dist);
         }
 
-        // Actualizar óptica
-        if (this.optics) this.optics.update(time);
+        // Sala 6: Dínamo Manual
+        if (this.dynamoExhibit && activeRoomIdx === 6) {
+            this.dynamoExhibit.update(time, delta);
+        }
 
-        // Actualizar Mel-Bot y Orbes coleccionables con posición del jugador
+        // Sala 7: Galería Óptica
+        if (this.optics && activeRoomIdx === 7) {
+            this.optics.update(time);
+        }
+
+        // Mel-Bot y Orbes Coleccionables
         if (playerPos) {
             if (this.robotGuide) this.robotGuide.update(time, playerPos, delta);
             if (this.orbsManager) this.orbsManager.update(time, playerPos);

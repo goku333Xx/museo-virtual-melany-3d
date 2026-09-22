@@ -1,131 +1,82 @@
 # ESTÁNDARES DE DISEÑO, RENDIMIENTO Y PEDAGOGÍA - MUSEO MELANY 3D
 
-Este documento establece las reglas y directrices inquebrantables que todo componente, modelo 3D, sistema de interfaz y mecánica educativa debe cumplir para garantizar una experiencia de 60+ FPS en navegadores y una inmersión visual de alta categoría para estudiantes de 11 años.
+Este documento establece las reglas y directrices inquebrantables que todo componente, modelo 3D, sistema de interfaz y mecánica educativa debe cumplir para garantizar una experiencia de 60+ FPS en computadoras y celulares, y una pedagogía 100% intuitiva para chicos de 11 años.
 
 ---
 
-## 1. ESTÁNDARES DE RENDIMIENTO GRÁFICO (PERFORMANCE BUDGET)
+## 1. ESTÁNDARES DE RENDIMIENTO GRÁFICO (PERFORMANCE BUDGET RED TEAM)
 
-### 1.1 Prohibición de Materiales de Transmisión Innecesarios
-* **Regla:** Queda **terminantemente prohibido** el uso indiscriminado de `MeshPhysicalMaterial` con `transmission: 0.9+` o `roughness: 0` en objetos masivos o cubiertas volumétricas.
-* **Causa:** Three.js genera un pase de renderizado completo (Render Target FBO) por cada objeto de transmisión para computar la refracción de fondo. Colocar cajas de cristal sobre pedestales destruye los FPS en cualquier GPU integrada.
-* **Solución:** Las vitrinas o pedestales deben ser abiertos ("Open Air Exhibition"), con acabados sólidos de mármol/acero mate. Si se necesita cristal (como el prisma óptico), se debe aislar y optimizar sin rebotes múltiples.
+### 1.1 Gestión Dinámica de Luces por Sala (Room Light Manager)
+* **Regla Inquebrantable:** Queda **terminantemente prohibido** tener más de 3 o 4 luces dinámicas activas simultáneamente en la escena.
+* **Causa:** El sombreador Three.js evalúa todas las luces concurrentes para cada fragmento de cada objeto visible. Tener más de 16 luces colapsa el uso de GPU al 100% y genera caídas severas de cuadros (lag) en celulares e integradas.
+* **Solución:**
+  - La iluminación general se sostiene mediante `HemisphereLight` de alta calidad (1.85) y luz solar cenital (`DirectionalLight` 2.4).
+  - Cada una de las 7 salas cuenta con su foco cenital y halo focal, pero **únicamente la sala donde se encuentra el jugador (o la más cercana) tiene sus focos activos**.
+  - Las 6 salas restantes tienen sus focos apagados (`visible = false`), reduciendo los cálculos de sombreado en un 80%.
 
-### 1.2 Tratamiento de Luces y Sombras
-* **Presupuesto:** Máximo **1 luz direccional principal con sombras proyectadas** (`castShadow = true`, tamaño de mapa de sombra optimizado 1024x1024, bias ajustado a -0.0005).
-* **Iluminación ambiental:** Usar `HemisphereLight` de bajo costo y focos puntuales decorativos suaves con `castShadow = false`.
-* **Iluminación decorativa arquitectónica:** Zócalos y tiras LED en las paredes usando materiales emisivos (`MeshBasicMaterial` con `emissive`) o texturas luminosas, cero costo de computación de luz por píxel.
+### 1.2 Simulación Selectiva de Experimentos (Active Room LOD)
+* **Regla Inquebrantable:** Cuando el jugador está dentro de una sala, **los otros 6 experimentos deben pausar sus cálculos internos de física, buffers y partículas (Modo Sleep)**.
+* **Causa:** Calcular en segundo plano cintas de Van de Graaff, trenes de engranajes de dinamos, arcos de tesla y aspas eólicas cuando el jugador está detrás de paredes a 25 metros de distancia es un desperdicio absoluto de CPU y GPU.
 
-### 1.3 Material del Suelo y Techo
-* **Suelo:** Acabado sólido mate con rugosidad controlada (`roughness: 0.7 - 0.85`, `metalness: 0.05`). Eliminar efectos de pseudo-raytracing que causan artefactos especulares y tirones de framerate.
-* **Cielo / Galaxia:** El techo físico debe ser removido para exponer un domo cósmico optimizado (BufferGeometry con Points o partículas estelares circulares estables generadas en memoria con textura radial), sin sobrecargar el pipeline con shaders pesados innecesarios.
+### 1.3 Prohibición de `backdrop-filter: blur()` sobre el Canvas WebGL
+* **Regla:** Queda prohibido aplicar filtros de desenfoque (`backdrop-filter: blur(...)`) a notificaciones Toast o píldoras que se animan con frecuencia.
+* **Causa:** En navegadores móviles y de escritorio, un `backdrop-filter` en movimiento fuerza a la GPU a pausar la ejecución de WebGL, volcar el framebuffer a memoria y calcular un costoso filtro gaussiano multipase, congelando el juego (lag al recoger orbes).
+* **Solución:** Usar degradados oscuros de alta opacidad (98%), bordes luminosos y sombras proyectadas (`box-shadow`), logrando un acabado idéntico sin ningún costo en el compositor.
 
----
+### 1.4 Prohibición de Re-creación de Geometrías en Bucle de Render
+* **Regla:** Queda prohibido llamar a `setFromPoints(points)` o instanciar nuevas `BufferGeometry` en cada cuadro.
+* **Solución:** Pre-alojar arrays tipados (`Float32Array`) y `BufferAttribute`, actualizando los valores directamente en memoria y marcando `attribute.needsUpdate = true`.
 
-## 2. ESTÁNDARES DE UI / UX Y HUD
-
-### 2.1 Visibilidad y No Oclusión
-* **Regla:** Ningún elemento informativo debe tapar el centro de visión del usuario mientras examina un experimento.
-* **Tarjeta Holográfica Lateral / Inferior:** Cuando la retícula o proximidad apunte a un experimento o a su atril, debe desplegarse un panel elegante estructurado en **píldoras glassmorphism (`.glass-pill`)** en la parte inferior de la pantalla con tipografía legible, título claro, conceptos clave y la tecla de acción `[E]`.
-
-### 2.2 Gestión Robusta del Puntero (PointerLock & Pausa)
-* **Regla:** La pérdida o liberación del mouse (tecla `ESC` o desenfoque) no debe romper la sesión ni ocultar la interfaz de misiones.
-* **Modal "Mouse Liberado":** Debe presentarse una ventana modal centrada semi-transparente ("Mouse Liberado - Haz clic para continuar"), preservando íntegros los datos del HUD de fondo (misiones, XP, minimapa).
-
-### 2.3 Minimapa 1:1 Squircle
-* **Diseño:** Debe mantenerse el formato squircle en Canvas 2D, con marcadores claros y contrastantes para cada uno de los 3 experimentos:
-  - 🟢 **Verde:** Papa Batería (Electroquímica)
-  - 🟣 **Púrpura:** Prisma Óptico (Dispersión de Luz)
-  - 🟡 **Dorado:** Cuna de Newton (Conservación de Momento)
-* Flecha de orientación del jugador con rotación fluida y coordenadas acotadas dentro del perímetro del museo.
+### 1.5 Tasa de Píxeles Inteligente (Smart DPR)
+* **En celulares y tablets:** Limitar `devicePixelRatio` a `1.0` (las pantallas móviles ya superan los 400 PPI, por lo que 1.0 se ve nítido y ahorra un 55% de fill-rate).
+* **En escritorio:** Limitar `devicePixelRatio` a `1.25`.
+* **Sombras en móviles:** Deshabilitar sombras dinámicas en celulares para garantizar 60 FPS estables.
 
 ---
 
-## 3. ESTÁNDARES PEDAGÓGICOS, GAMIFICACIÓN Y REGLAS ANTI-REGRESIÓN
+## 2. ESTÁNDARES PEDAGÓGICOS OBLIGATORIOS PARA CHICOS DE 11 AÑOS (6TO GRADO)
 
-### 3.1 Misiones Progresivas y Claras
-* El HUD debe listar simultáneamente las 3 estaciones de aprendizaje con estado dinámico (`Pendiente`, `En progreso`, `Completado`).
-* Cada misión debe incluir una descripción clara del fenómeno físico en lenguaje adaptado para chicos de 11 años: divertido, riguroso y sin tecnicismos impenetrables.
+### 2.1 Principio de Analogía Cotidiana Directa
+* **Regla Inquebrantable:** Todo concepto científico debe ser explicado utilizando analogías cotidianas, visuales y entretenidas. Se prohíbe el uso de fórmulas matemáticas complejas o jerga académica impenetrable.
+* **Guía de Analogías Aprobadas:**
+  - 🥔 **Pila de Papa:** *"El jugo ácido de la papa actúa como un tobogán donde los electrones saltan del zinc al cobre como chicos en el recreo."* (No decir "reacción redox con potencial de celda galvánica").
+  - ⚡ **Bobina de Tesla:** *"Emite olas invisibles de energía que viajan por el aire y encienden tubos de luz sin necesidad de cables."* (No decir "ruptura dieléctrica de alta frecuencia").
+  - 🌪️ **Aerogenerador:** *"El viento empuja las aspas gigantes para hacer girar imanes de fuerza dentro de rollos de cobre y generar luz para una ciudad."* (No decir "inducción electromagnética de flujo variable").
+  - ☀️ **Panel Solar:** *"La luz del sol está hecha de pelotitas diminutas llamadas fotones que golpean el silicio y hacen correr a los electrones."* (No decir "efecto fotoeléctrico cuántico de banda prohibida").
+  - ⚡ **Van de Graaff:** *"Una cinta de goma frota y junta un montón de electrones traviesos hasta que saltan chispas, como frotar un globo en el pelo pero a lo gigante."* (No decir "acumulación triboeléctrica electrostática").
+  - ⚖️ **Cuna de Newton:** *"La energía del choque viaja invisible a través de las esferas del medio y empuja solo a la última, como en el billar o las filas de dominó."* (No decir "conservación del momento lineal p=mv").
+  - ⚙️ **Dínamo Manual:** *"Tus músculos transfieren fuerza a los engranajes para hacer girar imanes que empujan la electricidad y calientan el filamento de la bombilla, como los faros de bicicletas."*
 
-### 3.2 Sistema de Preguntas Post-Interacción (Mini-Quizzes Interactivos)
-* Al activar o explorar un experimento por primera vez, se despliega un mini-desafío interactivo de 1 a 2 preguntas tipo multiple-choice.
-* Al responder correctamente: Feedback visual inmediato, recompensa de **+100 XP**, sonido sintetizado de éxito y actualización del marcador de nivel.
-
-### 3.3 Regla Anti-Regresión: Prohibición Estricta de Reabrir Quizzes ya Aprobados (Idempotencia)
-* **Regla Inquebrantable:** Queda **terminantemente prohibido** que una interacción física con un objeto o su pedestal reabra un modal de quiz cuya estación ya haya sido completada con éxito.
-* **Causa de Regresión:** Reabrir un modal aprobado bloquea la cámara, libera el cursor abruptamente e interrumpe la exploración del alumno, generando frustración.
-* **Patrón de Implementación Obligatorio:**
-  ```typescript
-  onInteract: () => {
-      // 1. Ejecutar SIEMPRE la física / cambio de modo
-      const nextMode = this.exhibit.cycleMode();
-      this.hud.setCardModePill(`MODO: ${nextMode.name}`);
-      
-      // 2. Evaluar quiz ÚNICAMENTE si no fue aprobado previamente
-      if (!this.hud.isMissionCompleted(EXHIBIT_ID)) {
-          this.hud.openQuiz(quizData, () => {
-              this.hud.completeMission(EXHIBIT_ID);
-          });
-      }
-  }
-  ```
-
-### 3.4 Regla Anti-Regresión: Modo Sandbox Permanente (Exploración Libre Post-Misión)
-* **Regla Inquebrantable:** Completar una misión **NUNCA debe congelar, bloquear o desactivar las mecánicas interactivas del experimento**.
-* **Comportamiento Requerido:** Tras la aprobación del quiz, las estaciones deben entrar en modo "Laboratorio Libre / Sandbox":
-  - **Prisma:** Seguir alternando indefinidamente entre Luz Blanca, Láser Verde y Láser Rojo con la tecla `[E]`.
-  - **Cuna de Newton:** Seguir alternando entre los 4 modos físicos de colisión (1 bola, 2 bolas, 3 bolas, simétrico) con `[E]`.
-  - **Papa Batería:** Seguir conmutando el interruptor mecánico de encendido/apagado del LED con `[E]`.
-  - El HUD debe actualizar dinámicamente sus píldoras de modo y badges sin volver a interrumpir la vista del usuario.
+### 2.2 Robot Guía Mel-Bot Amigable y Empático
+* Mel-Bot es un compañero robótico Chibi Kawaii con cara expresiva y ojos LED animados (ojos felices `^ ^`, guiños, estrellas de celebración).
+* Mel debe hablar con calidez, entusiasmo y de forma directa:
+  - Si el alumno está en una sala que aún no completó, Mel le recuerda: *"¡Ya estamos acá en la {Sala}! Probá el experimento y tocá el botón [DESAFÍO] para ganar tu medalla."*
+  - Al pedir guía, Mel vuela directamente al pedestal de la siguiente sala sin dar rodeos innecesarios.
 
 ---
 
-## 4. ESTÁNDARES DE FEEDBACK MULTISENSORIAL Y GAME-FEEL
+## 3. ESTÁNDARES DE GESTIÓN ROBUSTA DE POINTERLOCK Y TECLA ESC
 
-### 4.1 Principio del Doble Canal Concurrente (Visual + Auditivo)
-* **Regla:** Ninguna interacción en el museo puede ser "inerte" o un "clic silencioso" (dead click). Cada activación de tecla `[E]` o pulsación de botón de UI debe disparar **simultáneamente**:
-  1. **Confirmación Visual:** Deformación mecánica/rotación 3D, cambio de color/emisión lumínica y actualización en tarjeta HUD.
-  2. **Confirmación Acústica:** Respuesta sonora inmediata (<10ms de latencia).
-
-### 4.2 Prohibición de Archivos de Audio Externos (Web Audio API Obligatorio)
-* **Regla:** Todo sonido interactivo del museo debe ser **generado proceduralmente en tiempo real mediante la Web Audio API nativa** (AudioContext con Osciladores, Nodos de Ganancia y Filtros).
-* **Causa:** Los archivos externos (`.mp3`, `.wav`) introducen latencia de red, fallos por políticas CORS, errores 404 y sobrecarga de memoria en el navegador.
-* **Firmas Sonoras Obligatorias:**
-  - 🔘 **Interruptor / Switch:** Clic percusivo rápido con oscilador de caída exponencial.
-  - 🌈 **Prisma Óptico / Láser:** Barrido de frecuencia descendente electromagnético.
-  - ⚖️ **Cuna de Newton:** Impacto metálico modal simétrico.
-  - ⭐ **Éxito en Quiz:** Arpegio mayor triunfal de notas armónicas.
-  - 🏆 **Fin de Expedición:** Fanfarria cósmica con lluvia de confeti dinámico en pantalla.
+### 3.1 Recuperación a Prueba de Fallos tras Presionar Esc
+* **Problema Histórico:** Al presionar `ESC` en PC, los navegadores (Chrome/Edge/Firefox) imponen un enfriamiento de seguridad (~1.25 segundos). Si el alumno hacía clic en "Continuar" durante ese intervalo, el navegador rechazaba el bloqueo y el juego quedaba trabado con la pantalla de pausa oculta y la cámara inmóvil.
+* **Regla Inquebrantable:**
+  1. La pantalla de pausa `#pause-modal` **no debe ocultarse** hasta que el evento `controls.addEventListener('lock')` se dispare con éxito.
+  2. Si ocurre un error (`pointerlockerror`), se debe mantener o reabrir el modal con aviso claro.
+  3. Se debe permitir recuperar el control haciendo clic en **cualquier parte de la pantalla** o en el canvas 3D.
+  4. Presionar `Barra Espaciadora` o `Enter` mientras está en pausa debe reanudar el juego inmediatamente.
 
 ---
 
-## 5. ESTÁNDARES DE ACCESIBILIDAD Y CROSS-PLATFORM (MÓVIL / TABLET / ESCRITORIO)
+## 4. ESTÁNDARES DE CALIDAD Y REALISMO EN MODELOS 3D
 
-### 5.1 Detección Automática de Dispositivos Táctiles
-* Si el cliente ejecuta en un dispositivo táctil (`ontouchstart in window` o `navigator.maxTouchPoints > 0`):
-  - Activar el HUD táctil con **Joystick Virtual Analógico** en la esquina inferior izquierda.
-  - Activar los botones de acción rápida táctiles en la esquina inferior derecha: **⚡ INTERACTUAR [E]** y **▲ SALTAR**.
-  - Permitir rotación de cámara panorámica suave mediante arrastre táctil con el pulgar derecho sin requerir API de PointerLock.
+### 4.1 Aerogenerador Eólico ("Posta" / Realista)
+* Torre cónica tubular blanca de acero con plataforma y puerta de acceso técnico con señal de advertencia.
+* Góndola aerodinámica (Nacelle) con anemómetro giratorio en el techo, baliza de aviación roja parpadeante y ventana de inspección de engranajes.
+* Buje y 3 aspas blancas de perfil alar con dobles franjas rojas de advertencia en las puntas (estilo Vestas/Siemens Gamesa).
 
-### 5.2 Atajos de Teclado Universales
-* `W, A, S, D` / Flechas: Desplazamiento omnidireccional.
-* `SHIFT`: Carrera veloz.
-* `ESPACIO`: Salto con gravedad suave amortiguada.
-* `E`: Interactuar con atriles y experimentos.
-* `J`: Abrir / Cerrar el **Diario del Científico** (Libreta de Campo).
-* `ESC`: Pausa / Liberar puntero de mouse.
-
----
-
-## 6. DIARIO DEL CIENTÍFICO Y SISTEMA DE LOGROS TOAST
-
-### 6.1 Libreta de Campo Científica (`#journal-modal`)
-* Accesible en todo momento mediante el botón `📖 DIARIO [J]` del HUD superior o la tecla `[J]`.
-* 3 pestañas temáticas interactivas con explicación científica detallada y rigurosa:
-  1. **Pila de Papa:** Reacción redox Zinc/Cobre, electrolito ácido y configuración en serie (1.94V para encender LED).
-  2. **Prisma Óptico:** Dispersión cromática de Newton de 380nm a 750nm y haces monocromáticos puros de 532nm y 650nm.
-  3. **Cuna de Newton:** Principio de conservación del momento lineal ($p = m \cdot v$) y energía cinética ($E_k = \frac{1}{2}mv^2$).
-
-### 6.2 Notificaciones Toast Flotantes (`#achievement-toast`)
-* Estilo cápsula glassmorphic con brillo dorado, icono de trofeo animado y descarte automático no intrusivo tras 4.5 segundos.
-* Notifica de forma no bloqueante cada vez que el estudiante consolida un hito experimental.
+### 4.2 Panel Solar Fotovoltaico
+* Bastidor de aluminio anodizado con esquinas protegidas y vidrio templado antirreflejo.
+* Celdas de silicio monocristalino (azul oscuro iridiscente) con cuadrícula de contactos de plata (busbars).
+* Brazo de sol artificial articulado que se mueve suavemente con interpolación cinemática continua (cenital 90°, inclinado 45°, sombra).
+* Motor DC con hélice de aviación aerodinámica de 3 palas y aro protector.
+* Pantalla LCD digital interactiva que muestra en tiempo real la radiación (W/m²), tensión (V) y RPM.

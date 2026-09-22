@@ -12,7 +12,8 @@ export class VanDeGraaffExhibit {
     private beltMesh: THREE.Mesh;
     private ribbons: THREE.Mesh[] = [];
     private sparkLine: THREE.Line;
-    private sparkPoints: THREE.Vector3[] = [];
+    private sparkPositions = new Float32Array(9 * 3);
+    private sparkPosAttr: THREE.BufferAttribute;
     private sparkLight: THREE.PointLight;
     private interactableMeshes: THREE.Object3D[] = [];
 
@@ -203,11 +204,9 @@ export class VanDeGraaffExhibit {
         this.group.add(groundWire);
 
         // 8. ARCOS DE CHISPAS PROCEDURALES (DESCARGA ENTRE ESFERAS)
-        const sparkCount = 10;
-        for (let i = 0; i <= sparkCount; i++) {
-            this.sparkPoints.push(new THREE.Vector3());
-        }
-        const sparkGeom = new THREE.BufferGeometry().setFromPoints(this.sparkPoints);
+        const sparkGeom = new THREE.BufferGeometry();
+        this.sparkPosAttr = new THREE.BufferAttribute(this.sparkPositions, 3);
+        sparkGeom.setAttribute('position', this.sparkPosAttr);
         const sparkMat = new THREE.LineBasicMaterial({
             color: 0xc084fc,
             linewidth: 3,
@@ -248,27 +247,30 @@ export class VanDeGraaffExhibit {
             const wandX = 0.35;
             const domeY = 1.15;
 
-            const start = new THREE.Vector3(genX + 0.28, domeY, 0);
-            const end = new THREE.Vector3(wandX - 0.12, domeY, 0);
+            const startX = genX + 0.28;
+            const startY = domeY;
+            const startZ = 0;
+            const endX = wandX - 0.12;
+            const endY = domeY;
+            const endZ = 0;
 
             const isSparking = Math.random() > 0.35;
             this.sparkLine.visible = isSparking;
             this.sparkLight.intensity = isSparking ? (2.5 + Math.random() * 2.0) : 0;
 
             if (isSparking) {
-                const points: THREE.Vector3[] = [];
                 const segments = 8;
                 for (let s = 0; s <= segments; s++) {
                     const alpha = s / segments;
-                    const p = new THREE.Vector3().lerpVectors(start, end, alpha);
-                    if (s > 0 && s < segments) {
-                        p.x += (Math.random() - 0.5) * 0.06;
-                        p.y += (Math.random() - 0.5) * 0.08;
-                        p.z += (Math.random() - 0.5) * 0.08;
-                    }
-                    points.push(p);
+                    const jx = (s > 0 && s < segments) ? (Math.random() - 0.5) * 0.06 : 0;
+                    const jy = (s > 0 && s < segments) ? (Math.random() - 0.5) * 0.08 : 0;
+                    const jz = (s > 0 && s < segments) ? (Math.random() - 0.5) * 0.08 : 0;
+                    const idx = s * 3;
+                    this.sparkPositions[idx] = startX + (endX - startX) * alpha + jx;
+                    this.sparkPositions[idx + 1] = startY + (endY - startY) * alpha + jy;
+                    this.sparkPositions[idx + 2] = startZ + (endZ - startZ) * alpha + jz;
                 }
-                this.sparkLine.geometry.setFromPoints(points);
+                this.sparkPosAttr.needsUpdate = true;
             }
         } else {
             this.sparkLine.visible = false;

@@ -692,6 +692,10 @@ export class HUD {
         return this.completedMissions.has(id);
     }
 
+    public getCompletedCount(): number {
+        return this.completedMissions.size;
+    }
+
     // --- GRAN CELEBRACIÓN FINAL (CONFETI & TROFEO) ---
     public triggerGrandCelebration() {
         this.celebrationTriggered = true;
@@ -782,9 +786,17 @@ export class HUD {
     public showPauseModal(onResumeClick: () => void) {
         this.updatePauseMuteBtn(SoundSynthesizer.getInstance().getIsMuted());
         this.pauseModal.classList.remove('hidden');
-        this.resumeBtn.onclick = () => {
-            this.pauseModal.classList.add('hidden');
+
+        const doResume = (e?: Event) => {
+            e?.stopPropagation();
             onResumeClick();
+        };
+
+        this.resumeBtn.onclick = doResume;
+        this.pauseModal.onclick = (e) => {
+            if (e.target === this.pauseModal) {
+                doResume(e);
+            }
         };
     }
 

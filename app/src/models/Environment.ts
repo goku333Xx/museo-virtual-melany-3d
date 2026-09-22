@@ -21,6 +21,8 @@ export class MuseumRoom {
     private pedestalMeshes: THREE.Object3D[] = [];
     private floatingHalos: FloatingHaloData[] = [];
     private internalWallBoxes: WallBox[] = [];
+    private roomLights: { roomLight: THREE.PointLight, accentLight: THREE.PointLight }[] = [];
+    private activeRoomIndex: number = 0;
 
     constructor() {
         this.group = new THREE.Group();
@@ -471,7 +473,7 @@ export class MuseumRoom {
             const wallGeom = new THREE.BoxGeometry(w, wallHeight, d);
             const wallMesh = new THREE.Mesh(wallGeom, wallMat);
             wallMesh.position.set(posX, wallHeight / 2, posZ);
-            wallMesh.castShadow = true;
+            wallMesh.castShadow = false;
             wallMesh.receiveShadow = true;
             this.group.add(wallMesh);
             this.collidables.push(wallMesh);
@@ -583,18 +585,22 @@ export class MuseumRoom {
             { x: 0, z: 24, color: 0xd946ef, name: "Galería Óptica" }
         ];
 
-        roomConfigs.forEach(rc => {
-            // Luz cenital cálida de galería (3200K) que inunda toda la sala
+        roomConfigs.forEach((rc, idx) => {
+            // Luz cenital cálida de galería (3200K) que inunda la sala
             const roomLight = new THREE.PointLight(0xfff7ed, 2.4, 18.0, 1.2);
             roomLight.position.set(rc.x, 4.2, rc.z);
+            roomLight.visible = (idx === 0);
             this.group.add(roomLight);
 
             // Foco de acento con el color de la temática reflejado en el techo/pared
             const accentLight = new THREE.PointLight(rc.color, 1.2, 8.0, 2.0);
             accentLight.position.set(rc.x, 3.8, rc.z);
+            accentLight.visible = (idx === 0);
             this.group.add(accentLight);
 
-            // Apliques luminosos decorativos en las paredes de cada sala
+            this.roomLights.push({ roomLight, accentLight });
+
+            // Apliques luminosos decorativos en las paredes de cada sala (costo cero de luces dinámicas)
             this.createWallSconce(rc.x - 3.5, 2.4, rc.z - 3.5, rc.color);
             this.createWallSconce(rc.x + 3.5, 2.4, rc.z + 3.5, rc.color);
         });
@@ -736,7 +742,7 @@ export class MuseumRoom {
 
             const pedestal = new THREE.Mesh(baseGeom, baseMaterial);
             pedestal.position.set(0, pedestalHeight / 2, 0);
-            pedestal.castShadow = true;
+            pedestal.castShadow = false;
             pedestal.receiveShadow = true;
             pedestalGroup.add(pedestal);
 
@@ -784,10 +790,11 @@ export class MuseumRoom {
         const ringMesh = new THREE.Mesh(ringGeom, ringMat);
         haloGroup.add(ringMesh);
 
-        // Foco de museo descendente sobre el experimento
+        // Foco de museo descendente sobre el experimento (activo solo en la sala actual)
         const spot = new THREE.SpotLight(0xfff5eb, 35, 12, Math.PI / 4, 0.5, 1.5);
         spot.position.set(0, 0, 0);
         spot.target.position.set(0, -3.0, 0);
+        spot.visible = (this.floatingHalos.length === 0);
         haloGroup.add(spot);
         haloGroup.add(spot.target);
 
@@ -802,6 +809,22 @@ export class MuseumRoom {
         });
     }
 
+    public setActiveRoom(index: number | null): void {
+        const targetIdx = index !== null ? index : -1;
+        if (this.activeRoomIndex === targetIdx) return;
+        this.activeRoomIndex = targetIdx;
+
+        for (let i = 0; i < this.floatingHalos.length; i++) {
+            this.floatingHalos[i].spotLight.visible = (this.activeRoomIndex === i);
+        }
+
+        for (let i = 0; i < this.roomLights.length; i++) {
+            const isTarget = (this.activeRoomIndex === i);
+            this.roomLights[i].roomLight.visible = isTarget;
+            this.roomLights[i].accentLight.visible = isTarget;
+        }
+    }
+
     public update(time: number): void {
         for (let i = 0; i < this.floatingHalos.length; i++) {
             const halo = this.floatingHalos[i];
@@ -814,14 +837,14 @@ export class MuseumRoom {
     }
 
     private buildLightingAndDecor() {
-        // 1. Luz hemisférica natural y cálida de museo (5200K estilo galería de ciencias)
-        const hemiLight = new THREE.HemisphereLight(0xfff7ed, 0x1e293b, 1.25);
+        // 1. Luz hemisférica natural y cálida de museo (ilumina uniformemente sin costo de sombras)
+        const hemiLight = new THREE.HemisphereLight(0xfffaea, 0x334155, 1.85);
         hemiLight.position.set(0, 32, 0);
         this.group.add(hemiLight);
 
         // 2. Luz solar direccional cálida (proyectada desde el Sol Celestial)
         const sunPos = new THREE.Vector3(24, 38, -26);
-        const sunLight = new THREE.DirectionalLight(0xfffaea, 2.2);
+        const sunLight = new THREE.DirectionalLight(0xfffaea, 2.4);
         sunLight.position.copy(sunPos);
         sunLight.castShadow = true;
         sunLight.shadow.mapSize.width = 1024;

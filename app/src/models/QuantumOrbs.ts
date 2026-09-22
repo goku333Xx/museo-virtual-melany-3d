@@ -181,6 +181,7 @@ export class QuantumOrbsManager {
                     orb.scale = Math.max(0, orb.scale - 0.08);
                     orb.group.scale.setScalar(orb.scale);
                     if (orb.scale <= 0.01) {
+                        orb.group.visible = false;
                         orb.group.position.set(0, -999, 0); // Ocultar fuera de cámara
                     }
                 }
@@ -193,9 +194,9 @@ export class QuantumOrbsManager {
             orb.mesh.rotation.x = time * 1.6;
             orb.ring.rotation.z = time * 1.4;
 
-            // Detección de proximidad para recolección (1.5 metros)
-            const dist = playerPos.distanceTo(orb.group.position);
-            if (dist < 1.5) {
+            // Detección de proximidad para recolección (1.5 metros, usando distancia al cuadrado)
+            const distSq = playerPos.distanceToSquared(orb.group.position);
+            if (distSq < 2.25) {
                 this.collectOrb(orb);
             }
         }

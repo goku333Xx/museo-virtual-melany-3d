@@ -5,6 +5,7 @@ export interface WindTurbineModeInfo {
     name: string;
     windSpeed: number; // m/s
     voltage: number;   // Volts
+    power: string;
     desc: string;
 }
 
@@ -12,161 +13,261 @@ export class WindTurbineExhibit {
     private group: THREE.Group;
     private rotorHub: THREE.Group;
     private generatorRotor: THREE.Group;
+    private anemometerHub: THREE.Group;
+    private beaconLight: THREE.Mesh;
     private voltmeterNeedle: THREE.Mesh;
     private cityWindows: THREE.MeshStandardMaterial[] = [];
     private streetLights: THREE.MeshBasicMaterial[] = [];
     private interactableMeshes: THREE.Object3D[] = [];
 
     private currentMode: number = 1;
-    private currentRpm: number = 90;
-    private targetRpm: number = 90;
+    private currentRpm: number = 85;
+    private targetRpm: number = 85;
     private currentAngle: number = 0;
+    private anemometerAngle: number = 0;
     private currentVoltage: number = 5.0;
     private targetVoltage: number = 5.0;
+    private isSleeping: boolean = false;
 
     private readonly modes: WindTurbineModeInfo[] = [
         {
             id: 0,
-            name: "Brisa Suave (3 m/s · 1.8V · Farolas)",
-            windSpeed: 3,
-            voltage: 1.8,
-            desc: "Una brisa leve hace girar lentamente las aspas. El dinamo Faraday genera poco voltaje, encendiendo únicamente el alumbrado público."
+            name: "Brisa Suave (3.5 m/s · 2.1 V · 35 RPM)",
+            windSpeed: 3.5,
+            voltage: 2.1,
+            power: "250 W",
+            desc: "Una brisa leve hace girar las aspas lentamente. El generador electromagnético produce poca corriente, encendiendo únicamente el alumbrado de las calles."
         },
         {
             id: 1,
-            name: "Viento Favorable (8 m/s · 5.0V · Ciudad Iluminada)",
-            windSpeed: 8,
-            voltage: 5.0,
-            desc: "Flujo laminar óptico. La velocidad angular corta más líneas de campo magnético por segundo (Ley de Faraday) y enciende casas y edificios."
+            name: "Viento Favorable (8.5 m/s · 6.0 V · 90 RPM)",
+            windSpeed: 8.5,
+            voltage: 6.0,
+            power: "1.2 kW",
+            desc: "Viento ideal. Las aspas aerodinámicas cortan el aire con eficiencia y hacen girar los imanes dentro de bobinas de cobre, iluminando las casas de la maqueta."
         },
         {
             id: 2,
-            name: "Vendaval de Potencia (15 m/s · 12.0V · Metrópolis Plena)",
-            windSpeed: 15,
+            name: "Vendaval de Potencia (16.0 m/s · 12.0 V · 180 RPM)",
+            windSpeed: 16.0,
             voltage: 12.0,
-            desc: "Máxima potencia cinética. Las tres aspas giran a alta velocidad alimentando toda la red eléctrica y la torre de telecomunicaciones."
+            power: "3.5 kW",
+            desc: "Viento huracanado de alta energía. El rotor gira a máxima potencia y enciende todos los rascacielos y oficinas del centro urbano."
         }
     ];
 
     constructor() {
         this.group = new THREE.Group();
 
-        // 1. MESA DIORAMA DE LA CIUDAD Y TURBINA (2.4m x 1.4m x 0.12m)
+        // 1. MESA DIORAMA DEL PARQUE EÓLICO Y CIUDAD (2.4m x 1.4m x 0.10m)
         const tableW = 2.4;
         const tableD = 1.4;
         const tableH = 0.10;
 
-        const tableGeom = new THREE.BoxGeometry(tableW, tableH, tableD);
         const tableMat = new THREE.MeshStandardMaterial({
             color: 0x121722,
-            metalness: 0.8,
+            metalness: 0.85,
             roughness: 0.25
         });
-        const table = new THREE.Mesh(tableGeom, tableMat);
+        const table = new THREE.Mesh(new THREE.BoxGeometry(tableW, tableH, tableD), tableMat);
         table.position.set(0, tableH / 2, 0);
         table.receiveShadow = true;
         this.group.add(table);
         this.interactableMeshes.push(table);
 
-        // Bisel de latón pulido alrededor de la mesa
-        const rimGeom = new THREE.BoxGeometry(tableW + 0.04, 0.02, tableD + 0.04);
-        const brassMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.9, roughness: 0.2 });
-        const rim = new THREE.Mesh(rimGeom, brassMat);
+        // Moldura en latón dorado
+        const rim = new THREE.Mesh(
+            new THREE.BoxGeometry(tableW + 0.04, 0.02, tableD + 0.04),
+            new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.9, roughness: 0.2 })
+        );
         rim.position.set(0, tableH + 0.01, 0);
         this.group.add(rim);
 
-        // 2. MÁSTIL AEROGENERADOR (Lado Izquierdo: X = -0.65)
-        const turbineBaseX = -0.65;
-        const towerH = 1.65;
-        const towerGeom = new THREE.CylinderGeometry(0.045, 0.085, towerH, 32);
+        // =========================================================================
+        // 2. AEROGENERADOR REALISTA (ESTILO VESTAS / SIEMENS INDUSTRIAL)
+        // =========================================================================
+        const turbineBaseX = -0.68;
+        const towerH = 1.70;
+
+        // Torre tubular cónica de acero blanco con pintura anticorrosiva
+        const towerGeom = new THREE.CylinderGeometry(0.042, 0.088, towerH, 32);
         const towerMat = new THREE.MeshStandardMaterial({
             color: 0xf8fafc,
-            metalness: 0.3,
-            roughness: 0.25
+            metalness: 0.25,
+            roughness: 0.35
         });
         const tower = new THREE.Mesh(towerGeom, towerMat);
         tower.position.set(turbineBaseX, tableH + towerH / 2, 0);
-        tower.castShadow = true;
         this.group.add(tower);
         this.interactableMeshes.push(tower);
 
-        // Base cónica de anclaje con tornillos perimetrales
-        const baseCone = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 0.06, 24), brassMat);
-        baseCone.position.set(turbineBaseX, tableH + 0.03, 0);
-        this.group.add(baseCone);
+        // Base de anclaje de hormigón armado con corona de pernos
+        const foundation = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.14, 0.17, 0.05, 24),
+            new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.8 })
+        );
+        foundation.position.set(turbineBaseX, tableH + 0.025, 0);
+        this.group.add(foundation);
 
-        // 3. GÓNDOLA Y DÍNAMO TRANSPARENTE
-        const nacelleY = tableH + towerH + 0.06;
-        const nacelleGeom = new THREE.CylinderGeometry(0.09, 0.08, 0.38, 24);
-        nacelleGeom.rotateZ(Math.PI / 2);
-        const nacelleMat = new THREE.MeshStandardMaterial({
-            color: 0x1e293b,
-            metalness: 0.85,
-            roughness: 0.2
-        });
-        const nacelle = new THREE.Mesh(nacelleGeom, nacelleMat);
-        nacelle.position.set(turbineBaseX + 0.05, nacelleY, 0);
-        this.group.add(nacelle);
+        // Puerta de servicio para técnicos en la base de la torre
+        const doorGeom = new THREE.BoxGeometry(0.025, 0.12, 0.045);
+        const doorMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8, roughness: 0.3 });
+        const door = new THREE.Mesh(doorGeom, doorMat);
+        door.position.set(turbineBaseX + 0.075, tableH + 0.09, 0);
+        this.group.add(door);
 
-        // Ventana de inspección de policarbonato para ver el dinamo
-        const glassCanopy = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.092, 0.082, 0.22, 16, 1, false, 0, Math.PI),
+        // Señal de peligro alta tensión (amarillo) en la puerta
+        const hazardPlate = new THREE.Mesh(
+            new THREE.PlaneGeometry(0.015, 0.015),
+            new THREE.MeshBasicMaterial({ color: 0xfacc15, side: THREE.DoubleSide })
+        );
+        hazardPlate.position.set(turbineBaseX + 0.088, tableH + 0.11, 0);
+        hazardPlate.rotation.y = Math.PI / 2;
+        this.group.add(hazardPlate);
+
+        // Plataforma superior de guiñada (Yaw deck)
+        const yawDeck = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.052, 0.045, 0.03, 24),
+            new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.7 })
+        );
+        yawDeck.position.set(turbineBaseX, tableH + towerH + 0.015, 0);
+        this.group.add(yawDeck);
+
+        // =========================================================================
+        // 3. GÓNDOLA AERODINÁMICA (NACELLE) Y GENERADOR
+        // =========================================================================
+        const nacelleY = tableH + towerH + 0.07;
+
+        // Cuerpo estilizado y curvado de la góndola (fibra de vidrio blanca)
+        const nacelleGroup = new THREE.Group();
+        nacelleGroup.position.set(turbineBaseX, nacelleY, 0);
+
+        const nacelleBody = new THREE.Mesh(
+            new THREE.BoxGeometry(0.42, 0.12, 0.13),
+            towerMat
+        );
+        nacelleBody.position.set(0.04, 0, 0);
+        nacelleGroup.add(nacelleBody);
+        this.interactableMeshes.push(nacelleBody);
+
+        // Cola aerodinámica biselada de la góndola
+        const nacelleTail = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.05, 0.065, 0.12, 16),
+            towerMat
+        );
+        nacelleTail.rotation.z = Math.PI / 2;
+        nacelleTail.position.set(-0.21, 0, 0);
+        nacelleGroup.add(nacelleTail);
+
+        // Rejillas de ventilación y radiador de la góndola
+        const grillMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.7 });
+        const grill = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.04, 0.134), grillMat);
+        grill.position.set(-0.06, 0.02, 0);
+        nacelleGroup.add(grill);
+
+        // Ventana de acrílico transparente para inspección técnica
+        const windowCanopy = new THREE.Mesh(
+            new THREE.BoxGeometry(0.14, 0.06, 0.136),
             new THREE.MeshPhysicalMaterial({
                 color: 0x93c5fd,
                 transmission: 0.85,
-                opacity: 0.9,
                 transparent: true,
-                roughness: 0.05,
-                ior: 1.5
+                opacity: 0.9,
+                roughness: 0.1
             })
         );
-        glassCanopy.position.set(turbineBaseX + 0.05, nacelleY, 0);
-        glassCanopy.rotation.x = -Math.PI / 2;
-        this.group.add(glassCanopy);
+        windowCanopy.position.set(0.10, 0.02, 0);
+        nacelleGroup.add(windowCanopy);
 
-        // Núcleo del dinamo interior: Bobinas de cobre fijas (estator)
-        const coilMat = new THREE.MeshStandardMaterial({ color: 0xb45309, metalness: 0.9, roughness: 0.15 });
+        // Bobinas de cobre fijas del generador electromagnético (estator)
+        const copperMat = new THREE.MeshStandardMaterial({ color: 0xb45309, metalness: 0.95, roughness: 0.1 });
         for (let i = 0; i < 4; i++) {
             const angle = (i * Math.PI) / 2;
-            const coil = new THREE.Mesh(new THREE.TorusGeometry(0.045, 0.015, 12, 24), coilMat);
-            coil.position.set(turbineBaseX + 0.05, nacelleY, 0);
+            const coil = new THREE.Mesh(new THREE.TorusGeometry(0.032, 0.010, 12, 20), copperMat);
+            coil.position.set(0.10, 0, 0);
             coil.rotation.x = angle;
-            this.group.add(coil);
+            nacelleGroup.add(coil);
         }
 
-        // Rotor de imanes de neodimio (gira con las aspas)
+        // Rotor con imanes de neodimio que giran solidarios al eje
         this.generatorRotor = new THREE.Group();
-        this.generatorRotor.position.set(turbineBaseX + 0.05, nacelleY, 0);
+        this.generatorRotor.position.set(0.10, 0, 0);
         const magnetMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, metalness: 0.95, roughness: 0.1 });
-        for (let i = 0; i < 4; i++) {
-            const angle = (i * Math.PI) / 2 + Math.PI / 4;
-            const mag = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.04, 0.015), magnetMat);
-            mag.position.set(0, Math.cos(angle) * 0.035, Math.sin(angle) * 0.035);
+        for (let m = 0; m < 4; m++) {
+            const ang = (m * Math.PI) / 2 + Math.PI / 4;
+            const mag = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.028, 0.012), magnetMat);
+            mag.position.set(0, Math.cos(ang) * 0.024, Math.sin(ang) * 0.024);
             this.generatorRotor.add(mag);
         }
-        this.group.add(this.generatorRotor);
+        nacelleGroup.add(this.generatorRotor);
 
-        // 4. BUJE Y 3 ASPAS AERODINÁMICAS ROTATIVAS
+        // Anemómetro en el techo de la góndola con cazoletas giratorias
+        const anemometerPole = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.004, 0.004, 0.06, 8),
+            new THREE.MeshStandardMaterial({ color: 0x0f172a })
+        );
+        anemometerPole.position.set(-0.14, 0.09, 0);
+        nacelleGroup.add(anemometerPole);
+
+        this.anemometerHub = new THREE.Group();
+        this.anemometerHub.position.set(-0.14, 0.12, 0);
+        for (let a = 0; a < 3; a++) {
+            const aAngle = (a * Math.PI * 2) / 3;
+            const cupArm = new THREE.Mesh(new THREE.CylinderGeometry(0.002, 0.002, 0.025, 8), grillMat);
+            cupArm.rotation.z = Math.PI / 2;
+            cupArm.rotation.y = aAngle;
+            cupArm.position.set(Math.cos(aAngle) * 0.012, 0, Math.sin(aAngle) * 0.012);
+            this.anemometerHub.add(cupArm);
+
+            const cup = new THREE.Mesh(new THREE.SphereGeometry(0.007, 8, 8, 0, Math.PI), grillMat);
+            cup.rotation.y = aAngle + Math.PI / 2;
+            cup.position.set(Math.cos(aAngle) * 0.026, 0, Math.sin(aAngle) * 0.026);
+            this.anemometerHub.add(cup);
+        }
+        nacelleGroup.add(this.anemometerHub);
+
+        // Luz roja de baliza de aviación (anti-colisión) que parpadea lentamente
+        this.beaconLight = new THREE.Mesh(
+            new THREE.SphereGeometry(0.012, 12, 12),
+            new THREE.MeshBasicMaterial({ color: 0xef4444 })
+        );
+        this.beaconLight.position.set(-0.21, 0.08, 0);
+        nacelleGroup.add(this.beaconLight);
+
+        this.group.add(nacelleGroup);
+
+        // =========================================================================
+        // 4. BUJE Y 3 ASPAS AERODINÁMICAS BLANCAS CON PUNTA ROJA ("POSTA")
+        // =========================================================================
         this.rotorHub = new THREE.Group();
-        this.rotorHub.position.set(turbineBaseX + 0.24, nacelleY, 0);
+        this.rotorHub.position.set(turbineBaseX + 0.25, nacelleY, 0);
 
-        // Cono de morro estilizado
+        // Nariz cónica aerodinámica (Nosecone) en blanco industrial
         const noseCone = new THREE.Mesh(
-            new THREE.ConeGeometry(0.08, 0.14, 24),
-            new THREE.MeshStandardMaterial({ color: 0x00f0ff, metalness: 0.7, roughness: 0.2 })
+            new THREE.ConeGeometry(0.075, 0.13, 24),
+            new THREE.MeshStandardMaterial({ color: 0xf8fafc, metalness: 0.3, roughness: 0.25 })
         );
         noseCone.rotation.z = -Math.PI / 2;
         this.rotorHub.add(noseCone);
 
-        // Creación de 3 aspas de 0.65m con perfil alar
-        const bladeLen = 0.65;
+        // Tapa frontal del buje
+        const hubCap = new THREE.Mesh(
+            new THREE.SphereGeometry(0.065, 20, 20, 0, Math.PI * 2, 0, Math.PI / 2),
+            towerMat
+        );
+        hubCap.rotation.z = -Math.PI / 2;
+        this.rotorHub.add(hubCap);
+
+        // 3 aspas aerodinámicas de perfil alar (blancas con dobles franjas rojas en la punta)
+        const bladeLen = 0.68;
         const bladeShape = new THREE.Shape();
         bladeShape.moveTo(0, 0);
-        bladeShape.lineTo(bladeLen * 0.2, 0.045);
-        bladeShape.lineTo(bladeLen * 0.75, 0.035);
-        bladeShape.lineTo(bladeLen, 0.008);
-        bladeShape.lineTo(bladeLen, -0.008);
-        bladeShape.lineTo(bladeLen * 0.2, -0.025);
+        bladeShape.lineTo(bladeLen * 0.18, 0.040);
+        bladeShape.lineTo(bladeLen * 0.78, 0.024);
+        bladeShape.lineTo(bladeLen, 0.005);
+        bladeShape.lineTo(bladeLen, -0.005);
+        bladeShape.lineTo(bladeLen * 0.78, -0.016);
+        bladeShape.lineTo(bladeLen * 0.18, -0.020);
         bladeShape.closePath();
 
         const bladeGeom = new THREE.ExtrudeGeometry(bladeShape, {
@@ -174,16 +275,18 @@ export class WindTurbineExhibit {
             bevelEnabled: true,
             bevelSegments: 2,
             steps: 1,
-            bevelSize: 0.002,
-            bevelThickness: 0.002
+            bevelSize: 0.001,
+            bevelThickness: 0.001
         });
         bladeGeom.center();
 
         const bladeMat = new THREE.MeshStandardMaterial({
-            color: 0xf1f5f9,
+            color: 0xf8fafc,
             metalness: 0.2,
-            roughness: 0.3
+            roughness: 0.35
         });
+
+        const redTipMat = new THREE.MeshBasicMaterial({ color: 0xdc2626 });
 
         for (let i = 0; i < 3; i++) {
             const bladePivot = new THREE.Group();
@@ -191,17 +294,18 @@ export class WindTurbineExhibit {
 
             const blade = new THREE.Mesh(bladeGeom, bladeMat);
             blade.position.set(0, bladeLen / 2 + 0.05, 0);
-            blade.rotation.y = 0.15; // Ángulo de ataque de 8.5 grados
-            blade.castShadow = true;
+            blade.rotation.y = 0.14; // Ángulo de ataque de 8°
             bladePivot.add(blade);
 
-            // Borde de ataque con franja de alta visibilidad cian
-            const tip = new THREE.Mesh(
-                new THREE.BoxGeometry(0.008, 0.10, 0.012),
-                new THREE.MeshBasicMaterial({ color: 0x00f0ff })
-            );
-            tip.position.set(0, bladeLen + 0.02, 0);
-            bladePivot.add(tip);
+            // Franja de advertencia aeronáutica roja 1
+            const stripe1 = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.045, 0.024), redTipMat);
+            stripe1.position.set(0, bladeLen * 0.88, 0);
+            bladePivot.add(stripe1);
+
+            // Franja de advertencia aeronáutica roja 2 (punta extrema)
+            const stripe2 = new THREE.Mesh(new THREE.BoxGeometry(0.010, 0.040, 0.018), redTipMat);
+            stripe2.position.set(0, bladeLen + 0.025, 0);
+            bladePivot.add(stripe2);
 
             this.rotorHub.add(bladePivot);
         }
@@ -209,152 +313,191 @@ export class WindTurbineExhibit {
         this.group.add(this.rotorHub);
         this.interactableMeshes.push(this.rotorHub);
 
-        // 5. MAQUETA DE MINI CIUDAD Y RED ELÉCTRICA (Lado Derecho: X = 0.35)
+        // =========================================================================
+        // 5. MAQUETA DE MINI CIUDAD Y RED ELÉCTRICA (X = +0.35)
+        // =========================================================================
         const cityGroup = new THREE.Group();
-        cityGroup.position.set(0.35, tableH, 0);
+        cityGroup.position.set(0.38, tableH, 0);
 
-        // Pavimento asfaltado y cuadrícula de calles
-        const asphalt = new THREE.Mesh(
-            new THREE.PlaneGeometry(1.2, 1.1),
-            new THREE.MeshStandardMaterial({ color: 0x181e28, roughness: 0.85 })
-        );
-        asphalt.rotation.x = -Math.PI / 2;
-        asphalt.position.y = 0.002;
-        cityGroup.add(asphalt);
+        // Césped y parque alrededor de la subestación
+        const parkMat = new THREE.MeshStandardMaterial({ color: 0x1e3a2b, roughness: 0.9 });
+        const park = new THREE.Mesh(new THREE.PlaneGeometry(1.25, 1.15), parkMat);
+        park.rotation.x = -Math.PI / 2;
+        park.position.y = 0.001;
+        cityGroup.add(park);
 
-        // Franjas de calles peatonales en miniatura
-        const laneMat = new THREE.MeshBasicMaterial({ color: 0x94a3b8 });
-        for (let lx = -0.4; lx <= 0.4; lx += 0.4) {
-            const lane = new THREE.Mesh(new THREE.PlaneGeometry(0.02, 1.0), laneMat);
-            lane.rotation.x = -Math.PI / 2;
-            lane.position.set(lx, 0.003, 0);
-            cityGroup.add(lane);
-        }
+        // Calles asfaltadas
+        const streetMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 });
+        const street = new THREE.Mesh(new THREE.PlaneGeometry(1.18, 0.24), streetMat);
+        street.rotation.x = -Math.PI / 2;
+        street.position.set(0, 0.002, 0.12);
+        cityGroup.add(street);
 
-        // 8 Edificios con ventanas iluminables
-        const buildingConfigs = [
-            { x: -0.32, z: -0.32, w: 0.18, d: 0.18, h: 0.45 },
-            { x: 0.0,   z: -0.35, w: 0.22, d: 0.16, h: 0.65 }, // Torre central
-            { x: 0.32,  z: -0.30, w: 0.18, d: 0.18, h: 0.38 },
-            { x: -0.30, z: 0.05,  w: 0.16, d: 0.20, h: 0.32 },
-            { x: 0.32,  z: 0.05,  w: 0.16, d: 0.22, h: 0.50 },
-            { x: -0.32, z: 0.35,  w: 0.20, d: 0.16, h: 0.28 },
-            { x: 0.0,   z: 0.38,  w: 0.20, d: 0.16, h: 0.35 },
-            { x: 0.32,  z: 0.35,  w: 0.18, d: 0.16, h: 0.25 }
+        // 8 edificios urbanos de diversas alturas con ventanas que se iluminan
+        const buildingsData = [
+            { x: -0.38, z: -0.32, w: 0.18, d: 0.18, h: 0.42, color: 0x334155 },
+            { x: -0.16, z: -0.35, w: 0.16, d: 0.16, h: 0.58, color: 0x1e293b },
+            { x: 0.08, z: -0.34, w: 0.20, d: 0.18, h: 0.72, color: 0x0f172a }, // Rascacielos central
+            { x: 0.32, z: -0.32, w: 0.18, d: 0.16, h: 0.48, color: 0x1e293b },
+            { x: -0.36, z: 0.35, w: 0.16, d: 0.16, h: 0.32, color: 0x334155 },
+            { x: -0.12, z: 0.38, w: 0.20, d: 0.16, h: 0.38, color: 0x1e293b },
+            { x: 0.14, z: 0.36, w: 0.18, d: 0.18, h: 0.52, color: 0x0f172a },
+            { x: 0.36, z: 0.36, w: 0.16, d: 0.14, h: 0.28, color: 0x475569 }
         ];
 
-        buildingConfigs.forEach((cfg) => {
+        buildingsData.forEach((b) => {
             const bMat = new THREE.MeshStandardMaterial({
-                color: 0x222a38,
-                metalness: 0.6,
-                roughness: 0.4
+                color: b.color,
+                metalness: 0.7,
+                roughness: 0.3,
+                emissive: 0xfef08a,
+                emissiveIntensity: 0.4
             });
-            const bMesh = new THREE.Mesh(new THREE.BoxGeometry(cfg.w, cfg.h, cfg.d), bMat);
-            bMesh.position.set(cfg.x, cfg.h / 2, cfg.z);
-            bMesh.castShadow = true;
+            this.cityWindows.push(bMat);
+
+            const bMesh = new THREE.Mesh(new THREE.BoxGeometry(b.w, b.h, b.d), bMat);
+            bMesh.position.set(b.x, b.h / 2, b.z);
             cityGroup.add(bMesh);
-
-            // Ventanas luminosas reactivas al voltaje
-            const winMat = new THREE.MeshStandardMaterial({
-                color: 0xfef08a,
-                emissive: 0xfde047,
-                emissiveIntensity: 0.8,
-                roughness: 0.2
-            });
-            this.cityWindows.push(winMat);
-
-            const winRows = Math.floor(cfg.h / 0.08);
-            for (let r = 1; r < winRows; r++) {
-                const winFront = new THREE.Mesh(
-                    new THREE.PlaneGeometry(cfg.w * 0.75, 0.035),
-                    winMat
-                );
-                winFront.position.set(cfg.x, r * 0.08, cfg.z + cfg.d / 2 + 0.001);
-                cityGroup.add(winFront);
-            }
         });
 
-        // 6 Farolas de calle con focos cálidos
-        const postMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.8 });
-        const lampPositions = [
-            [-0.15, -0.2], [-0.15, 0.2], [0.15, -0.2], [0.15, 0.2], [-0.48, 0], [0.48, 0]
-        ];
+        // Subestación transformadora eléctrica con transformador y aletas
+        const subGroup = new THREE.Group();
+        subGroup.position.set(-0.25, 0.05, 0.02);
+        const subBody = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.10, 0.08), new THREE.MeshStandardMaterial({ color: 0x475569 }));
+        subGroup.add(subBody);
 
-        lampPositions.forEach(([lx, lz]) => {
-            const post = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.01, 0.18, 12), postMat);
-            post.position.set(lx, 0.09, lz);
-            cityGroup.add(post);
+        // Aisladores de porcelana
+        const insulatorMat = new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.2 });
+        for (let ins = -0.04; ins <= 0.04; ins += 0.04) {
+            const insulator = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.012, 0.04, 12), insulatorMat);
+            insulator.position.set(ins, 0.07, 0);
+            subGroup.add(insulator);
+        }
+        cityGroup.add(subGroup);
 
-            const lampHead = new THREE.Mesh(new THREE.SphereGeometry(0.016, 12, 12), new THREE.MeshBasicMaterial({ color: 0x38bdf8 }));
-            lampHead.position.set(lx, 0.18, lz);
-            cityGroup.add(lampHead);
+        // Farolas de iluminación pública con cabezal LED
+        const poleMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.9 });
+        for (let lx = -0.45; lx <= 0.45; lx += 0.30) {
+            const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.004, 0.14, 8), poleMat);
+            pole.position.set(lx, 0.07, 0.22);
+            cityGroup.add(pole);
 
-            const lMat = new THREE.MeshBasicMaterial({ color: 0xfde047 });
-            this.streetLights.push(lMat);
-            lampHead.material = lMat;
-        });
+            const lightBulbMat = new THREE.MeshBasicMaterial({ color: 0xffedd5 });
+            this.streetLights.push(lightBulbMat);
+
+            const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.010, 8, 8), lightBulbMat);
+            bulb.position.set(lx, 0.14, 0.22);
+            cityGroup.add(bulb);
+        }
 
         this.group.add(cityGroup);
 
-        // 6. VOLTÍMETRO ANALÓGICO CON AGUJA FÍSICA Y DIAL ILUMINADO
+        // =========================================================================
+        // 6. VOLTÍMETRO Y TAQUÍMETRO ANALÓGICO CALIBRADO (0 A 12V)
+        // =========================================================================
         const meterGroup = new THREE.Group();
-        meterGroup.position.set(0.35, tableH + 0.04, 0.60);
-        meterGroup.rotation.x = -Math.PI / 4; // Inclinado hacia el observador
+        meterGroup.position.set(0.08, tableH + 0.02, 0.34);
+        meterGroup.rotation.y = -Math.PI / 10;
 
-        const meterBox = new THREE.Mesh(
-            new THREE.BoxGeometry(0.32, 0.18, 0.06),
-            new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.9, roughness: 0.2 })
+        const meterBody = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.11, 0.11, 0.06, 32),
+            new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.85, roughness: 0.2 })
         );
-        meterGroup.add(meterBox);
+        meterBody.rotation.x = Math.PI / 6;
+        meterGroup.add(meterBody);
+        this.interactableMeshes.push(meterBody);
 
-        // Dial con escala 0V - 12V
-        const dialGeom = new THREE.PlaneGeometry(0.28, 0.14);
-        const dialMat = new THREE.MeshBasicMaterial({ color: 0x1e293b });
-        const dial = new THREE.Mesh(dialGeom, dialMat);
-        dial.position.z = 0.031;
-        meterGroup.add(dial);
+        const meterBezel = new THREE.Mesh(
+            new THREE.TorusGeometry(0.11, 0.010, 16, 32),
+            new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.95, roughness: 0.15 })
+        );
+        meterBezel.rotation.x = Math.PI / 6;
+        meterBezel.position.y = 0.035;
+        meterGroup.add(meterBezel);
 
-        // Aguja indicadora roja
-        const needleGeom = new THREE.BoxGeometry(0.006, 0.09, 0.005);
-        needleGeom.translate(0, 0.045, 0); // Pivote en la base
-        const needleMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+        // Cuadrante analógico con escalas de Viento (m/s) y Voltios (V)
+        const dialCanvas = document.createElement('canvas');
+        dialCanvas.width = 256;
+        dialCanvas.height = 256;
+        const dCtx = dialCanvas.getContext('2d')!;
+        dCtx.fillStyle = '#f8fafc';
+        dCtx.fillRect(0, 0, 256, 256);
+        dCtx.strokeStyle = '#0f172a';
+        dCtx.lineWidth = 4;
+        dCtx.beginPath();
+        dCtx.arc(128, 140, 95, Math.PI * 0.75, Math.PI * 0.25, false);
+        dCtx.stroke();
+
+        dCtx.fillStyle = '#0f172a';
+        dCtx.font = 'bold 20px sans-serif';
+        dCtx.textAlign = 'center';
+        dCtx.fillText('VIENTO & VOLTAJE', 128, 92);
+        dCtx.font = 'bold 15px sans-serif';
+        dCtx.fillText('0V · 0m/s', 60, 165);
+        dCtx.fillText('6V · 8m/s', 128, 65);
+        dCtx.fillText('12V · 16m/s', 195, 165);
+
+        const dialTex = new THREE.CanvasTexture(dialCanvas);
+        const dialPlane = new THREE.Mesh(
+            new THREE.CircleGeometry(0.10, 32),
+            new THREE.MeshBasicMaterial({ map: dialTex })
+        );
+        dialPlane.rotation.x = -Math.PI / 3;
+        dialPlane.position.set(0, 0.034, 0.015);
+        meterGroup.add(dialPlane);
+
+        // Aguja indicadora
+        const needleGeom = new THREE.BoxGeometry(0.004, 0.08, 0.002);
+        const needleMat = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.2 });
         this.voltmeterNeedle = new THREE.Mesh(needleGeom, needleMat);
-        this.voltmeterNeedle.position.set(0, -0.04, 0.033);
+        this.voltmeterNeedle.position.set(0, 0.036, 0.015);
+        this.voltmeterNeedle.rotation.x = -Math.PI / 3;
         meterGroup.add(this.voltmeterNeedle);
 
         this.group.add(meterGroup);
-        this.interactableMeshes.push(meterBox);
 
-        // Cables de conexión entre el aerogenerador y la ciudad
-        const wireMat = new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.4 });
+        // 7. CABLE CONDUCTOR SUBTERRÁNEO DE LA TORRE A LA SUBESTACIÓN
         const wireCurve = new THREE.CatmullRomCurve3([
-            new THREE.Vector3(turbineBaseX + 0.05, tableH + 0.03, 0.05),
-            new THREE.Vector3(-0.2, tableH + 0.08, 0.2),
-            new THREE.Vector3(0.1, tableH + 0.02, 0.4),
-            new THREE.Vector3(0.35, tableH + 0.03, 0.55)
+            new THREE.Vector3(turbineBaseX + 0.06, tableH + 0.02, 0),
+            new THREE.Vector3(-0.20, tableH + 0.01, 0.05),
+            new THREE.Vector3(0.08, tableH + 0.02, 0.25)
         ]);
-        const wire = new THREE.Mesh(new THREE.TubeGeometry(wireCurve, 32, 0.012, 8, false), wireMat);
+        const wire = new THREE.Mesh(new THREE.TubeGeometry(wireCurve, 20, 0.007, 8, false), new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5 }));
         this.group.add(wire);
     }
 
-    public update(_time: number, delta: number = 0.016): void {
-        // Interpolación inercial suave de RPM y Voltaje
-        this.currentRpm += (this.targetRpm - this.currentRpm) * Math.min(1.0, delta * 3.5);
-        this.currentVoltage += (this.targetVoltage - this.currentVoltage) * Math.min(1.0, delta * 3.5);
+    public setSleep(sleep: boolean): void {
+        this.isSleeping = sleep;
+    }
 
-        // Rotación de las aspas
+    public update(time: number, delta: number = 0.016): void {
+        if (this.isSleeping) return;
+
+        // 1. Interpolación inercial suave de RPM y Voltaje
+        this.currentRpm += (this.targetRpm - this.currentRpm) * Math.min(1.0, delta * 3.2);
+        this.currentVoltage += (this.targetVoltage - this.currentVoltage) * Math.min(1.0, delta * 3.2);
+
+        // 2. Rotación de las aspas del aerogenerador
         const rps = this.currentRpm / 60;
         this.currentAngle += rps * Math.PI * 2 * delta;
         this.rotorHub.rotation.x = this.currentAngle;
         this.generatorRotor.rotation.x = this.currentAngle;
 
-        // Movimiento de la aguja del voltímetro (-45° a +45°)
+        // 3. Rotación del anemómetro en el techo
+        this.anemometerAngle += rps * 3.5 * Math.PI * 2 * delta;
+        this.anemometerHub.rotation.y = this.anemometerAngle;
+
+        // 4. Parpadeo suave de la baliza de aviación (1 ciclo cada 1.5s)
+        const beaconIntensity = Math.sin(time * 4.0) > 0.4 ? 1.0 : 0.15;
+        (this.beaconLight.material as THREE.MeshBasicMaterial).color.setScalar(beaconIntensity);
+
+        // 5. Aguja del voltímetro (-45° a +45°)
         const normV = Math.max(0, Math.min(1, this.currentVoltage / 12.0));
         const needleAngle = (1 - normV) * (Math.PI / 3) - (Math.PI / 3);
         this.voltmeterNeedle.rotation.z = -needleAngle;
 
-        // Brillo reactivo de ventanas y farolas
-        const emissiveLevel = 0.15 + normV * 1.25;
+        // 6. Brillo de ventanas y farolas en función del voltaje producido
+        const emissiveLevel = 0.15 + normV * 1.35;
         this.cityWindows.forEach(wMat => {
             wMat.emissiveIntensity = emissiveLevel;
         });
@@ -367,7 +510,7 @@ export class WindTurbineExhibit {
         this.currentMode = (this.currentMode + 1) % this.modes.length;
         const info = this.modes[this.currentMode];
 
-        const rpmMap = [35, 110, 220];
+        const rpmMap = [35, 90, 180];
         this.targetRpm = rpmMap[this.currentMode];
         this.targetVoltage = info.voltage;
 
