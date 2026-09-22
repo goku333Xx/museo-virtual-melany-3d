@@ -299,7 +299,8 @@ export class HUD {
         modeText?: string,
         actionEText?: string,
         actionRText?: string,
-        isDone?: boolean
+        isDone?: boolean,
+        isRobot?: boolean
     ) {
         if (this.isModalOpen) return;
         this.cardTag.innerText = tag;
@@ -329,11 +330,11 @@ export class HUD {
             this.cardMode.style.display = 'none';
         }
 
-        this.updateMobileActions(true, isDone);
+        this.updateMobileActions(true, isDone, isRobot);
         this.exhibitCard.classList.remove('hidden');
     }
 
-    public updateMobileActions(show: boolean, isDone?: boolean) {
+    public updateMobileActions(show: boolean, isDone?: boolean, isRobot?: boolean) {
         if (!this.touchExhibitActions) return;
         if (!show) {
             this.touchExhibitActions.classList.add('hidden');
@@ -343,12 +344,17 @@ export class HUD {
         this.touchExhibitActions.classList.remove('hidden');
 
         if (this.touchInteractLabel) {
-            this.touchInteractLabel.textContent = isDone ? 'MANIPULAR' : 'INTERACTUAR';
+            this.touchInteractLabel.textContent = isRobot ? 'HABLAR' : (isDone ? 'MANIPULAR' : 'INTERACTUAR');
         }
 
         if (this.touchChallengeBtn && this.touchChallengeLabel) {
             const xpChip = this.touchChallengeBtn.querySelector('.touch-xp-chip') as HTMLElement | null;
-            if (isDone) {
+            if (isRobot) {
+                this.touchChallengeLabel.textContent = 'Pedir Consejo';
+                this.touchChallengeBtn.classList.remove('challenge-glow-pill');
+                this.touchChallengeBtn.classList.remove('done-pill');
+                if (xpChip) xpChip.style.display = 'none';
+            } else if (isDone) {
                 this.touchChallengeLabel.textContent = 'Desafío Aprobado ⭐';
                 this.touchChallengeBtn.classList.remove('challenge-glow-pill');
                 this.touchChallengeBtn.classList.add('done-pill');

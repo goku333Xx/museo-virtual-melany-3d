@@ -79,6 +79,15 @@ playBtn.addEventListener('click', () => {
     }
 });
 
+// Permitir iniciar presionando Enter en el campo de texto del nombre
+const nameInputElement = document.getElementById('student-name-input') as HTMLInputElement | null;
+nameInputElement?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        playBtn.click();
+    }
+});
+
 // Eventos de PointerLock
 controls.addEventListener('lock', () => {
     startScreen.classList.add('hidden');
@@ -166,20 +175,32 @@ let targetRotationX = camera.rotation.x;
 let prevTime = performance.now();
 const velocity = new THREE.Vector3();
 let stepTimer = 0;
+let lastOnGroundTime = performance.now();
 
 const tryJump = () => {
     const currentGroundY = getGroundHeight(camera.position.x, camera.position.z, camera.position.y);
-    const isOnGround = Math.abs(camera.position.y - currentGroundY) < 0.28 || Math.abs(velocity.y) < 0.12;
-    if (isOnGround) {
+    const timeSinceGrounded = performance.now() - lastOnGroundTime;
+    const isGrounded = Math.abs(camera.position.y - currentGroundY) < 0.35 || 
+                       (timeSinceGrounded < 180 && velocity.y <= 0.5);
+
+    if (isGrounded) {
         velocity.y = 8.8; // Salto con altura suficiente para subirse a la mesa del experimento
+        lastOnGroundTime = 0; // Consumir salto inmediatamente para evitar doble salto
         SoundSynthesizer.getInstance().playFootstep();
     }
 };
 
+const isInputFocused = (): boolean => {
+    const active = document.activeElement as HTMLElement | null;
+    if (!active) return false;
+    const tag = active.tagName;
+    return tag === 'INPUT' || tag === 'TEXTAREA' || active.isContentEditable;
+};
+
 const onKeyDown = (event: KeyboardEvent) => {
-    // Si el usuario está escribiendo en un input/textarea o el juego no arrancó, ignorar atajos del juego
+    // Si el usuario está escribiendo en un input/textarea (ej. ingresando su nombre "Julián") o el juego no arrancó, ignorar atajos
     const target = event.target as HTMLElement | null;
-    if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || !gameStarted) {
+    if (!gameStarted || isInputFocused() || target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA') {
         return;
     }
 
@@ -216,7 +237,7 @@ const onKeyDown = (event: KeyboardEvent) => {
 
 const onKeyUp = (event: KeyboardEvent) => {
     const target = event.target as HTMLElement | null;
-    if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA') {
+    if (isInputFocused() || target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA') {
         return;
     }
 
@@ -297,7 +318,14 @@ if (isTouchDevice) {
             }
         });
 
-        window.addEventListener('touchcancel', resetJoystick);
+        window.addEventListener('touchcancel', (e) => {
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === joystickTouchId) {
+                    resetJoystick();
+                    break;
+                }
+            }
+        });
     }
 
     // Rotación de Cámara por Arrastre en pantalla táctil con Suavizado Cinematográfico
@@ -348,7 +376,14 @@ if (isTouchDevice) {
             }
         }
     });
-    window.addEventListener('touchcancel', resetLookTouch);
+    window.addEventListener('touchcancel', (e) => {
+        for (let i = 0; i < e.changedTouches.length; i++) {
+            if (e.changedTouches[i].identifier === lookTouchId) {
+                resetLookTouch();
+                break;
+            }
+        }
+    });
 
     // Botones de acción táctiles con soporte multi-touch simultáneo al joystick
     const bindTouchAction = (btn: HTMLElement | null, action: () => void) => {
@@ -377,6 +412,8 @@ window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
+    const updatedIsMobile = (window.matchMedia('(pointer: coarse)').matches && !window.matchMedia('(pointer: fine)').matches) || window.innerWidth <= 768;
+    world.setIsMobile(updatedIsMobile);
 });
 
 // --- BUCLE PRINCIPAL DE RENDER (60+ FPS) ---
@@ -441,11 +478,14 @@ function animate() {
 
         // Límite de suelo dinámico (piso de mármol 1.68m o sobre la mesa del pedestal 2.88m)
         const groundY = getGroundHeight(camera.position.x, camera.position.z, camera.position.y);
-        const isOnGround = Math.abs(camera.position.y - groundY) < 0.12;
+        const isOnGround = Math.abs(camera.position.y - groundY) < 0.18;
 
-        if (camera.position.y < groundY) {
+        if (camera.position.y <= groundY) {
             velocity.y = 0;
             camera.position.y = groundY;
+            lastOnGroundTime = performance.now();
+        } else if (isOnGround) {
+            lastOnGroundTime = performance.now();
         }
 
         // Sonido de pasos procedurales al caminar sobre el suelo

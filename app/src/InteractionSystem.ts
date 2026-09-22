@@ -59,16 +59,26 @@ export class InteractionSystem {
                     const modeText = found.getModeText ? found.getModeText() : found.modeText;
                     
                     // Doble canal de acción desacoplado: [E] Probar / [R] Responder (Adaptado para PC o Móvil)
+                    const isRobot = found.id === 99;
                     const isDone = this.hud.isMissionCompleted(found.id);
                     const isMobile = window.innerWidth <= 768 || ('ontouchstart' in window && !window.matchMedia('(pointer: fine)').matches);
                     
-                    const badgeText = isDone ? "✅ ¡Misión Cumplida! (Medalla Ganada)" : found.badge;
-                    const actionEText = isDone 
-                        ? (isMobile ? "⚡ Manipular física" : "⚡ [E] Probar / Manipular física")
-                        : (isMobile ? "⚡ Probar Experimento" : "⚡ [E] Probar Experimento");
-                    const actionRText = isDone
-                        ? "⭐ Desafío Aprobado (+100 XP)"
-                        : (isMobile ? "📝 Responder Desafío (+100 XP)" : "📝 [R] Responder Desafío (+100 XP)");
+                    const badgeText = isRobot ? found.badge : (isDone ? "✅ ¡Misión Cumplida! (Medalla Ganada)" : found.badge);
+
+                    let actionEText: string;
+                    let actionRText: string;
+
+                    if (isRobot) {
+                        actionEText = isMobile ? "💬 Hablar con Mel-Bot" : "💬 [E] Hablar con Mel-Bot";
+                        actionRText = isMobile ? "💡 Pedir Consejo" : "💡 [R] Pedir Consejo";
+                    } else {
+                        actionEText = isDone 
+                            ? (isMobile ? "⚡ Manipular física" : "⚡ [E] Probar / Manipular física")
+                            : (isMobile ? "⚡ Probar Experimento" : "⚡ [E] Probar Experimento");
+                        actionRText = isDone
+                            ? "⭐ Desafío Aprobado (+100 XP)"
+                            : (isMobile ? "📝 Responder Desafío (+100 XP)" : "📝 [R] Responder Desafío (+100 XP)");
+                    }
 
                     this.hud.showExhibitCard(
                         found.title,
@@ -78,7 +88,8 @@ export class InteractionSystem {
                         modeText,
                         actionEText,
                         actionRText,
-                        isDone
+                        isDone,
+                        isRobot
                     );
                     return;
                 }
@@ -117,7 +128,7 @@ export class InteractionSystem {
                         }
                     });
                 } else {
-                    this.hud.showAchievementToast('Estación Ya Completada', 'Ya respondiste este desafío. ¡Seguí jugando con [E]!');
+                    this.hud.showAchievementToast('Estación Ya Completada', 'Ya respondiste este desafío. ¡Seguí jugando con el experimento!');
                 }
             }
         }

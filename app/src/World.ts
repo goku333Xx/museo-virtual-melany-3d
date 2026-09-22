@@ -179,7 +179,7 @@ export class World {
                         }
                     });
                 } else {
-                    this.hud.showAchievementToast('Pila de Papa: ¡Completada!', 'Ya obtuviste la medalla de esta estación. Podés seguir probando con [E].');
+                    this.hud.showAchievementToast('Pila de Papa: ¡Completada!', 'Ya obtuviste la medalla de esta estación. Podés seguir interactuando libremente con el circuito.');
                 }
             }
         };
@@ -187,7 +187,7 @@ export class World {
         this.switchExhibit.getInteractables().forEach(mesh => {
             this.interactables.push({ object: mesh, ...papaInteractable });
         });
-        this.interactables.push({ object: this.plugMesh, ...papaInteractable });
+        this.plugMesh && this.interactables.push({ object: this.plugMesh, ...papaInteractable });
         this.potato1.getMesh().traverse((child) => {
             if (child instanceof THREE.Mesh) this.interactables.push({ object: child, ...papaInteractable });
         });
@@ -219,17 +219,17 @@ export class World {
             id: 2,
             title: "Estación 02: Prisma Óptico",
             tag: "🌈 LA MAGIA DE LA LUZ",
-            description: "¿Sabías que la luz blanca del sol esconde todos los colores del arcoíris? Cuando atraviesa este cristal en triángulo, cada color viaja a diferente velocidad y se separan en abanico. ¡Probá la luz blanca y láseres de colores con [E]!",
+            description: "¿Sabías que la luz blanca del sol esconde todos los colores del arcoíris? Cuando atraviesa este cristal en triángulo, cada color viaja a diferente velocidad y se separan en abanico. ¡Probá la luz blanca y láseres de colores interactuando con el prisma!",
             badge: "🏅 +100 XP · Medalla de la Luz",
             getModeText: () => `MODO: ${this.optics.getCurrentModeInfo().name.toUpperCase()}`,
             quiz: quizOptics,
-            // TECLA [E]: Únicamente para alternar modos de luz física
+            // Acción Interactuar: alternar modos de luz física
             onInteract: () => {
                 const newMode = this.optics.cycleMode();
                 sfx.playLaserCycle(newMode.id);
                 this.hud.setCardModePill(`MODO: ${newMode.name.toUpperCase()}`);
             },
-            // TECLA [R]: Únicamente para responder el desafío pedagógico
+            // Acción Desafío: responder el desafío pedagógico
             onChallenge: () => {
                 if (!this.hud.isMissionCompleted(2)) {
                     this.hud.openQuiz(quizOptics, (success) => {
@@ -238,7 +238,7 @@ export class World {
                         }
                     });
                 } else {
-                    this.hud.showAchievementToast('Prisma Óptico: ¡Completado!', 'Ya obtuviste la medalla de esta estación. Podés seguir probando con [E].');
+                    this.hud.showAchievementToast('Prisma Óptico: ¡Completado!', 'Ya obtuviste la medalla de esta estación. Podés seguir interactuando libremente con los láseres.');
                 }
             }
         };
@@ -265,17 +265,17 @@ export class World {
             id: 3,
             title: "Estación 03: Cuna de Newton",
             tag: "⚖️ MOVIMIENTO Y CHOQUES",
-            description: "¿Alguna vez jugaste a los autitos chocadores? Aquí la energía no desaparece: viaja de una bola a otra a través del metal como un pase de fútbol invisible. ¡Pulsá [E] para alternar entre 1 bola, 2 bolas, 3 bolas o choque simétrico!",
+            description: "¿Alguna vez jugaste a los autitos chocadores? Aquí la energía no desaparece: viaja de una bola a otra a través del metal como un pase de fútbol invisible. ¡Interactuá para alternar entre 1 bola, 2 bolas, 3 bolas o choque simétrico!",
             badge: "🏅 +100 XP · Medalla de Newton",
             getModeText: () => `MODO DE CHOQUE: ${this.cradle.getCurrentModeInfo().name.toUpperCase()}`,
             quiz: quizNewton,
-            // TECLA [E]: Únicamente para alternar modos de péndulos
+            // Acción Interactuar: alternar modos de péndulos
             onInteract: () => {
                 const newMode = this.cradle.cycleMode();
                 sfx.playNewtonClack(1.0);
                 this.hud.setCardModePill(`MODO DE CHOQUE: ${newMode.name.toUpperCase()}`);
             },
-            // TECLA [R]: Únicamente para responder el desafío pedagógico
+            // Acción Desafío: responder el desafío pedagógico
             onChallenge: () => {
                 if (!this.hud.isMissionCompleted(3)) {
                     this.hud.openQuiz(quizNewton, (success) => {
@@ -284,7 +284,7 @@ export class World {
                         }
                     });
                 } else {
-                    this.hud.showAchievementToast('Cuna de Newton: ¡Completada!', 'Ya obtuviste la medalla de esta estación. Podés seguir probando con [E].');
+                    this.hud.showAchievementToast('Cuna de Newton: ¡Completada!', 'Ya obtuviste la medalla de esta estación. Podés seguir interactuando libremente con las esferas.');
                 }
             }
         };
