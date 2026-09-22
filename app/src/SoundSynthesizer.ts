@@ -295,4 +295,157 @@ export class SoundSynthesizer {
         osc.start(now);
         osc.stop(now + 0.08);
     }
+
+    // 11. Zumbido de Aerogenerador Eólico y Dínamo Faraday
+    public playWindTurbine(speed: number = 1.0): void {
+        if (this.isMuted) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+
+        // Viento soplante suave
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        const baseFreq = 80 + speed * 60;
+        osc.frequency.setValueAtTime(baseFreq, now);
+        osc.frequency.linearRampToValueAtTime(baseFreq * 1.2, now + 0.25);
+        osc.frequency.linearRampToValueAtTime(baseFreq, now + 0.5);
+
+        gain.gain.setValueAtTime(0.08 * Math.min(speed, 2.0), now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.52);
+
+        // Zumbido electromagnético del dinamo
+        const dynamoOsc = this.ctx.createOscillator();
+        const dynamoGain = this.ctx.createGain();
+        dynamoOsc.type = 'triangle';
+        dynamoOsc.frequency.setValueAtTime(220 + speed * 180, now);
+        dynamoGain.gain.setValueAtTime(0.05 * Math.min(speed, 2.0), now);
+        dynamoGain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+        dynamoOsc.connect(dynamoGain);
+        dynamoGain.connect(this.ctx.destination);
+        dynamoOsc.start(now);
+        dynamoOsc.stop(now + 0.42);
+    }
+
+    // 12. Fotones Solares y Aceleración de Motor DC
+    public playSolarPhotons(intensity: number = 1.0): void {
+        if (this.isMuted) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+
+        // Tono cristalino armónico de fotones
+        const photonFreqs = [880, 1320, 1760];
+        photonFreqs.forEach((f, idx) => {
+            if (!this.ctx) return;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            const t = now + idx * 0.05;
+            osc.frequency.setValueAtTime(f * intensity, t);
+            osc.frequency.exponentialRampToValueAtTime(f * 1.15 * intensity, t + 0.12);
+
+            gain.gain.setValueAtTime(0.08, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(t);
+            osc.stop(t + 0.13);
+        });
+
+        // Motor DC girando
+        const motorOsc = this.ctx.createOscillator();
+        const motorGain = this.ctx.createGain();
+        motorOsc.type = 'sawtooth';
+        motorOsc.frequency.setValueAtTime(140 + intensity * 280, now);
+        motorGain.gain.setValueAtTime(0.06 * intensity, now);
+        motorGain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+        motorOsc.connect(motorGain);
+        motorGain.connect(this.ctx.destination);
+        motorOsc.start(now);
+        motorOsc.stop(now + 0.36);
+    }
+
+    // 13. Chispa Electrostática de Van de Graaff (150.000 V)
+    public playElectrostaticSpark(): void {
+        if (this.isMuted) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(3600 + Math.random() * 1200, now);
+        osc.frequency.exponentialRampToValueAtTime(90, now + 0.045);
+
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.045);
+
+        osc.start(now);
+        osc.stop(now + 0.05);
+    }
+
+    // 14. Giro de Manivela del Dínamo Mecánico y Lámpara Edison
+    public playDynamoCrank(rpmRatio: number = 0.5): void {
+        if (this.isMuted) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const intensity = Math.max(0.1, Math.min(1.0, rpmRatio));
+
+        // 14a. Ráfaga de clics mecánicos de engranajes de latón
+        const clickCount = Math.floor(4 + intensity * 8);
+        for (let i = 0; i < clickCount; i++) {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            const filter = this.ctx.createBiquadFilter();
+
+            osc.type = 'triangle';
+            const t = now + i * (0.035 / (1 + intensity * 1.5));
+            osc.frequency.setValueAtTime(600 + (i % 3) * 250 + intensity * 400, t);
+
+            filter.type = 'bandpass';
+            filter.frequency.setValueAtTime(1200 + intensity * 800, t);
+            filter.Q.setValueAtTime(3.0, t);
+
+            gain.gain.setValueAtTime(0.06 * intensity, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.02);
+
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(this.ctx.destination);
+
+            osc.start(t);
+            osc.stop(t + 0.025);
+        }
+
+        // 14b. Zumbido electromagnético suave de inducción (bobinas en rotación)
+        const humOsc = this.ctx.createOscillator();
+        const humGain = this.ctx.createGain();
+        humOsc.type = 'sine';
+        humOsc.frequency.setValueAtTime(110 + intensity * 330, now);
+        humOsc.frequency.exponentialRampToValueAtTime(110 + intensity * 180, now + 0.35);
+
+        humGain.gain.setValueAtTime(0.07 * intensity, now);
+        humGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+
+        humOsc.connect(humGain);
+        humGain.connect(this.ctx.destination);
+        humOsc.start(now);
+        humOsc.stop(now + 0.36);
+    }
 }
+

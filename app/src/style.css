@@ -143,86 +143,103 @@ html, body {
   border-color: rgba(0, 240, 255, 0.4);
 }
 
-/* Top Center: Floating Achievement Toast (Amplia, Ultra Legible y Liquid Glass) */
+/* ==========================================================================
+   ACHIEVEMENT TOAST FLOTANTE (TRUE LIQUID GLASSMORPHISM & ALTA LEGIBILIDAD)
+   ========================================================================== */
 .achievement-toast {
   position: fixed;
   top: 24px;
   left: 50%;
-  transform: translateX(-50%);
-  width: min(92vw, 560px);
-  padding: 16px 24px;
+  transform: translateX(-50%) translateY(-40px);
+  width: min(94vw, 580px);
+  z-index: 1000;
   display: flex;
   align-items: center;
-  gap: 16px;
-  background: linear-gradient(135deg, rgba(253, 224, 71, 0.16) 0%, rgba(10, 24, 45, 0.94) 100%);
-  border: 1.5px solid rgba(253, 224, 71, 0.7);
-  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.8), 0 0 35px rgba(253, 224, 71, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.4);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  border-radius: 20px;
-  z-index: 120;
-  pointer-events: auto;
-  animation: toastSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  gap: 18px;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.96) 0%, rgba(8, 15, 30, 0.98) 100%) !important;
+  backdrop-filter: blur(28px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(180%) !important;
+  border: 1.5px solid rgba(253, 224, 71, 0.85) !important;
+  border-radius: 22px;
+  padding: 16px 24px;
+  box-shadow: 
+    0 20px 50px rgba(0, 0, 0, 0.85), 
+    0 0 35px rgba(253, 224, 71, 0.4), 
+    inset 0 1px 2px rgba(255, 255, 255, 0.35),
+    inset 0 0 20px rgba(253, 224, 71, 0.12) !important;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@keyframes toastSlideIn {
-  from {
-    opacity: 0;
-    transform: translateX(-50%) translateY(-24px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0) scale(1);
-  }
+.achievement-toast.show {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  transform: translateX(-50%) translateY(0) !important;
+}
+
+.achievement-toast.fade-out {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transform: translateX(-50%) translateY(-25px) !important;
 }
 
 .achievement-toast.hidden {
   opacity: 0 !important;
   pointer-events: none !important;
-  transform: translateX(-50%) translateY(-24px) scale(0.95) !important;
   display: none !important;
 }
 
-.ach-icon {
-  font-size: 38px;
+.achievement-toast .ach-icon {
+  font-size: 32px;
   line-height: 1;
   flex-shrink: 0;
-  filter: drop-shadow(0 0 12px rgba(253, 224, 71, 0.6));
+  width: 58px;
+  height: 58px;
+  border-radius: 16px;
+  background: radial-gradient(circle, rgba(253, 224, 71, 0.25) 0%, rgba(253, 224, 71, 0.05) 100%);
+  border: 1.5px solid rgba(253, 224, 71, 0.5);
+  box-shadow: 0 0 20px rgba(253, 224, 71, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 0 10px rgba(253, 224, 71, 0.6));
 }
 
-.ach-content {
+.achievement-toast .ach-content {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
+  text-align: left;
   flex: 1;
 }
 
-.ach-tag {
+.achievement-toast .ach-tag {
   font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 1.5px;
-  color: var(--gold);
+  font-weight: 900;
+  letter-spacing: 1.8px;
+  color: #fde047;
   text-transform: uppercase;
-  text-shadow: 0 0 10px rgba(253, 224, 71, 0.5);
+  text-shadow: 0 0 10px rgba(253, 224, 71, 0.6);
 }
 
-.ach-content strong,
-#ach-title {
-  font-size: 17px;
+.achievement-toast #ach-title {
+  font-size: 18px;
   font-weight: 800;
   color: #ffffff;
   letter-spacing: 0.3px;
   margin: 1px 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.85);
 }
 
-.ach-content small,
-#ach-desc {
+.achievement-toast #ach-desc {
   font-size: 13.5px;
   font-weight: 500;
-  color: #e2e8f0;
+  color: #f1f5f9;
   line-height: 1.45;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
 }
+
 
 /* Left: Multi-Mission Tracker */
 .mission-panel {
@@ -1039,88 +1056,6 @@ html, body {
 }
 
 /* ==========================================================================
-   ACHIEVEMENT TOAST FLOTANTE (CYBER HUD - ULTRA AMPLIA & LEGIBLE)
-   ========================================================================== */
-.achievement-toast {
-  position: fixed;
-  top: 24px;
-  left: 50%;
-  transform: translateX(-50%) translateY(-40px);
-  width: min(92vw, 560px);
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  background: linear-gradient(135deg, rgba(253, 224, 71, 0.16) 0%, rgba(10, 24, 45, 0.94) 100%);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1.5px solid rgba(253, 224, 71, 0.7);
-  border-radius: 20px;
-  padding: 16px 24px;
-  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.8), 0 0 35px rgba(253, 224, 71, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.4);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.achievement-toast.show {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateX(-50%) translateY(0);
-}
-
-.achievement-toast.fade-out {
-  opacity: 0;
-  pointer-events: none;
-  transform: translateX(-50%) translateY(-25px);
-}
-
-.achievement-toast.hidden {
-  opacity: 0 !important;
-  pointer-events: none !important;
-  display: none !important;
-}
-
-.achievement-toast .ach-icon {
-  font-size: 38px;
-  line-height: 1;
-  flex-shrink: 0;
-  filter: drop-shadow(0 0 12px rgba(253, 224, 71, 0.6));
-}
-
-.achievement-toast .ach-content {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  text-align: left;
-  flex: 1;
-}
-
-.achievement-toast .ach-tag {
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 1.5px;
-  color: var(--gold);
-  text-transform: uppercase;
-  text-shadow: 0 0 10px rgba(253, 224, 71, 0.5);
-}
-
-.achievement-toast #ach-title {
-  font-size: 17px;
-  font-weight: 800;
-  color: #ffffff;
-  letter-spacing: 0.3px;
-  margin: 1px 0;
-}
-
-.achievement-toast #ach-desc {
-  font-size: 13.5px;
-  font-weight: 500;
-  color: #e2e8f0;
-  line-height: 1.45;
-}
-
-/* ==========================================================================
    DIARIO DEL CIENTÍFICO (FIELD JOURNAL MODAL)
    ========================================================================== */
 .journal-card {
@@ -1421,26 +1356,35 @@ html, body {
     padding-top: 6px;
   }
 
-  /* Toast de Logro adaptado en móvil */
+  /* Toast de Logro adaptado en móvil con verdadero Glassmorphism de alto contraste */
   .achievement-toast {
     top: 14px;
     width: calc(100% - 20px);
-    padding: 12px 16px;
-    gap: 12px;
-    border-radius: 16px;
+    padding: 14px 18px;
+    gap: 14px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.98) 0%, rgba(8, 15, 30, 0.99) 100%) !important;
+    border: 1.5px solid rgba(253, 224, 71, 0.9) !important;
+    box-shadow: 0 16px 45px rgba(0, 0, 0, 0.9), 0 0 25px rgba(253, 224, 71, 0.35) !important;
   }
 
   .achievement-toast .ach-icon {
-    font-size: 30px;
+    width: 48px;
+    height: 48px;
+    font-size: 26px;
+    border-radius: 13px;
+    background: radial-gradient(circle, rgba(253, 224, 71, 0.3) 0%, rgba(253, 224, 71, 0.08) 100%);
   }
 
   .achievement-toast #ach-title {
-    font-size: 15px;
+    font-size: 15.5px;
+    color: #ffffff !important;
   }
 
   .achievement-toast #ach-desc {
-    font-size: 12px;
+    font-size: 12.5px;
     line-height: 1.4;
+    color: #f1f5f9 !important;
   }
 
   /* Tarjeta interactiva del experimento en móvil (sin botones internos para no tapar texto) */

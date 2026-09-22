@@ -38,7 +38,7 @@
 
     <!-- Top Center: Floating Achievement Toast -->
     <div class="achievement-toast hidden" id="achievement-toast">
-      <div class="ach-icon">🏆</div>
+      <div class="ach-icon" id="ach-icon">🏆</div>
       <div class="ach-content">
         <span class="ach-tag">¡LOGRO CIENTÍFICO DESBLOQUEADO!</span>
         <strong id="ach-title">Nombre del Logro</strong>
@@ -54,7 +54,7 @@
           <h2 class="mission-main-title">Misiones del Museo</h2>
         </div>
         <button id="mission-toggle-btn" class="glass-pill mission-counter-pill" aria-label="Progreso y alternar misiones">
-          <span id="mission-counter-badge">0/4</span>
+          <span id="mission-counter-badge">0/7</span>
         </button>
       </div>
 
@@ -70,31 +70,55 @@
             <div class="dot">1</div>
             <div class="task-info">
               <span class="task-title">Pila de Papa</span>
-              <span class="task-status">Cerrá el circuito y mirá el LED</span>
+              <span class="task-status">Cerrá el circuito electroquímico (~1.94V)</span>
             </div>
           </div>
 
           <div class="task pending" id="mission-2">
             <div class="dot">2</div>
             <div class="task-info">
-              <span class="task-title">Prisma Óptico</span>
-              <span class="task-status">Investigá la separación de la luz</span>
+              <span class="task-title">Bobina de Tesla</span>
+              <span class="task-status">Transmití energía inalámbrica y encendé el tubo</span>
             </div>
           </div>
 
           <div class="task pending" id="mission-3">
             <div class="dot">3</div>
             <div class="task-info">
-              <span class="task-title">Cuna de Newton</span>
-              <span class="task-status">Alterná los 4 modos de colisión</span>
+              <span class="task-title">Aerogenerador Faraday</span>
+              <span class="task-status">Generá energía eólica e iluminá la ciudad</span>
             </div>
           </div>
 
           <div class="task pending" id="mission-4">
             <div class="dot">4</div>
             <div class="task-info">
-              <span class="task-title">Bobina de Tesla</span>
-              <span class="task-status">Transmití energía y encendé el tubo</span>
+              <span class="task-title">Panel Solar Fotovoltaico</span>
+              <span class="task-status">Activá fotones y hacé girar la hélice</span>
+            </div>
+          </div>
+
+          <div class="task pending" id="mission-5">
+            <div class="dot">5</div>
+            <div class="task-info">
+              <span class="task-title">Generador Van de Graaff</span>
+              <span class="task-status">Acumulá 150.000V y hacé levitar las cintas</span>
+            </div>
+          </div>
+
+          <div class="task pending" id="mission-6">
+            <div class="dot">6</div>
+            <div class="task-info">
+              <span class="task-title">Cuna de Newton</span>
+              <span class="task-status">Probá la conservación de momento y choques</span>
+            </div>
+          </div>
+
+          <div class="task pending" id="mission-7">
+            <div class="dot">7</div>
+            <div class="task-info">
+              <span class="task-title">Dínamo Manual con Manivela</span>
+              <span class="task-status">Girá la manivela y encendé la lámpara Edison</span>
             </div>
           </div>
         </div>
@@ -102,17 +126,19 @@
     </div>
 
     <!-- Right: Squircle Minimap (Solo en PC) -->
-    <div class="panel map-panel pc-only">
+    <div class="panel map-panel pc-only" style="width: 210px;">
       <div class="map-header">
         <span class="glass-pill map-title">RADAR TÁCTICO 1:1</span>
         <span class="live-dot"></span>
       </div>
       <canvas id="minimapCanvas" width="180" height="180"></canvas>
-      <div class="map-legend">
-        <span class="leg-item"><i style="background:#00f0ff;"></i> Papa</span>
-        <span class="leg-item"><i style="background:#d946ef;"></i> Óptica</span>
-        <span class="leg-item"><i style="background:#fde047;"></i> Newton</span>
+      <div class="map-legend" style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 4px; font-size: 8.5px; margin-top: 6px;">
+        <span class="leg-item"><i style="background:#4ade80;"></i> Papa</span>
         <span class="leg-item"><i style="background:#38bdf8;"></i> Tesla</span>
+        <span class="leg-item"><i style="background:#00f0ff;"></i> Eólica</span>
+        <span class="leg-item"><i style="background:#fde047;"></i> Solar</span>
+        <span class="leg-item"><i style="background:#c084fc;"></i> Estática</span>
+        <span class="leg-item"><i style="background:#f59e0b;"></i> Newton</span>
       </div>
     </div>
 
@@ -216,25 +242,28 @@
     </div>
   </div>
 
-  <!-- Modal de Victoria y Graduación Épica (Al terminar las 3 misiones) -->
+  <!-- Modal de Victoria y Graduación Épica (Al terminar las 7 misiones) -->
   <div id="victory-modal" class="modal-overlay hidden" style="z-index: 200;">
-    <div class="panel victory-card" style="text-align: center; max-width: 580px; padding: 36px 28px; border: 2px solid var(--gold); box-shadow: 0 0 50px rgba(253, 224, 71, 0.35);">
+    <div class="panel victory-card" style="text-align: center; max-width: 620px; padding: 36px 28px; border: 2px solid var(--gold); box-shadow: 0 0 50px rgba(253, 224, 71, 0.35);">
       <div style="font-size: 64px; margin-bottom: 8px;">🏆</div>
       <div class="glass-pill xp-badge" style="margin-bottom: 12px; font-size: 13px;">⭐ EXPEDICIÓN 100% COMPLETADA</div>
       <h1 id="victory-title" style="color: #ffffff; font-size: 24px; font-weight: 800; margin-bottom: 10px;">¡FELICITACIONES, CIENTÍFICO DE ÉLITE!</h1>
       <p style="color: var(--text-muted); font-size: 13px; line-height: 1.6; margin-bottom: 20px;">
-        Descubriste cómo fluyen los electrones en la <b>Pila de Papa</b>, cómo se abren los colores en el <b>Prisma Óptico</b>, cómo viaja la energía en la <b>Cuna de Newton</b> y la inducción inalámbrica en la <b>Bobina de Tesla</b>.
+        Dominaste las transformaciones de la energía en el museo: la reacción redox de la <b>Pila de Papa</b>, el plasma en la <b>Bobina de Tesla</b>, la inducción eólica del <b>Aerogenerador</b>, los fotones del <b>Panel Solar</b>, la electrostática del <b>Van de Graaff</b>, los choques elásticos en la <b>Cuna de Newton</b> y la inducción con manivela del <b>Dínamo Manual</b>.
       </p>
 
-      <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 24px; flex-wrap: wrap;">
-        <div class="glass-pill" style="border-color: #4ade80; color: #bbf7d0;">⚡ Medalla de Energía</div>
-        <div class="glass-pill" style="border-color: #d946ef; color: #f5d0fe;">🌈 Medalla de Luz</div>
-        <div class="glass-pill" style="border-color: #00f0ff; color: #cffafe;">⚖️ Medalla de Choques</div>
+      <div style="display: flex; justify-content: center; gap: 8px; margin-bottom: 24px; flex-wrap: wrap;">
+        <div class="glass-pill" style="border-color: #4ade80; color: #bbf7d0;">🥔 Medalla Química Redox</div>
         <div class="glass-pill" style="border-color: #38bdf8; color: #bae6fd;">⚡ Medalla de Tesla</div>
+        <div class="glass-pill" style="border-color: #00f0ff; color: #cffafe;">🌬️ Medalla Eólica Faraday</div>
+        <div class="glass-pill" style="border-color: #facc15; color: #fef08a;">☀️ Medalla Solar Fotovoltaica</div>
+        <div class="glass-pill" style="border-color: #c084fc; color: #e9d5ff;">⚡ Medalla Van de Graaff</div>
+        <div class="glass-pill" style="border-color: #f97316; color: #ffedd5;">⚖️ Medalla Choque Elástico</div>
+        <div class="glass-pill" style="border-color: #fb923c; color: #ffedd5;">⚙️ Medalla del Dínamo</div>
       </div>
 
       <div class="glass-pill rank-badge" style="font-size: 13px; padding: 8px 20px; margin-bottom: 24px; background: rgba(0, 240, 255, 0.15); display: inline-flex;">
-        RANGO MÁXIMO ALCANZADO: GRAN MAESTRO CIENTÍFICO ⭐ 400 XP
+        RANGO MÁXIMO ALCANZADO: GRAN MAESTRO DE LA ENERGÍA ⭐ 700 XP
       </div>
 
       <div>
@@ -247,7 +276,7 @@
 
   <!-- Modal de Diario del Científico (Libreta de Campo) -->
   <div id="journal-modal" class="modal-overlay hidden" style="z-index: 150;">
-    <div class="panel journal-card" style="max-width: 680px; width: 92%; max-height: 85vh; overflow-y: auto; padding: 28px; border: 1px solid var(--cyan);">
+    <div class="panel journal-card" style="max-width: 720px; width: 94%; max-height: 85vh; overflow-y: auto; padding: 24px; border: 1px solid var(--cyan);">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
         <div style="display: flex; align-items: center; gap: 8px;">
           <span style="font-size: 24px;">📖</span>
@@ -256,19 +285,24 @@
         <button id="journal-close-btn" class="glass-pill" style="cursor: pointer;">✕ Cerrar <span class="pc-only">[J]</span></button>
       </div>
 
-      <div style="display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap;">
-        <button class="glass-pill journal-tab active" data-tab="tab-potato" style="cursor: pointer;">⚡ Pila de Papa (1.94V)</button>
-        <button class="glass-pill journal-tab" data-tab="tab-optics" style="cursor: pointer;">🌈 Prisma Óptico</button>
-        <button class="glass-pill journal-tab" data-tab="tab-newton" style="cursor: pointer;">⚖️ Cuna de Newton</button>
+      <div style="display: flex; gap: 6px; margin-bottom: 18px; flex-wrap: wrap;">
+        <button class="glass-pill journal-tab active" data-tab="tab-potato" style="cursor: pointer;">🥔 Pila de Papa</button>
         <button class="glass-pill journal-tab" data-tab="tab-tesla" style="cursor: pointer;">⚡ Bobina de Tesla</button>
+        <button class="glass-pill journal-tab" data-tab="tab-wind" style="cursor: pointer;">🌬️ Aerogenerador</button>
+        <button class="glass-pill journal-tab" data-tab="tab-solar" style="cursor: pointer;">☀️ Panel Solar</button>
+        <button class="glass-pill journal-tab" data-tab="tab-vande" style="cursor: pointer;">⚡ Van de Graaff</button>
+        <button class="glass-pill journal-tab" data-tab="tab-newton" style="cursor: pointer;">⚖️ Cuna de Newton</button>
+        <button class="glass-pill journal-tab" data-tab="tab-dynamo" style="cursor: pointer;">⚙️ Dínamo Manual</button>
+        <button class="glass-pill journal-tab" data-tab="tab-optics" style="cursor: pointer;">🌈 Galería Óptica</button>
+        <button class="glass-pill journal-tab" data-tab="tab-secrets" style="cursor: pointer; border-color: rgba(253, 224, 71, 0.4); color: #fde047;">🔮 Secretos de Energía</button>
       </div>
 
       <!-- Tab 1: Papa -->
       <div class="journal-content-tab" id="tab-potato">
         <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
-          <span class="pill-concept-label">🔋 PRINCIPIO ELECTROQUÍMICO</span>
+          <span class="pill-concept-label">🔋 PRINCIPIO ELECTROQUÍMICO (QUÍMICA A ELÉCTRICA)</span>
           <p>
-            El ácido fosfórico dentro de la pulpa de la papa actúa como <b>electrolito</b>. Al introducir un clavo de <b>Zinc (Zn)</b> y otro de <b>Cobre (Cu)</b>, ocurre una reacción redox: el zinc cede electrones con avidez, los cuales viajan por el cable conductor hacia el cobre.
+            El ácido fosfórico dentro de la pulpa de la papa actúa como <b>electrolito</b>. Al introducir un clavo de <b>Zinc (Zn)</b> y otro de <b>Cobre (Cu)</b>, ocurre una reacción redox espontánea: el zinc cede electrones con avidez, los cuales viajan por el cable conductor hacia el cobre.
           </p>
         </div>
         <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
@@ -279,42 +313,10 @@
         </div>
       </div>
 
-      <!-- Tab 2: Óptica -->
-      <div class="journal-content-tab hidden" id="tab-optics">
-        <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
-          <span class="pill-concept-label">🌈 DISPERSIÓN DE NEWTON (1666)</span>
-          <p>
-            La luz blanca no es un color único, sino la combinación de todo el espectro visible (de <b>380 nm</b> en el violeta a <b>750 nm</b> en el rojo). En el aire viajan a igual velocidad, pero al penetrar en el cristal, cada frecuencia sufre una reducción de velocidad distinta (índice de refracción <i>n</i>), abriéndose en un abanico multicolor.
-          </p>
-        </div>
-        <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
-          <span class="pill-concept-label">🎯 LÁSER MONOCROMÁTICO</span>
-          <p>
-            Los láseres verde (532nm) y rojo (650nm) poseen una sola longitud de onda pura. Al atravesar el prisma se desvían pero <b>no se dividen en colores</b>, demostrando la naturaleza monocromática.
-          </p>
-        </div>
-      </div>
-
-      <!-- Tab 3: Newton -->
-      <div class="journal-content-tab hidden" id="tab-newton">
-        <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
-          <span class="pill-concept-label">⚖️ LEY DE CONSERVACIÓN DEL MOMENTO</span>
-          <p>
-            La cantidad de movimiento se define como <b>p = m · v</b>. En una colisión perfectamente elástica entre esferas de acero templado de idéntica masa, la velocidad se transfiere íntegramente a través de ondas de compresión de alta velocidad en el metal sin desplazar a las esferas intermedias.
-          </p>
-        </div>
-        <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
-          <span class="pill-concept-label">🔄 MODOS DE IMPACTO</span>
-          <p>
-            Si impactan 2 esferas, la conservación simultánea del momento y de la energía cinética (<b>Ek = ½·m·v²</b>) exige matemáticamente que <b>salgan 2 esferas</b>, dejando a la esfera central completamente en reposo.
-          </p>
-        </div>
-      </div>
-
-      <!-- Tab 4: Tesla -->
+      <!-- Tab 2: Tesla -->
       <div class="journal-content-tab hidden" id="tab-tesla">
         <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
-          <span class="pill-concept-label">⚡ RESONANCIA ELECTROMAGNÉTICA</span>
+          <span class="pill-concept-label">⚡ RESONANCIA ELECTROMAGNÉTICA (ALTO VOLTAJE Y PLASMA)</span>
           <p>
             Inventada por <b>Nikola Tesla en 1891</b>, la bobina es un transformador resonante sintonizado. Transforma pulsos de bajo voltaje en <b>cientos de miles de voltios a alta frecuencia</b>, ionizando el gas del aire y desatando rayos de plasma luminiscentes.
           </p>
@@ -325,6 +327,114 @@
             El campo electromagnético alterno que rodea al toroide viaja a través del aire. Al acercar un tubo fluorescente o de gas neón, las ondas electromagnéticas excitan los átomos de fósforo y mercurio en su interior, <b>encendiendo la lámpara sin cables ni contacto físico</b>.
           </p>
         </div>
+      </div>
+
+      <!-- Tab 3: Aerogenerador -->
+      <div class="journal-content-tab hidden" id="tab-wind">
+        <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
+          <span class="pill-concept-label">🌬️ CINÉTICA A ELÉCTRICA (INDUCCIÓN DE FARADAY)</span>
+          <p>
+            El flujo de viento empuja las aspas aerodinámicas convirtiendo la <b>energía cinética del aire</b> en rotación mecánica. El rotor impulsa un eje con imanes permanentes de neodimio que giran rápidamente dentro de bobinas de cobre fijas.
+          </p>
+        </div>
+        <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
+          <span class="pill-concept-label">🏙️ RED ELÉCTRICA Y MINI CIUDAD</span>
+          <p>
+            Según la <b>Ley de Inducción de Faraday</b>, la variación del flujo magnético en el interior de la bobina induce una fuerza electromotriz (voltaje). Al activar el viento, el voltímetro sube a <b>12V</b> y alimenta instantáneamente la red de iluminación de la mini ciudad.
+          </p>
+        </div>
+      </div>
+
+      <!-- Tab 4: Panel Solar -->
+      <div class="journal-content-tab hidden" id="tab-solar">
+        <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
+          <span class="pill-concept-label">☀️ EFECTO FOTOVOLTAICO (LUMÍNICA A ELÉCTRICA)</span>
+          <p>
+            La luz solar transporta paquetes de energía llamados <b>fotones</b>. Cuando estos fotones colisionan con los átomos de silicio tipo P y N del panel, transfieren su energía a los electrones ligados, arrancándolos de su órbita y generando una corriente continua (DC).
+          </p>
+        </div>
+        <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
+          <span class="pill-concept-label">🚁 ELÉCTRICA A MECÁNICA (MOTOR DE HÉLICE)</span>
+          <p>
+            La corriente generada fluye por los conductores hacia un motor de corriente directa acoplado a una hélice. Cuando el sol artificial alinea su foco sobre las celdas, la electricidad activa el electroimán del motor, haciendo girar la hélice a alta velocidad.
+          </p>
+        </div>
+      </div>
+
+      <!-- Tab 5: Van de Graaff -->
+      <div class="journal-content-tab hidden" id="tab-vande">
+        <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
+          <span class="pill-concept-label">⚡ EFECTO TRIBOELÉCTRICO (MECÁNICA A ELECTROSTÁTICA)</span>
+          <p>
+            El motor acciona una correa de goma aislante que se frota continuamente contra poleas de distintos materiales (teflón/vidrio). Por fricción o contacto triboeléctrico, se arrancan electrones y la correa transporta una carga neta hacia el interior de la cúpula metálica.
+          </p>
+        </div>
+        <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
+          <span class="pill-concept-label">💥 150.000 VOLTIOS Y RUPTURA DIELÉCTRICA</span>
+          <p>
+            Las cargas del mismo signo se repelen y viajan a la superficie exterior de la esfera de aluminio, alcanzando un potencial superior a <b>150.000 Voltios</b>. Esta enorme tensión supera la resistencia del aire (ruptura dieléctrica a 30 kV/cm), creando chispas luminosas hacia la varilla de descarga conectada a tierra.
+          </p>
+        </div>
+      </div>
+
+      <!-- Tab 6: Newton -->
+      <div class="journal-content-tab hidden" id="tab-newton">
+        <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
+          <span class="pill-concept-label">⚖️ LEY DE CONSERVACIÓN DEL MOMENTO Y ENERGÍA</span>
+          <p>
+            La cantidad de movimiento se define como <b>p = m · v</b> y la energía cinética como <b>Ek = ½·m·v²</b>. En una colisión elástica entre esferas de acero templado de idéntica masa, la velocidad y la energía se transfieren íntegramente mediante ondas de compresión en el metal.
+          </p>
+        </div>
+        <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
+          <span class="pill-concept-label">🔄 MODOS DE IMPACTO</span>
+          <p>
+            Si impactan 2 esferas, la conservación matemática simultánea del momento y de la energía exige que <b>salgan exactamente 2 esferas</b> por el lado opuesto, dejando a las esferas centrales en completo reposo.
+          </p>
+        </div>
+      </div>
+
+      <!-- Tab: Dínamo Manual -->
+      <div class="journal-content-tab hidden" id="tab-dynamo">
+        <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
+          <span class="pill-concept-label">⚙️ MECÁNICA A ELÉCTRICA (INDUCCIÓN DE FARADAY)</span>
+          <p>
+            Al girar la manivela con tus brazos, la caja de engranajes con relación <b>5:1</b> multiplica las revoluciones, haciendo girar un rotor de cobre a alta velocidad dentro de un campo magnético creado por imanes permanentes de neodimio (polos Norte y Sur).
+          </p>
+        </div>
+        <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
+          <span class="pill-concept-label">💡 ELÉCTRICA A LUMÍNICA Y TÉRMICA (EFECTO JOULE)</span>
+          <p>
+            La corriente generada fluye por los cables hacia la lámpara Edison. Dentro de la ampolla de vidrio, los electrones colisionan contra los átomos del filamento de tungsteno, calentándolo a más de <b>2000°C</b> hasta emitir luz incandescente y calor. Cuanto más rápido girás, mayor es el voltaje (hasta <b>24V</b> en el voltímetro) y más brillante es la luz.
+          </p>
+        </div>
+      </div>
+
+      <!-- Tab: Óptica -->
+      <div class="journal-content-tab hidden" id="tab-optics">
+        <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
+          <span class="pill-concept-label">🌈 DISPERSIÓN CROMÁTICA (NEWTON 1666)</span>
+          <p>
+            La luz blanca visible combina longitudes de onda desde <b>380 nm</b> (violeta) hasta <b>750 nm</b> (rojo). Al ingresar al prisma de vidrio de alta densidad óptica, cada longitud de onda experimenta un índice de refracción distinto, curvándose en ángulos diferentes y proyectando el arcoíris.
+          </p>
+        </div>
+        <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
+          <span class="pill-concept-label">🎯 HAZ LÁSER COHERENTE</span>
+          <p>
+            A diferencia de la luz blanca policromática, el láser emite luz monocromática de longitud de onda pura. Al atravesar el prisma cambia de dirección según la ley de Snell, pero <b>no se descompone en colores</b>.
+          </p>
+        </div>
+      </div>
+
+      <!-- Tab: Secretos Cuánticos de Energía -->
+      <div class="journal-content-tab hidden" id="tab-secrets">
+        <div id="secrets-empty-notice" class="glass-pill pill-concept-box" style="margin-bottom: 12px; text-align: center; padding: 24px;">
+          <span style="font-size: 32px; display: block; margin-bottom: 8px;">🔮</span>
+          <span class="pill-concept-label" style="color: #38bdf8;">ORBES CUÁNTICOS DE ENERGÍA</span>
+          <p style="margin-top: 8px; color: var(--text-muted);">
+            Hay <b>7 orbes flotantes de energía</b> escondidos en las salas del museo. Cada orbe recolectado otorga <b>+25 XP</b> y desbloquea una curiosidad científica exclusiva aquí en tu diario.
+          </p>
+        </div>
+        <div id="secrets-facts-container"></div>
       </div>
     </div>
   </div>
@@ -350,7 +460,7 @@
       <div class="start-logo">🌌</div>
       <h1>MUSEO VIRTUAL MELANY</h1>
       <p class="start-desc">
-        Una experiencia interactiva de física y ciencia en 3D bajo las estrellas. Caminá por la sala, descubrí los 4 experimentos interactivos y poné a prueba tu conocimiento.
+        Una expedición científica interactiva en 3D sobre las <b>TRANSFORMACIONES DE LA ENERGÍA</b>. Explorá las 7 salas temáticas, recolectá los orbes cuánticos y poné a prueba tu conocimiento.
       </p>
 
       <div class="student-input-container" style="margin: 18px auto 22px auto; max-width: 360px; text-align: left;">
@@ -369,9 +479,12 @@
       
       <div class="features-row">
         <div class="feat-box glass-pill"><span>🥔</span> Pila de Papa</div>
-        <div class="feat-box glass-pill"><span>🌈</span> Prisma Óptico</div>
+        <div class="feat-box glass-pill"><span>⚡</span> Bobina Tesla</div>
+        <div class="feat-box glass-pill"><span>🌬️</span> Aerogenerador</div>
+        <div class="feat-box glass-pill"><span>☀️</span> Panel Solar</div>
+        <div class="feat-box glass-pill"><span>⚡</span> Van de Graaff</div>
         <div class="feat-box glass-pill"><span>⚖️</span> Cuna de Newton</div>
-        <div class="feat-box glass-pill"><span>⚡</span> Bobina de Tesla</div>
+        <div class="feat-box glass-pill"><span>⚙️</span> Dínamo Manual</div>
       </div>
 
       <button id="play-btn" class="action-btn start-btn">ENTRAR A LA EXPEDICIÓN</button>

@@ -28,7 +28,7 @@ scene.background = new THREE.Color(0x020308);
 
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
 // Spawn del jugador a escala humana (1.68m de altura)
-camera.position.set(0, 1.68, 8);
+camera.position.set(0, 1.68, 4.5);
 camera.rotation.order = 'YXZ';
 
 const renderer = new THREE.WebGLRenderer({ 
@@ -119,10 +119,14 @@ hud.onCloseModal = () => {
 // --- FÍSICAS DE ALTURA DINÁMICA & MESAS DE EXPERIMENTOS ---
 // Las mesas son de 2.4m x 2.4m, altura 1.2m
 const pedestals = [
-    { minX: -1.2, maxX: 1.2, minZ: -1.2, maxZ: 1.2, height: 1.2 },       // Papa (Centro)
-    { minX: -1.2, maxX: 1.2, minZ: -16.2, maxZ: -13.8, height: 1.2 },    // Óptica (Fondo)
-    { minX: -1.2, maxX: 1.2, minZ: 13.8, maxZ: 16.2, height: 1.2 },      // Newton (Entrada)
-    { minX: 14.8, maxX: 17.2, minZ: -1.2, maxZ: 1.2, height: 1.2 }       // Tesla (Ala Este)
+    { minX: -16.2, maxX: -13.8, minZ: -1.2, maxZ: 1.2, height: 1.2 },    // 1. Papa (Oeste)
+    { minX: 14.8, maxX: 17.2, minZ: -1.2, maxZ: 1.2, height: 1.2 },      // 2. Tesla (Este)
+    { minX: -1.2, maxX: 1.2, minZ: -16.2, maxZ: -13.8, height: 1.2 },    // 3. Eólica (Norte)
+    { minX: 10.8, maxX: 13.2, minZ: -13.2, maxZ: -10.8, height: 1.2 },   // 4. Solar (Noreste)
+    { minX: -13.2, maxX: -10.8, minZ: -13.2, maxZ: -10.8, height: 1.2 },  // 5. Van de Graaff (Noroeste)
+    { minX: -1.2, maxX: 1.2, minZ: 12.8, maxZ: 15.2, height: 1.2 },      // 6. Newton (Sur)
+    { minX: 10.8, maxX: 13.2, minZ: 8.8, maxZ: 11.2, height: 1.2 },      // 7. Dínamo (Sureste)
+    { minX: -1.2, maxX: 1.2, minZ: 22.8, maxZ: 25.2, height: 1.2 }       // 8. Prisma (Galería)
 ];
 
 function getGroundHeight(x: number, z: number, currentCamY: number): number {

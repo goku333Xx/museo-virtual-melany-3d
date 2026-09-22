@@ -19,6 +19,8 @@ export class MuseumRoom {
         this.buildRoom();
         this.buildPilasters();
         this.buildFloorRunwayAndZones();
+        this.buildCentralAtriumBeacon();
+        this.buildRoomPortals();
         this.buildCeilingTruss();
         this.buildPedestals();
         this.buildLightingAndDecor();
@@ -233,72 +235,243 @@ export class MuseumRoom {
 
     // --- PISTA CENTRAL DE VISITA Y ZONAS DE PEDESTAL ---
     private buildFloorRunwayAndZones() {
-        // Pasarela central de granito pulido oscuro
-        const runwayGeom = new THREE.PlaneGeometry(2.0, 44);
         const runwayMat = new THREE.MeshStandardMaterial({
             color: 0x161c28,
             roughness: 0.5,
             metalness: 0.2
         });
-        const runway = new THREE.Mesh(runwayGeom, runwayMat);
-        runway.rotation.x = -Math.PI / 2;
-        runway.position.set(0, 0.005, 0);
-        runway.receiveShadow = true;
-        this.group.add(runway);
-
-        // Tiras de latón arquitectónico en los bordes de la pasarela
-        const guideGeom = new THREE.BoxGeometry(0.04, 0.01, 44);
         const brassMat = new THREE.MeshStandardMaterial({
             color: 0xc49b55,
             roughness: 0.3,
             metalness: 0.8
         });
 
-        const leftGuide = new THREE.Mesh(guideGeom, brassMat);
-        leftGuide.position.set(-1.0, 0.008, 0);
-        this.group.add(leftGuide);
+        // 1. Pasarela Eje Norte-Sur (De Z = -16 a Z = +26, longitud 44m)
+        const nsRunway = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 44), runwayMat);
+        nsRunway.rotation.x = -Math.PI / 2;
+        nsRunway.position.set(0, 0.005, 5);
+        nsRunway.receiveShadow = true;
+        this.group.add(nsRunway);
 
-        const rightGuide = new THREE.Mesh(guideGeom, brassMat);
-        rightGuide.position.set(1.0, 0.008, 0);
-        this.group.add(rightGuide);
+        // Guías de latón eje Norte-Sur
+        const nsGuideGeom = new THREE.BoxGeometry(0.04, 0.01, 44);
+        const nsLeftGuide = new THREE.Mesh(nsGuideGeom, brassMat);
+        nsLeftGuide.position.set(-1.2, 0.008, 5);
+        const nsRightGuide = new THREE.Mesh(nsGuideGeom, brassMat);
+        nsRightGuide.position.set(1.2, 0.008, 5);
+        this.group.add(nsLeftGuide, nsRightGuide);
 
-        // Pasarela Este hacia la Estación 04 (Bobina de Tesla)
-        const eastRunwayGeom = new THREE.PlaneGeometry(16, 2.0);
-        const eastRunway = new THREE.Mesh(eastRunwayGeom, runwayMat);
-        eastRunway.rotation.x = -Math.PI / 2;
-        eastRunway.position.set(8.0, 0.005, 0);
-        eastRunway.receiveShadow = true;
-        this.group.add(eastRunway);
+        // 2. Pasarela Eje Este-Oeste (De X = -16 a X = +16, longitud 34m)
+        const ewRunway = new THREE.Mesh(new THREE.PlaneGeometry(34, 2.4), runwayMat);
+        ewRunway.rotation.x = -Math.PI / 2;
+        ewRunway.position.set(0, 0.005, 0);
+        ewRunway.receiveShadow = true;
+        this.group.add(ewRunway);
 
-        // Guías de latón pasarela Este
-        const eastGuideGeom = new THREE.BoxGeometry(16, 0.01, 0.04);
-        const topEastGuide = new THREE.Mesh(eastGuideGeom, brassMat);
-        topEastGuide.position.set(8.0, 0.008, -1.0);
-        const botEastGuide = new THREE.Mesh(eastGuideGeom, brassMat);
-        botEastGuide.position.set(8.0, 0.008, 1.0);
-        this.group.add(topEastGuide, botEastGuide);
+        // Guías de latón eje Este-Oeste
+        const ewGuideGeom = new THREE.BoxGeometry(34, 0.01, 0.04);
+        const ewTopGuide = new THREE.Mesh(ewGuideGeom, brassMat);
+        ewTopGuide.position.set(0, 0.008, -1.2);
+        const ewBotGuide = new THREE.Mesh(ewGuideGeom, brassMat);
+        ewBotGuide.position.set(0, 0.008, 1.2);
+        this.group.add(ewTopGuide, ewBotGuide);
 
-        // Círculos concéntricos de demarcación de zona científica bajo cada pedestal
-        const stationZones = [
-            [0, 15],
-            [0, 0],
-            [0, -15],
-            [16, 0]
+        // 3. Pasarelas Diagonales hacia Noreste (Solar) y Noroeste (Van de Graaff)
+        const diagLen = 17;
+        const diagGeom = new THREE.PlaneGeometry(2.0, diagLen);
+
+        // Hacia Noreste (Solar: 12, -12)
+        const neRunway = new THREE.Mesh(diagGeom, runwayMat);
+        neRunway.rotation.x = -Math.PI / 2;
+        neRunway.rotation.z = -Math.PI / 4;
+        neRunway.position.set(6, 0.005, -6);
+        neRunway.receiveShadow = true;
+        this.group.add(neRunway);
+
+        // Hacia Noroeste (Van de Graaff: -12, -12)
+        const nwRunway = new THREE.Mesh(diagGeom, runwayMat);
+        nwRunway.rotation.x = -Math.PI / 2;
+        nwRunway.rotation.z = Math.PI / 4;
+        nwRunway.position.set(-6, 0.005, -6);
+        nwRunway.receiveShadow = true;
+        this.group.add(nwRunway);
+
+        // Hacia Sureste (Dínamo Manual: 12, 10)
+        const seRunway = new THREE.Mesh(diagGeom, runwayMat);
+        seRunway.rotation.x = -Math.PI / 2;
+        seRunway.rotation.z = Math.PI / 4;
+        seRunway.position.set(6, 0.005, 5);
+        seRunway.receiveShadow = true;
+        this.group.add(seRunway);
+
+        // 4. Círculos de demarcación bajo los 8 pedestales
+        const stationZones: [number, number, number][] = [
+            [-15, 0, 0x4ade80],   // Sala 1: Pila de Papa (Verde)
+            [16, 0, 0x38bdf8],    // Sala 2: Bobina de Tesla (Azul/Cian)
+            [0, -15, 0x00f0ff],   // Sala 3: Aerogenerador (Cian)
+            [12, -12, 0xfde047],  // Sala 4: Panel Solar (Dorado)
+            [-12, -12, 0xc084fc], // Sala 5: Van de Graaff (Violeta)
+            [0, 14, 0xf59e0b],    // Sala 6: Cuna de Newton (Ámbar)
+            [12, 10, 0xf97316],   // Sala 7: Dínamo Manual con Manivela (Naranja)
+            [0, 24, 0xd946ef]     // Galería: Prisma Óptico (Magenta)
         ];
-        const ringGeom = new THREE.RingGeometry(2.2, 2.25, 64);
-        const ringMat = new THREE.MeshBasicMaterial({ 
-            color: 0x38bdf8, 
-            side: THREE.DoubleSide,
-            transparent: true,
-            opacity: 0.35
-        });
 
-        stationZones.forEach(([zx, zz]) => {
+        const ringGeom = new THREE.RingGeometry(2.1, 2.2, 48);
+        stationZones.forEach(([zx, zz, colorHex]) => {
+            const ringMat = new THREE.MeshBasicMaterial({
+                color: colorHex,
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.45
+            });
             const circle = new THREE.Mesh(ringGeom, ringMat);
             circle.rotation.x = -Math.PI / 2;
             circle.position.set(zx, 0.012, zz);
             this.group.add(circle);
         });
+    }
+
+    // --- NÚCLEO HOLOGRÁFICO DEL ATRIO CENTRAL ---
+    private buildCentralAtriumBeacon() {
+        const beaconGroup = new THREE.Group();
+        beaconGroup.position.set(0, 0, 0);
+
+        // Medallón central en mármol con estrella de los vientos en latón
+        const centerDisc = new THREE.Mesh(
+            new THREE.CylinderGeometry(2.4, 2.4, 0.015, 48),
+            new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.3, metalness: 0.7 })
+        );
+        centerDisc.position.y = 0.008;
+        beaconGroup.add(centerDisc);
+
+        const brassRing = new THREE.Mesh(
+            new THREE.TorusGeometry(2.3, 0.03, 16, 48),
+            new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.9, roughness: 0.2 })
+        );
+        brassRing.rotation.x = Math.PI / 2;
+        brassRing.position.y = 0.018;
+        beaconGroup.add(brassRing);
+
+        // Estrella de orientación náutica/científica en el piso
+        const starMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.6 });
+        for (let i = 0; i < 4; i++) {
+            const starPoint = new THREE.Mesh(new THREE.ConeGeometry(0.2, 1.8, 4), starMat);
+            starPoint.rotation.x = Math.PI / 2;
+            starPoint.rotation.z = (i * Math.PI) / 2;
+            starPoint.position.y = 0.019;
+            beaconGroup.add(starPoint);
+        }
+
+        // Anillos giroscópicos holográficos flotando en el centro
+        const gyroGeo = new THREE.TorusGeometry(0.85, 0.015, 12, 36);
+        const gyro1 = new THREE.Mesh(gyroGeo, new THREE.MeshBasicMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.75 }));
+        gyro1.position.y = 1.8;
+        gyro1.rotation.x = Math.PI / 4;
+        beaconGroup.add(gyro1);
+
+        const gyro2 = new THREE.Mesh(gyroGeo, new THREE.MeshBasicMaterial({ color: 0xfde047, transparent: true, opacity: 0.6 }));
+        gyro2.position.y = 1.8;
+        gyro2.rotation.y = Math.PI / 3;
+        beaconGroup.add(gyro2);
+
+        this.group.add(beaconGroup);
+    }
+
+    // --- ARCOS ARQUITECTÓNICOS Y LETREROS DE LAS SALAS ---
+    private buildRoomPortals() {
+        const portalConfigs = [
+            { pos: [-7.5, 0], rotY: Math.PI / 2, title: "SALA 01: ELECTROQUÍMICA", sub: "Pila de Papa · Reacción Redox", color: "#4ade80" },
+            { pos: [7.5, 0], rotY: -Math.PI / 2, title: "SALA 02: ALTA TENSIÓN Y TESLA", sub: "Transformador Resonante · Inducción", color: "#38bdf8" },
+            { pos: [0, -7.5], rotY: 0, title: "SALA 03: ENERGÍA EÓLICA & FARADAY", sub: "Cinética a Eléctrica · Mini Ciudad", color: "#00f0ff" },
+            { pos: [5.5, -5.5], rotY: -Math.PI / 4, title: "SALA 04: ENERGÍA SOLAR", sub: "Efecto Fotovoltaico · Celdas de Silicio", color: "#fde047" },
+            { pos: [-5.5, -5.5], rotY: Math.PI / 4, title: "SALA 05: GENERADOR ELECTROSTÁTICO", sub: "Fricción y Cargas · 150.000V", color: "#c084fc" },
+            { pos: [0, 7.5], rotY: Math.PI, title: "SALA 06: ENERGÍA MECÁNICA", sub: "Conservación de Momento · Choques", color: "#f59e0b" },
+            { pos: [5.5, 4.8], rotY: -3 * Math.PI / 4, title: "SALA 07: DÍNAMO MECÁNICO", sub: "Inducción y Manivela · Efecto Joule", color: "#f97316" },
+            { pos: [0, 19.0], rotY: Math.PI, title: "GALERÍA ESPECIAL: PRISMA ÓPTICO", sub: "Dispersión Espectral · Calibración", color: "#d946ef" }
+        ];
+
+        const archMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.85, roughness: 0.3 });
+        const postGeom = new THREE.BoxGeometry(0.24, 3.8, 0.24);
+        const lintelGeom = new THREE.BoxGeometry(3.6, 0.35, 0.35);
+
+        portalConfigs.forEach(cfg => {
+            const portal = new THREE.Group();
+            portal.position.set(cfg.pos[0], 0, cfg.pos[1]);
+            portal.rotation.y = cfg.rotY;
+
+            // Poste Izquierdo
+            const postL = new THREE.Mesh(postGeom, archMat);
+            postL.position.set(-1.6, 1.9, 0);
+            portal.add(postL);
+
+            // Poste Derecho
+            const postR = new THREE.Mesh(postGeom, archMat);
+            postR.position.set(1.6, 1.9, 0);
+            portal.add(postR);
+
+            // Dintel superior
+            const lintel = new THREE.Mesh(lintelGeom, archMat);
+            lintel.position.set(0, 3.8, 0);
+            portal.add(lintel);
+
+            // Cartel luminoso con letrero de la sala
+            const signTex = this.generateSignTexture(cfg.title, cfg.sub, cfg.color);
+            const signMat = new THREE.MeshBasicMaterial({ map: signTex, transparent: true });
+            const sign = new THREE.Mesh(new THREE.PlaneGeometry(2.8, 0.7), signMat);
+            sign.position.set(0, 3.3, 0.05);
+            portal.add(sign);
+
+            // Respaldo del cartel para verse también al volver
+            const signBack = new THREE.Mesh(new THREE.PlaneGeometry(2.8, 0.7), signMat);
+            signBack.position.set(0, 3.3, -0.05);
+            signBack.rotation.y = Math.PI;
+            portal.add(signBack);
+
+            this.group.add(portal);
+        });
+    }
+
+    private generateSignTexture(title: string, subtitle: string, hexColor: string): THREE.CanvasTexture {
+        const canvas = document.createElement('canvas');
+        canvas.width = 512;
+        canvas.height = 128;
+        const ctx = canvas.getContext('2d')!;
+
+        // Fondo oscuro estilo HUD de museo
+        ctx.fillStyle = '#060d1a';
+        ctx.fillRect(0, 0, 512, 128);
+
+        // Borde con brillo neón
+        ctx.strokeStyle = hexColor;
+        ctx.lineWidth = 5;
+        ctx.strokeRect(6, 6, 500, 116);
+
+        // Acentos angulares en esquinas
+        ctx.fillStyle = hexColor;
+        ctx.fillRect(6, 6, 24, 5);
+        ctx.fillRect(6, 6, 5, 24);
+        ctx.fillRect(506 - 24, 6, 24, 5);
+        ctx.fillRect(506 - 5, 6, 5, 24);
+        ctx.fillRect(6, 122 - 5, 24, 5);
+        ctx.fillRect(6, 122 - 24, 5, 24);
+        ctx.fillRect(506 - 24, 122 - 5, 24, 5);
+        ctx.fillRect(506 - 5, 122 - 24, 5, 24);
+
+        // Título de la sala
+        ctx.font = 'bold 25px "Inter", system-ui, sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(title, 256, 48);
+
+        // Subtítulo pedagógico
+        ctx.font = 'bold 15px "Inter", system-ui, sans-serif';
+        ctx.fillStyle = hexColor;
+        ctx.fillText(subtitle, 256, 86);
+
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.needsUpdate = true;
+        return tex;
     }
 
     // --- ESTRUCTURA RETICULAR DEL TECHO (OBSERVATORIO DE CIENCIAS) ---
@@ -351,10 +524,14 @@ export class MuseumRoom {
         });
 
         const positions = [
-            [0, 0],    // Estación 1: Papa Batería (Centro)
-            [0, -15],  // Estación 2: Prisma Óptica (Fondo)
-            [0, 15],   // Estación 3: Cuna de Newton (Entrada)
-            [16, 0]    // Estación 4: Bobina de Tesla (Ala Este)
+            [-15, 0],   // 1. Pila de Papa (Oeste)
+            [16, 0],    // 2. Bobina de Tesla (Este)
+            [0, -15],   // 3. Aerogenerador Faraday (Norte)
+            [12, -12],  // 4. Panel Solar & Motor (Noreste)
+            [-12, -12], // 5. Generador Van de Graaff (Noroeste)
+            [0, 14],    // 6. Cuna de Newton (Sur)
+            [12, 10],   // 7. Dínamo Manual con Manivela (Sureste)
+            [0, 24]     // 8. Alcoba Especial: Prisma Óptico (Sur Profundo)
         ];
 
         positions.forEach((pos, idx) => {

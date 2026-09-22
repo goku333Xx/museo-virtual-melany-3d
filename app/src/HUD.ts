@@ -154,7 +154,7 @@ export class HUD {
     private setupEventListeners() {
         this.quizContinueBtn.onclick = () => {
             this.closeQuiz();
-            if (this.completedMissions.size === 4 && !this.celebrationTriggered) {
+            if (this.completedMissions.size === 6 && !this.celebrationTriggered) {
                 this.triggerGrandCelebration();
             }
         };
@@ -526,8 +526,10 @@ export class HUD {
     }
 
     // --- LOGROS & TOAST FLOTANTE ---
-    public showAchievementToast(title: string, desc: string) {
+    public showAchievementToast(title: string, desc: string, icon: string = '🏆') {
         if (!this.achievementToast) return;
+        const iconEl = document.getElementById('ach-icon');
+        if (iconEl) iconEl.innerText = icon;
         if (this.achTitle) this.achTitle.innerText = title;
         if (this.achDesc) this.achDesc.innerText = desc;
 
@@ -568,14 +570,17 @@ export class HUD {
 
         // Notificación de logro con toast y sonido
         const achievements: Record<number, { title: string; desc: string }> = {
-            1: { title: 'Pila de Papa: Circuito Estable', desc: '¡Has cerrado el circuito generando ~1.96V electroquímicos reales!' },
-            2: { title: 'Prisma Óptico: Descomposición Espectral', desc: '¡Comprobaste la dispersión cromática de la luz blanca!' },
-            3: { title: 'Cuna de Newton: Choque Elástico', desc: '¡Comprobaste la conservación del momento lineal!' },
-            4: { title: 'Bobina de Tesla: Inducción Inalámbrica', desc: '¡Encendiste el tubo a distancia con ondas electromagnéticas!' }
+            1: { title: 'Pila de Papa: Reacción Redox', desc: '¡Has cerrado el circuito generando ~1.94V electroquímicos reales!' },
+            2: { title: 'Bobina de Tesla: Inducción Inalámbrica', desc: '¡Encendiste el tubo a distancia con ondas electromagnéticas!' },
+            3: { title: 'Aerogenerador Faraday: Energía Eólica', desc: '¡Convertiste la fuerza del viento en electricidad para la ciudad!' },
+            4: { title: 'Panel Solar: Efecto Fotoeléctrico', desc: '¡Transformaste fotones de luz en rotación mecánica de la hélice!' },
+            5: { title: 'Van de Graaff: Repulsión Estática', desc: '¡Acumulaste 150.000V e hiciste levitar las cintas en el aire!' },
+            6: { title: 'Cuna de Newton: Choque Elástico', desc: '¡Comprobaste la conservación simultánea de momento y energía!' },
+            7: { title: 'Dínamo Manual: Manivela e Inducción', desc: '¡Convertiste tu esfuerzo físico en 24V y luz incandescente!' }
         };
 
         if (achievements[missionId]) {
-            this.showAchievementToast(achievements[missionId].title, achievements[missionId].desc);
+            this.showAchievementToast(achievements[missionId].title, achievements[missionId].desc, '🏅');
         }
     }
 
@@ -583,27 +588,57 @@ export class HUD {
         this.xp += amount;
         this.scoreText.innerText = `⭐ ${this.xp} XP`;
 
-        if (this.xp >= 400) {
-            this.rankText.innerText = 'Nivel 4: Gran Maestro Científico';
+        if (this.xp >= 700) {
+            this.rankText.innerText = 'Nivel 5: Gran Maestro de la Energía Universal';
+        } else if (this.xp >= 500) {
+            this.rankText.innerText = 'Nivel 4: Ingeniero de Energías Renovables';
         } else if (this.xp >= 300) {
-            this.rankText.innerText = 'Nivel 3: Maestro Físico';
+            this.rankText.innerText = 'Nivel 3: Domador de la Inducción';
         } else if (this.xp >= 100) {
-            this.rankText.innerText = 'Nivel 2: Investigador';
+            this.rankText.innerText = 'Nivel 2: Investigador de Circuitos';
+        } else {
+            this.rankText.innerText = 'Nivel 1: Aprendiz de la Energía';
         }
+    }
+
+    public unlockSecretFact(id: number, title: string, desc: string): void {
+        const container = document.getElementById('secrets-facts-container');
+        if (!container) return;
+
+        if (document.getElementById(`secret-fact-${id}`)) return;
+
+        const emptyNotice = document.getElementById('secrets-empty-notice');
+        if (emptyNotice) emptyNotice.style.display = 'none';
+
+        const factEl = document.createElement('div');
+        factEl.id = `secret-fact-${id}`;
+        factEl.className = 'glass-pill pill-concept-box secret-fact-card';
+        factEl.style.marginBottom = '12px';
+        factEl.style.border = '1px solid rgba(0, 240, 255, 0.4)';
+        factEl.style.background = 'rgba(10, 25, 45, 0.75)';
+
+        factEl.innerHTML = `
+            <span class="pill-concept-label" style="color: #fde047; font-size: 11px;">🔮 ${title}</span>
+            <p style="font-size: 13px; line-height: 1.5; color: #f1f5f9; margin-top: 4px;">${desc}</p>
+        `;
+        container.appendChild(factEl);
     }
 
     private updateProgressText() {
         const count = this.completedMissions.size;
         if (this.progressText) {
-            this.progressText.innerText = count === 4 
-                ? '🏆 ¡EXPEDICIÓN COMPLETA! Felicitaciones Científico' 
-                : `Progreso: ${count} de 4 estaciones completadas`;
+            this.progressText.innerText = count === 7 
+                ? '🏆 ¡EXPEDICIÓN COMPLETA! Gran Maestro de la Energía' 
+                : `Progreso: ${count} de 7 salas completadas`;
         }
         if (this.missionCounterBadge) {
-            this.missionCounterBadge.innerText = count === 4 ? '4/4 ⭐' : `${count}/4`;
-            if (count === 4) {
+            this.missionCounterBadge.innerText = count === 7 ? '7/7 ⭐' : `${count}/7`;
+            if (count === 7) {
                 this.missionCounterBadge.parentElement?.classList.add('all-done');
             }
+        }
+        if (count === 7 && !this.celebrationTriggered) {
+            this.triggerGrandCelebration();
         }
     }
 
@@ -747,10 +782,15 @@ export class HUD {
         this.ctx.lineWidth = 1.5;
         this.ctx.strokeRect(12, 12, width - 24, height - 24);
 
-        // Experimentos (1:1)
-        this.drawExhibitDot(0, 0, '#00f0ff', this.completedMissions.has(1));
-        this.drawExhibitDot(0, -15, '#d946ef', this.completedMissions.has(2));
-        this.drawExhibitDot(0, 15, '#fde047', this.completedMissions.has(3));
+        // 7 Estaciones de Energía + Prisma Conmemorativo (1:1)
+        this.drawExhibitDot(-15, 0, '#4ade80', this.completedMissions.has(1));   // Sala 1: Papa
+        this.drawExhibitDot(16, 0, '#38bdf8', this.completedMissions.has(2));    // Sala 2: Tesla
+        this.drawExhibitDot(0, -15, '#00f0ff', this.completedMissions.has(3));   // Sala 3: Eólica
+        this.drawExhibitDot(12, -12, '#fde047', this.completedMissions.has(4));  // Sala 4: Solar
+        this.drawExhibitDot(-12, -12, '#c084fc', this.completedMissions.has(5)); // Sala 5: Van de Graaff
+        this.drawExhibitDot(0, 14, '#f59e0b', this.completedMissions.has(6));    // Sala 6: Newton
+        this.drawExhibitDot(12, 10, '#f97316', this.completedMissions.has(7));   // Sala 7: Dínamo Manual
+        this.drawExhibitDot(0, 24, '#d946ef', true);                             // Galería Especial: Prisma
 
         // Jugador
         const pX = ((playerX + this.roomWidth / 2) / this.roomWidth) * (width - 24) + 12;

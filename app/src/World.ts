@@ -6,6 +6,10 @@ import { MuseumRoom } from './models/Environment';
 import { OpticsExhibit } from './models/OpticsExhibit';
 import { NewtonsCradle } from './models/NewtonsCradle';
 import { TeslaCoil } from './models/TeslaCoil';
+import { WindTurbineExhibit } from './models/WindTurbineExhibit';
+import { SolarPanelExhibit } from './models/SolarPanelExhibit';
+import { VanDeGraaffExhibit } from './models/VanDeGraaffExhibit';
+import { DynamoExhibit } from './models/DynamoExhibit';
 import { RobotGuide } from './models/RobotGuide';
 import { QuantumOrbsManager } from './models/QuantumOrbs';
 import { SoundSynthesizer } from './SoundSynthesizer';
@@ -30,7 +34,7 @@ export class World {
     scene: THREE.Scene;
     interactables: Interactable[] = [];
     
-    // Modelos
+    // Modelos de las Salas
     private room!: MuseumRoom;
     private potato1!: PotatoBattery;
     private potato2!: PotatoBattery;
@@ -38,9 +42,13 @@ export class World {
     private potato4!: PotatoBattery;
     private cables!: EnergyCables;
     private switchExhibit!: SwitchExhibit;
-    private optics!: OpticsExhibit;
-    private cradle!: NewtonsCradle;
     private teslaCoil!: TeslaCoil;
+    private windTurbine!: WindTurbineExhibit;
+    private solarPanel!: SolarPanelExhibit;
+    private vanDeGraaff!: VanDeGraaffExhibit;
+    private dynamoExhibit!: DynamoExhibit;
+    private cradle!: NewtonsCradle;
+    private optics!: OpticsExhibit;
     private robotGuide!: RobotGuide;
     private orbsManager!: QuantumOrbsManager;
 
@@ -55,133 +63,182 @@ export class World {
     }
 
     private init() {
-        // 1. Habitación Principal Moderna (Pabellón Abierto al Cosmos)
+        // 1. Habitación Arquitectónica con 6 Salas Temáticas y Atrio Central
         this.room = new MuseumRoom();
         this.scene.add(this.room.getMesh());
 
         const pHeight = 1.2;
 
-        // 2. ESTACIÓN 01: CIRCUITO DE 4 PAPAS BATERÍA EN SERIE (~1.96V)
-        // Lado Izquierdo: Papa 1 (Atrás) y Papa 2 (Adelante)
+        // =========================================================================
+        // SALA 01 (OESTE: X = -15, Z = 0): ENERGÍA QUÍMICA & PILA DE PAPA (~1.94V)
+        // =========================================================================
+        const s1X = -15;
         this.potato1 = new PotatoBattery();
         const p1Mesh = this.potato1.getMesh();
-        p1Mesh.position.set(-0.82, pHeight + 0.12, -0.20);
+        p1Mesh.position.set(s1X - 0.82, pHeight + 0.12, -0.20);
         this.scene.add(p1Mesh);
 
         this.potato2 = new PotatoBattery();
         const p2Mesh = this.potato2.getMesh();
-        p2Mesh.position.set(-0.62, pHeight + 0.12, 0.22);
+        p2Mesh.position.set(s1X - 0.62, pHeight + 0.12, 0.22);
         this.scene.add(p2Mesh);
 
-        // Lado Derecho: Papa 3 (Adelante) y Papa 4 (Atrás)
         this.potato3 = new PotatoBattery();
         const p3Mesh = this.potato3.getMesh();
-        p3Mesh.position.set(0.68, pHeight + 0.12, 0.15);
+        p3Mesh.position.set(s1X + 0.68, pHeight + 0.12, 0.15);
         this.scene.add(p3Mesh);
 
         this.potato4 = new PotatoBattery();
         const p4Mesh = this.potato4.getMesh();
-        p4Mesh.position.set(0.85, pHeight + 0.12, -0.22);
+        p4Mesh.position.set(s1X + 0.85, pHeight + 0.12, -0.22);
         this.scene.add(p4Mesh);
 
-        // Tablero central con Interruptor, LED aumentado 15% y Multímetro inclinado a la derecha
         this.switchExhibit = new SwitchExhibit();
         const switchMesh = this.switchExhibit.getMesh();
-        switchMesh.position.set(-0.05, pHeight, 0.08);
+        switchMesh.position.set(s1X - 0.05, pHeight, 0.08);
         this.scene.add(switchMesh);
 
-        // Conector de clavija en electrodo de papa 1
         const plugGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.05, 16);
         const plugMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.9, roughness: 0.2 });
         this.plugMesh = new THREE.Mesh(plugGeo, plugMat);
-        this.plugMesh.position.set(-0.82, pHeight + 0.22, -0.20);
+        this.plugMesh.position.set(s1X - 0.82, pHeight + 0.22, -0.20);
         this.scene.add(this.plugMesh);
 
-        // CABLES CONECTANDO LAS 4 PAPAS EN SERIE COHERENTE (Zinc a Cobre en cadena)
         const cablePoints = [
-            new THREE.Vector3(-0.76, pHeight + 0.16, -0.18),    // Papa 1 Zinc
-            new THREE.Vector3(-0.72, pHeight + 0.08, 0.02),     // Curva puente izquierda
-            new THREE.Vector3(-0.62, pHeight + 0.16, 0.18),     // Papa 2 Cobre
-            new THREE.Vector3(-0.56, pHeight + 0.16, 0.24),     // Papa 2 Zinc
-            new THREE.Vector3(-0.40, pHeight + 0.06, 0.20),     // Bajada al tablero
-            new THREE.Vector3(-0.29, pHeight + 0.05, 0.18),     // Entrada Borne Tablero
-            new THREE.Vector3(-0.05, pHeight + 0.05, 0.18),     // Puente Switch -> LED
-            new THREE.Vector3(0.19, pHeight + 0.05, 0.18),      // Salida Borne Tablero
-            new THREE.Vector3(0.42, pHeight + 0.06, 0.18),      // Hacia papas derechas
-            new THREE.Vector3(0.64, pHeight + 0.16, 0.12),      // Papa 3 Cobre
-            new THREE.Vector3(0.72, pHeight + 0.16, 0.18),      // Papa 3 Zinc
-            new THREE.Vector3(0.78, pHeight + 0.08, -0.04),     // Curva puente derecha
-            new THREE.Vector3(0.85, pHeight + 0.16, -0.18),     // Papa 4 Zinc
-            new THREE.Vector3(0.0, pHeight + 0.04, -0.42),      // Cable de retorno largo por detrás
-            new THREE.Vector3(-0.85, pHeight + 0.16, -0.22)     // Retorno a Papa 1 Cobre
+            new THREE.Vector3(s1X - 0.76, pHeight + 0.16, -0.18),
+            new THREE.Vector3(s1X - 0.72, pHeight + 0.08, 0.02),
+            new THREE.Vector3(s1X - 0.62, pHeight + 0.16, 0.18),
+            new THREE.Vector3(s1X - 0.56, pHeight + 0.16, 0.24),
+            new THREE.Vector3(s1X - 0.40, pHeight + 0.06, 0.20),
+            new THREE.Vector3(s1X - 0.29, pHeight + 0.05, 0.18),
+            new THREE.Vector3(s1X - 0.05, pHeight + 0.05, 0.18),
+            new THREE.Vector3(s1X + 0.19, pHeight + 0.05, 0.18),
+            new THREE.Vector3(s1X + 0.42, pHeight + 0.06, 0.18),
+            new THREE.Vector3(s1X + 0.64, pHeight + 0.16, 0.12),
+            new THREE.Vector3(s1X + 0.72, pHeight + 0.16, 0.18),
+            new THREE.Vector3(s1X + 0.78, pHeight + 0.08, -0.04),
+            new THREE.Vector3(s1X + 0.85, pHeight + 0.16, -0.18),
+            new THREE.Vector3(s1X + 0.0, pHeight + 0.04, -0.42),
+            new THREE.Vector3(s1X - 0.85, pHeight + 0.16, -0.22)
         ];
         this.cables = new EnergyCables(cablePoints);
         this.scene.add(this.cables.getMesh());
 
-        // 3. ESTACIÓN 02: PRISMA ÓPTICO (Fondo: 0, -15)
-        this.optics = new OpticsExhibit();
-        const opticsMesh = this.optics.getMesh();
-        opticsMesh.position.set(0, pHeight, -15);
-        opticsMesh.scale.set(1.0, 1.0, 1.0); // Banco óptico real de 1.8m a escala 1:1
-        this.scene.add(opticsMesh);
+        // =========================================================================
+        // SALA 02 (ESTE: X = +16, Z = 0): ALTA TENSIÓN & BOBINA DE TESLA
+        // =========================================================================
+        this.teslaCoil = new TeslaCoil();
+        const teslaMesh = this.teslaCoil.getMesh();
+        teslaMesh.position.set(16, pHeight, 0);
+        this.scene.add(teslaMesh);
 
-        // 4. ESTACIÓN 03: CUNA DE NEWTON (Entrada: 0, 15)
+        // =========================================================================
+        // SALA 03 (NORTE: X = 0, Z = -15): ENERGÍA EÓLICA & DÍNAMO FARADAY
+        // =========================================================================
+        this.windTurbine = new WindTurbineExhibit();
+        const windMesh = this.windTurbine.getMesh();
+        windMesh.position.set(0, pHeight, -15);
+        this.scene.add(windMesh);
+
+        // =========================================================================
+        // SALA 04 (NORESTE: X = 12, Z = -12): ENERGÍA SOLAR FOTOVOLTAICA
+        // =========================================================================
+        this.solarPanel = new SolarPanelExhibit();
+        const solarMesh = this.solarPanel.getMesh();
+        solarMesh.position.set(12, pHeight, -12);
+        this.scene.add(solarMesh);
+
+        // =========================================================================
+        // SALA 05 (NOROESTE: X = -12, Z = -12): GENERADOR ELECTROSTÁTICO VAN DE GRAAFF
+        // =========================================================================
+        this.vanDeGraaff = new VanDeGraaffExhibit();
+        const vanDeGraaffMesh = this.vanDeGraaff.getMesh();
+        vanDeGraaffMesh.position.set(-12, pHeight, -12);
+        this.scene.add(vanDeGraaffMesh);
+
+        // =========================================================================
+        // SALA 06 (SUR: X = 0, Z = 14): ENERGÍA MECÁNICA & CUNA DE NEWTON
+        // =========================================================================
         this.cradle = new NewtonsCradle();
         const cradleMesh = this.cradle.getMesh();
-        cradleMesh.position.set(0, pHeight, 15);
+        cradleMesh.position.set(0, pHeight, 14);
         cradleMesh.scale.set(0.18, 0.18, 0.18);
         this.scene.add(cradleMesh);
 
-        // 5. Configurar interactables, pedagogía adaptada y vinculación con atriles
+        // =========================================================================
+        // SALA 07 (SURESTE: X = 12, Z = 10): DÍNAMO MANUAL CON MANIVELA
+        // =========================================================================
+        this.dynamoExhibit = new DynamoExhibit();
+        const dynamoMesh = this.dynamoExhibit.getMesh();
+        dynamoMesh.position.set(12, pHeight, 10);
+        this.scene.add(dynamoMesh);
+
+        // =========================================================================
+        // GALERÍA HISTÓRICA (SUR PROFUNDO: X = 0, Z = 24): PRISMA ÓPTICO
+        // =========================================================================
+        this.optics = new OpticsExhibit();
+        const opticsMesh = this.optics.getMesh();
+        opticsMesh.position.set(0, pHeight, 24);
+        opticsMesh.scale.set(1.0, 1.0, 1.0);
+        this.scene.add(opticsMesh);
+
+        // 8. Robot Guía Mel-Bot en el Atrio Central
+        this.robotGuide = new RobotGuide();
+        const robotMesh = this.robotGuide.getMesh();
+        robotMesh.position.set(1.5, 1.4, 2.0);
+        this.scene.add(robotMesh);
+
+        // 9. Orbes de Energía Temáticos
+        this.orbsManager = new QuantumOrbsManager(this.scene, this.hud);
+
+        // 10. Configurar interactables, pedagogía y cuestionarios
         this.setupInteractivity();
     }
 
     private setupInteractivity() {
         const sfx = SoundSynthesizer.getInstance();
 
-        // --- ESTACIÓN 1: PAPA BATERÍA ---
+        // -------------------------------------------------------------
+        // ESTACIÓN 01: PILA DE PAPA (SALA 1)
+        // -------------------------------------------------------------
         const quizPapa: QuizData = {
             id: 1,
-            title: "Pila de Papa",
-            question: "¿Por qué dos simples papas logran encender la lamparita LED?",
+            title: "Energía Química y Redox",
+            question: "¿Cómo logran dos simples papas encender la lamparita LED del circuito?",
             options: [
-                "Porque las papas absorben rayos láser de la luz del sol durante el día.",
-                "Porque los metales (zinc y cobre) reaccionan con el jugo ácido de la papa y liberan electrones por los cables.",
-                "Porque la papa está caliente por dentro y genera vapor con chispas."
+                "Porque las papas absorben calor y generan chispas de vapor caliente.",
+                "Porque los metales (zinc y cobre) reaccionan con el jugo ácido liberando electrones que viajan por el cable.",
+                "Porque las papas tienen microchips de silicio enterrados adentro."
             ],
             correctIndex: 1,
-            explanation: "¡Exacto! El jugo ácido de la papa ayuda a que los electrones salten del zinc al cobre. ¡Funciona igual que la pila de un juguete!"
+            explanation: "¡Exacto! El ácido fosfórico de la pulpa actúa como electrolito, provocando una reacción redox que empuja electrones del zinc hacia el cobre."
         };
 
         const papaInteractable: Omit<Interactable, 'object'> = {
             id: 1,
-            title: "Estación 01: Pila de Papa",
-            tag: "⚡ ELECTRICIDAD Y QUÍMICA",
-            description: "¡Las papas tienen jugo con energía escondida! Dos metales distintos (cobre y zinc) reaccionan con el jugo de la papa y liberan electrones que viajan por los cables en circuito cerrado hasta encender la lamparita LED sobre la placa.",
-            badge: "🏅 +100 XP · Medalla de la Energía",
+            title: "Sala 01: Pila de Papa",
+            tag: "🔋 ENERGÍA QUÍMICA A ELÉCTRICA",
+            description: "¡Dos metales distintos (cobre y zinc) sumergidos en el jugo de la papa reaccionan liberando electrones! Al conectar dos celdas en serie se obtienen ~1.94V, suficiente para encender el diodo LED verde.",
+            badge: "🏅 +100 XP · Medalla Química",
             getModeText: () => {
                 const isOn = this.switchExhibit.getState() && this.isPlugged;
-                return isOn ? "ESTADO: CIRCUITO CERRADO (LED VERDE ENCENDIDO)" : "ESTADO: CIRCUITO ABIERTO (APAGADO)";
+                return isOn ? "ESTADO: CIRCUITO CERRADO (~1.94V LED ENCENDIDO)" : "ESTADO: CIRCUITO ABIERTO (APAGADO)";
             },
             quiz: quizPapa,
-            // TECLA [E]: Únicamente para probar / encender / manipular el circuito
             onInteract: () => {
                 const newState = this.switchExhibit.toggle();
                 const isOn = newState && this.isPlugged;
                 sfx.playSwitchClick(isOn);
-                const modeText = isOn ? "ESTADO: CIRCUITO CERRADO (LED VERDE ENCENDIDO)" : "ESTADO: CIRCUITO ABIERTO (APAGADO)";
+                const modeText = isOn ? "ESTADO: CIRCUITO CERRADO (~1.94V LED ENCENDIDO)" : "ESTADO: CIRCUITO ABIERTO (APAGADO)";
                 this.hud.setCardModePill(modeText);
             },
-            // TECLA [R]: Únicamente para responder el desafío pedagógico
             onChallenge: () => {
                 if (!this.hud.isMissionCompleted(1)) {
                     this.hud.openQuiz(quizPapa, (success) => {
-                        if (success) {
-                            this.hud.completeMission(1);
-                        }
+                        if (success) this.hud.completeMission(1);
                     });
                 } else {
-                    this.hud.showAchievementToast('Pila de Papa: ¡Completada!', 'Ya obtuviste la medalla de esta estación. Podés seguir interactuando libremente con el circuito.');
+                    this.hud.showAchievementToast('Pila de Papa: ¡Completado!', 'Ya obtuviste la medalla de esta sala. Podés seguir probando el circuito.');
                 }
             }
         };
@@ -189,124 +246,21 @@ export class World {
         this.switchExhibit.getInteractables().forEach(mesh => {
             this.interactables.push({ object: mesh, ...papaInteractable });
         });
-        this.plugMesh && this.interactables.push({ object: this.plugMesh, ...papaInteractable });
-        this.potato1.getMesh().traverse((child) => {
-            if (child instanceof THREE.Mesh) this.interactables.push({ object: child, ...papaInteractable });
-        });
-        this.potato2.getMesh().traverse((child) => {
-            if (child instanceof THREE.Mesh) this.interactables.push({ object: child, ...papaInteractable });
-        });
-        this.potato3.getMesh().traverse((child) => {
-            if (child instanceof THREE.Mesh) this.interactables.push({ object: child, ...papaInteractable });
-        });
-        this.potato4.getMesh().traverse((child) => {
-            if (child instanceof THREE.Mesh) this.interactables.push({ object: child, ...papaInteractable });
+        [this.potato1, this.potato2, this.potato3, this.potato4].forEach(p => {
+            p.getMesh().traverse((child) => {
+                if (child instanceof THREE.Mesh) this.interactables.push({ object: child, ...papaInteractable });
+            });
         });
 
-        // --- ESTACIÓN 2: PRISMA ÓPTICO ---
-        const quizOptics: QuizData = {
-            id: 2,
-            title: "La Magia de la Luz",
-            question: "¿Por qué la luz blanca se abre en arcoíris al cruzar el cristal pero el láser no?",
-            options: [
-                "Porque el cristal tiene acuarelas transparentes escondidas adentro.",
-                "Porque el láser se enfría y apaga sus otros colores al tocar el vidrio.",
-                "Porque la luz blanca es una mezcla de muchos colores viajando juntos; el láser es de un solo color puro."
-            ],
-            correctIndex: 2,
-            explanation: "¡Brillante! La luz blanca contiene todos los colores juntos. Al entrar al cristal, cada color se frena a distinta velocidad y se abren en abanico."
-        };
-
-        const opticsInteractable: Omit<Interactable, 'object'> = {
-            id: 2,
-            title: "Estación 02: Prisma Óptico",
-            tag: "🌈 LA MAGIA DE LA LUZ",
-            description: "¿Sabías que la luz blanca del sol esconde todos los colores del arcoíris? Cuando atraviesa este cristal en triángulo, cada color viaja a diferente velocidad y se separan en abanico. ¡Probá la luz blanca y láseres de colores interactuando con el prisma!",
-            badge: "🏅 +100 XP · Medalla de la Luz",
-            getModeText: () => `MODO: ${this.optics.getCurrentModeInfo().name.toUpperCase()}`,
-            quiz: quizOptics,
-            // Acción Interactuar: alternar modos de luz física
-            onInteract: () => {
-                const newMode = this.optics.cycleMode();
-                sfx.playLaserCycle(newMode.id);
-                this.hud.setCardModePill(`MODO: ${newMode.name.toUpperCase()}`);
-            },
-            // Acción Desafío: responder el desafío pedagógico
-            onChallenge: () => {
-                if (!this.hud.isMissionCompleted(2)) {
-                    this.hud.openQuiz(quizOptics, (success) => {
-                        if (success) {
-                            this.hud.completeMission(2);
-                        }
-                    });
-                } else {
-                    this.hud.showAchievementToast('Prisma Óptico: ¡Completado!', 'Ya obtuviste la medalla de esta estación. Podés seguir interactuando libremente con los láseres.');
-                }
-            }
-        };
-
-        this.optics.getInteractables().forEach(mesh => {
-            this.interactables.push({ object: mesh, ...opticsInteractable });
-        });
-
-        // --- ESTACIÓN 3: CUNA DE NEWTON ---
-        const quizNewton: QuizData = {
-            id: 3,
-            title: "Movimiento y Choques",
-            question: "Cuando la primera bola choca a las que están quietas, ¿por qué solo sale disparada la del otro extremo?",
-            options: [
-                "Porque la energía del golpe viaja a través de las bolas quietas y se transfiere directo a la última.",
-                "Porque las bolas del medio tienen imanes que repelen la bola de la punta.",
-                "Porque la gravedad solo empuja a los metales que están en el borde exterior."
-            ],
-            correctIndex: 0,
-            explanation: "¡Exacto! Es la conservación de la energía: las esferas del medio reciben el golpe y lo pasan en milésimas de segundo a la última esfera sin moverse ellas."
-        };
-
-        const newtonInteractable: Omit<Interactable, 'object'> = {
-            id: 3,
-            title: "Estación 03: Cuna de Newton",
-            tag: "⚖️ MOVIMIENTO Y CHOQUES",
-            description: "¿Alguna vez jugaste a los autitos chocadores? Aquí la energía no desaparece: viaja de una bola a otra a través del metal como un pase de fútbol invisible. ¡Interactuá para alternar entre 1 bola, 2 bolas, 3 bolas o choque simétrico!",
-            badge: "🏅 +100 XP · Medalla de Newton",
-            getModeText: () => `MODO DE CHOQUE: ${this.cradle.getCurrentModeInfo().name.toUpperCase()}`,
-            quiz: quizNewton,
-            // Acción Interactuar: alternar modos de péndulos
-            onInteract: () => {
-                const newMode = this.cradle.cycleMode();
-                sfx.playNewtonClack(1.0);
-                this.hud.setCardModePill(`MODO DE CHOQUE: ${newMode.name.toUpperCase()}`);
-            },
-            // Acción Desafío: responder el desafío pedagógico
-            onChallenge: () => {
-                if (!this.hud.isMissionCompleted(3)) {
-                    this.hud.openQuiz(quizNewton, (success) => {
-                        if (success) {
-                            this.hud.completeMission(3);
-                        }
-                    });
-                } else {
-                    this.hud.showAchievementToast('Cuna de Newton: ¡Completada!', 'Ya obtuviste la medalla de esta estación. Podés seguir interactuando libremente con las esferas.');
-                }
-            }
-        };
-
-        this.cradle.getInteractables().forEach((mesh: THREE.Object3D) => {
-            this.interactables.push({ object: mesh, ...newtonInteractable });
-        });
-
-        // 5. ESTACIÓN 04: BOBINA DE TESLA (Ala Este: 16, 1.2, 0)
-        this.teslaCoil = new TeslaCoil();
-        const teslaMesh = this.teslaCoil.getMesh();
-        teslaMesh.position.set(16, 1.2, 0);
-        this.scene.add(teslaMesh);
-
+        // -------------------------------------------------------------
+        // ESTACIÓN 02: BOBINA DE TESLA (SALA 2)
+        // -------------------------------------------------------------
         const quizTesla: QuizData = {
-            id: 4,
+            id: 2,
             title: "Electromagnetismo y Tesla",
             question: "¿Por qué el tubo fluorescente se enciende en el aire cerca de la Bobina sin cables ni pilas?",
             options: [
-                "Porque la bobina genera un campo electromagnético de alta frecuencia que viaja por el aire y excita el gas del tubo.",
+                "Porque la bobina genera un campo electromagnético de alta frecuencia que viaja por el aire e ioniza el gas del tubo.",
                 "Porque el vidrio del tubo tiene pequeñas baterías invisibles que se calientan con el aire.",
                 "Porque el sonido del relámpago empuja la luz hacia adentro del tubo."
             ],
@@ -315,82 +269,326 @@ export class World {
         };
 
         const teslaInteractable: Omit<Interactable, 'object'> = {
-            id: 4,
-            title: "Estación 04: Bobina de Tesla",
-            tag: "⚡ ELECTROMAGNETISMO Y ALTA TENSIÓN",
+            id: 2,
+            title: "Sala 02: Bobina de Tesla",
+            tag: "⚡ ALTA TENSIÓN Y TRANSMISIÓN INALÁMBRICA",
             description: "Nikola Tesla descubrió que la electricidad puede viajar por el aire sin necesidad de cables. La bobina genera un campo electromagnético de alta frecuencia tan potente que enciende el tubo fluorescente a distancia y desata arcos de plasma.",
             badge: "🏅 +100 XP · Medalla de Tesla",
             getModeText: () => `MODO: ${this.teslaCoil.getCurrentModeInfo().name.toUpperCase()}`,
             quiz: quizTesla,
             onInteract: () => {
                 const newMode = this.teslaCoil.cycleMode();
+                sfx.playTeslaZap(newMode.id === 0 ? 0.6 : newMode.id === 1 ? 1.0 : 0.8);
                 this.hud.setCardModePill(`MODO: ${newMode.name.toUpperCase()}`);
             },
             onChallenge: () => {
-                if (!this.hud.isMissionCompleted(4)) {
+                if (!this.hud.isMissionCompleted(2)) {
                     this.hud.openQuiz(quizTesla, (success) => {
-                        if (success) {
-                            this.hud.completeMission(4);
-                        }
+                        if (success) this.hud.completeMission(2);
                     });
                 } else {
-                    this.hud.showAchievementToast('Bobina de Tesla: ¡Completada!', 'Ya obtuviste la medalla de esta estación. Podés seguir probando los modos de plasma.');
+                    this.hud.showAchievementToast('Bobina de Tesla: ¡Completado!', 'Ya dominás el electromagnetismo resonante.');
                 }
             }
         };
 
-        this.teslaCoil.getInteractables().forEach((mesh: THREE.Object3D) => {
+        this.teslaCoil.getInteractables().forEach(mesh => {
             this.interactables.push({ object: mesh, ...teslaInteractable });
         });
 
-        // 6. VINCULAR LOS 4 PEDESTALES / ATRILES DIRECTAMENTE A CADA EXPERIMENTO
-        const pedestals = this.room.getPedestalMeshes();
-        if (pedestals.length >= 4) {
-            this.interactables.push({ object: pedestals[0], ...papaInteractable });
-            this.interactables.push({ object: pedestals[1], ...opticsInteractable });
-            this.interactables.push({ object: pedestals[2], ...newtonInteractable });
-            this.interactables.push({ object: pedestals[3], ...teslaInteractable });
-        }
+        // -------------------------------------------------------------
+        // ESTACIÓN 03: AEROGENERADOR FARADAY & MINI CIUDAD (SALA 3)
+        // -------------------------------------------------------------
+        const quizWind: QuizData = {
+            id: 3,
+            title: "Energía Eólica y Dinamo de Faraday",
+            question: "¿Cómo transforma el aerogenerador la fuerza del viento en luz para la maqueta de la ciudad?",
+            options: [
+                "El viento empuja las aspas, las aspas hacen girar imanes dentro de bobinas de cobre y se induce corriente eléctrica.",
+                "Las aspas atrapan nubes de tormenta y las exprimen sobre la ciudad.",
+                "El viento enfría los cables y el frío se convierte en electricidad líquida."
+            ],
+            correctIndex: 0,
+            explanation: "¡Brillante! Según la Ley de Inducción de Faraday, cuando un imán gira cerca de una bobina de cobre, los electrones se ponen en movimiento generando electricidad limpia."
+        };
 
-        // 7. COMPAÑERO ROBÓTICO NPC: MEL-BOT
-        this.robotGuide = new RobotGuide();
-        this.scene.add(this.robotGuide.getMesh());
+        const windInteractable: Omit<Interactable, 'object'> = {
+            id: 3,
+            title: "Sala 03: Aerogenerador & Mini Ciudad",
+            tag: "🌪️ ENERGÍA CINÉTICA A ELÉCTRICA (EÓLICA)",
+            description: "¡El viento mueve las aspas de perfil aerodinámico! La rotación hace girar imanes de neodimio dentro de bobinas de cobre en el dinamo transparente, generando voltaje que ilumina toda la maqueta de la ciudad.",
+            badge: "🏅 +100 XP · Medalla Eólica",
+            getModeText: () => `POTENCIA: ${this.windTurbine.getCurrentModeInfo().name.toUpperCase()}`,
+            quiz: quizWind,
+            onInteract: () => {
+                const newMode = this.windTurbine.cycleMode();
+                sfx.playWindTurbine(newMode.windSpeed / 8.0);
+                this.hud.setCardModePill(`POTENCIA: ${newMode.name.toUpperCase()}`);
+            },
+            onChallenge: () => {
+                if (!this.hud.isMissionCompleted(3)) {
+                    this.hud.openQuiz(quizWind, (success) => {
+                        if (success) this.hud.completeMission(3);
+                    });
+                } else {
+                    this.hud.showAchievementToast('Energía Eólica: ¡Completado!', 'Ya conocés cómo se genera la energía limpia del viento.');
+                }
+            }
+        };
 
+        this.windTurbine.getInteractables().forEach(mesh => {
+            this.interactables.push({ object: mesh, ...windInteractable });
+        });
+
+        // -------------------------------------------------------------
+        // ESTACIÓN 04: PANEL SOLAR FOTOVOLTAICO & MOTOR (SALA 4)
+        // -------------------------------------------------------------
+        const quizSolar: QuizData = {
+            id: 4,
+            title: "Energía Solar y Efecto Fotoeléctrico",
+            question: "¿Qué ocurre dentro de las celdas de silicio del panel solar cuando la luz del foco incide sobre ellas?",
+            options: [
+                "El panel absorbe agua del aire y la evapora a presión.",
+                "Los fotones de luz chocan contra los átomos de silicio y desprenden electrones, creando una corriente eléctrica que hace girar la hélice.",
+                "El panel se calienta y el calor empuja las palas con vapor."
+            ],
+            correctIndex: 1,
+            explanation: "¡Excelente! Es el Efecto Fotoeléctrico descubierto por Heinrich Hertz y explicado por Albert Einstein: la luz solar (fotones) arranca electrones del silicio generando electricidad directa."
+        };
+
+        const solarInteractable: Omit<Interactable, 'object'> = {
+            id: 4,
+            title: "Sala 04: Panel Solar Fotovoltaico",
+            tag: "☀️ ENERGÍA LUMÍNICA A MECÁNICA (SOLAR)",
+            description: "¡Los fotones de la luz golpean los átomos de silicio del panel solar desprendiendo electrones! Esta corriente continua alimenta directamente el motor eléctrico que hace girar la hélice de aviación a alta velocidad.",
+            badge: "🏅 +100 XP · Medalla Solar",
+            getModeText: () => `INCIDENCIA: ${this.solarPanel.getCurrentModeInfo().name.toUpperCase()}`,
+            quiz: quizSolar,
+            onInteract: () => {
+                const newMode = this.solarPanel.cycleMode();
+                sfx.playSolarPhotons(newMode.efficiency);
+                this.hud.setCardModePill(`INCIDENCIA: ${newMode.name.toUpperCase()}`);
+            },
+            onChallenge: () => {
+                if (!this.hud.isMissionCompleted(4)) {
+                    this.hud.openQuiz(quizSolar, (success) => {
+                        if (success) this.hud.completeMission(4);
+                    });
+                } else {
+                    this.hud.showAchievementToast('Energía Solar: ¡Completado!', 'Ya dominás la conversión de fotones en movimiento.');
+                }
+            }
+        };
+
+        this.solarPanel.getInteractables().forEach(mesh => {
+            this.interactables.push({ object: mesh, ...solarInteractable });
+        });
+
+        // -------------------------------------------------------------
+        // ESTACIÓN 05: GENERADOR ELECTROSTÁTICO VAN DE GRAAFF (SALA 5)
+        // -------------------------------------------------------------
+        const quizVanDeGraaff: QuizData = {
+            id: 5,
+            title: "Electricidad Estática y Fricción",
+            question: "¿Por qué las tiras conductoras de la cúpula levitan en el aire cuando el generador está encendido?",
+            options: [
+                "Porque el generador sopla aire comprimido por pequeños agujeros invisibles.",
+                "Porque la cúpula y las tiras se cargan con el mismo signo eléctrico (+), y las cargas iguales se repelen con fuerza desafiando la gravedad.",
+                "Porque el aluminio se vuelve magnético y es atraído por el techo del museo."
+            ],
+            correctIndex: 1,
+            explanation: "¡Exacto! Ley de Coulomb: cargas de igual polaridad se repelen mutuamente. Como la cúpula y las tiras comparten la misma carga eléctrica positiva, se rechazan y levitan."
+        };
+
+        const vanDeGraaffInteractable: Omit<Interactable, 'object'> = {
+            id: 5,
+            title: "Sala 05: Generador de Van de Graaff",
+            tag: "⚡ ENERGÍA MECÁNICA A ELECTROSTÁTICA",
+            description: "Una correa de caucho en movimiento transporta electrones por fricción mecánica hasta acumular más de 150.000 Voltios en la esfera de aluminio. ¡Las cargas del mismo signo se repelen haciendo levitar las cintas en el aire!",
+            badge: "🏅 +100 XP · Medalla Estática",
+            getModeText: () => `ESTADO: ${this.vanDeGraaff.getCurrentModeInfo().name.toUpperCase()}`,
+            quiz: quizVanDeGraaff,
+            onInteract: () => {
+                const newMode = this.vanDeGraaff.cycleMode();
+                if (newMode.id === 1) {
+                    sfx.playElectrostaticSpark();
+                } else {
+                    sfx.playTeslaZap(0.5);
+                }
+                this.hud.setCardModePill(`ESTADO: ${newMode.name.toUpperCase()}`);
+            },
+            onChallenge: () => {
+                if (!this.hud.isMissionCompleted(5)) {
+                    this.hud.openQuiz(quizVanDeGraaff, (success) => {
+                        if (success) this.hud.completeMission(5);
+                    });
+                } else {
+                    this.hud.showAchievementToast('Van de Graaff: ¡Completado!', 'Ya entendés cómo funciona la repulsión electrostática.');
+                }
+            }
+        };
+
+        this.vanDeGraaff.getInteractables().forEach(mesh => {
+            this.interactables.push({ object: mesh, ...vanDeGraaffInteractable });
+        });
+
+        // -------------------------------------------------------------
+        // ESTACIÓN 06: CUNA DE NEWTON (SALA 6)
+        // -------------------------------------------------------------
+        const quizNewton: QuizData = {
+            id: 6,
+            title: "Conservación de la Energía y Momento",
+            question: "Al soltar 2 esferas de acero, ¿por qué salen despedidas exactamente 2 esferas del otro lado y no 1 sola a doble velocidad?",
+            options: [
+                "Porque las esferas centrales tienen resortes que cuentan cuántas bolas cayeron.",
+                "Porque deben conservarse al mismo tiempo la energía cinética (½·m·v²) y la cantidad de movimiento (m·v).",
+                "Porque el acero solo puede recordar números pares de golpes."
+            ],
+            correctIndex: 1,
+            explanation: "¡Magistral! La física exige que tanto la masa en movimiento como la energía cinética total se conserven exactamente en un choque elástico perfecto."
+        };
+
+        const newtonInteractable: Omit<Interactable, 'object'> = {
+            id: 6,
+            title: "Sala 06: Cuna de Newton",
+            tag: "⚖️ ENERGÍA CINÉTICA Y CONSERVACIÓN",
+            description: "¡La energía no se crea ni se destruye! En choques perfectamente elásticos entre esferas de acero templado, la velocidad y la energía cinética viajan como ondas invisibles a través de las bolas intermedias sin moverlas.",
+            badge: "🏅 +100 XP · Medalla de Choques",
+            getModeText: () => `MODO: ${this.cradle.getCurrentModeInfo().name.toUpperCase()}`,
+            quiz: quizNewton,
+            onInteract: () => {
+                const newMode = this.cradle.cycleMode();
+                sfx.playNewtonClack(1.0);
+                this.hud.setCardModePill(`MODO: ${newMode.name.toUpperCase()}`);
+            },
+            onChallenge: () => {
+                if (!this.hud.isMissionCompleted(6)) {
+                    this.hud.openQuiz(quizNewton, (success) => {
+                        if (success) this.hud.completeMission(6);
+                    });
+                } else {
+                    this.hud.showAchievementToast('Cuna de Newton: ¡Completado!', 'Ya comprendés el principio de conservación de energía.');
+                }
+            }
+        };
+
+        this.cradle.getInteractables().forEach(mesh => {
+            this.interactables.push({ object: mesh, ...newtonInteractable });
+        });
+
+        // -------------------------------------------------------------
+        // ESTACIÓN 07: DÍNAMO MANUAL CON MANIVELA (SALA 7)
+        // -------------------------------------------------------------
+        const quizDynamo: QuizData = {
+            id: 7,
+            title: "Inducción Electromagnética y Efecto Joule",
+            question: "Cuando hacés girar la manivela con la fuerza de tus brazos, ¿cómo se convierte tu energía física en luz en la bombilla?",
+            options: [
+                "Los engranajes frotan cables calientes y el calor sale en forma de chispas por el vidrio.",
+                "Tu trabajo muscular hace girar bobinas de cobre entre imanes permanentes, induciendo una corriente de electrones que calienta el filamento de tungsteno hasta encenderlo.",
+                "La manivela absorbe aire frío y lo sopla dentro de la bombilla para que brille."
+            ],
+            correctIndex: 1,
+            explanation: "¡Excelente! Ley de Inducción de Faraday y Efecto Joule: la rotación mecánica mueve las bobinas en el campo magnético generando voltaje. La corriente de electrones choca contra los átomos de tungsteno, calentándolo a más de 2000°C hasta emitir luz blanca incandescente."
+        };
+
+        const dynamoInteractable: Omit<Interactable, 'object'> = {
+            id: 7,
+            title: "Sala 07: Dínamo Manual con Manivela",
+            tag: "⚙️ TRABAJO MUSCULAR A LUZ INCANDESCENTE",
+            description: "¡Convertí tu propia energía en electricidad! Al girar la manivela, los engranajes transparentes multiplican la velocidad a 5x, haciendo girar el rotor de cobre entre imanes permanentes. El voltímetro mide la tensión generada y enciende la lámpara vintage Edison.",
+            badge: "🏅 +100 XP · Medalla del Dínamo",
+            getModeText: () => `POTENCIA: ${this.dynamoExhibit.getCurrentModeInfo().name.toUpperCase()}`,
+            quiz: quizDynamo,
+            onInteract: () => {
+                const newMode = this.dynamoExhibit.crankKick();
+                sfx.playDynamoCrank(newMode.voltage / 24.0);
+                this.hud.setCardModePill(`POTENCIA: ${newMode.name.toUpperCase()}`);
+            },
+            onChallenge: () => {
+                if (!this.hud.isMissionCompleted(7)) {
+                    this.hud.openQuiz(quizDynamo, (success) => {
+                        if (success) this.hud.completeMission(7);
+                    });
+                } else {
+                    this.hud.showAchievementToast('Dínamo Manual: ¡Completado!', 'Ya dominás la conversión de energía humana en luz.', '⚙️');
+                }
+            }
+        };
+
+        this.dynamoExhibit.getInteractables().forEach(mesh => {
+            this.interactables.push({ object: mesh, ...dynamoInteractable });
+        });
+
+        // -------------------------------------------------------------
+        // EXHIBICIÓN ESPECIAL: PRISMA ÓPTICO (GALERÍA CONMEMORATIVA)
+        // -------------------------------------------------------------
+        const opticsQuiz: QuizData = {
+            id: 8,
+            title: "Exhibición de Óptica: Descomposición Espectral",
+            question: "¿Por qué el cristal triangular separa la luz blanca en todos los colores del arcoíris?",
+            options: [
+                "Porque el cristal tiene acuarelas transparentes adentro.",
+                "Porque la luz blanca está compuesta por todas las frecuencias visibles y cada una viaja a velocidad diferente dentro del vidrio.",
+                "Porque el láser se apaga con el frío del vidrio."
+            ],
+            correctIndex: 1,
+            explanation: "¡Exacto! Refracción y dispersión cromática: el cristal frena más a las frecuencias altas (violeta) que a las bajas (rojo), abriendo el abanico espectral."
+        };
+
+        const opticsInteractable: Omit<Interactable, 'object'> = {
+            id: 8,
+            title: "Galería Especial: Prisma Óptico",
+            tag: "🌈 MUESTRA DE CALIBRACIÓN LUMÍNICA",
+            description: "Exhibición técnica y de referencia conmemorativa. Isaac Newton demostró en 1666 que la luz blanca contiene todas las longitudes de onda del espectro visible. ¡Probá la luz blanca y los láseres monocromáticos!",
+            badge: "💎 Exhibición de Muestra e Historia",
+            getModeText: () => `LÁSER: ${this.optics.getCurrentModeInfo().name.toUpperCase()}`,
+            quiz: opticsQuiz,
+            onInteract: () => {
+                const newMode = this.optics.cycleMode();
+                sfx.playLaserCycle(newMode.id);
+                this.hud.setCardModePill(`LÁSER: ${newMode.name.toUpperCase()}`);
+            },
+            onChallenge: () => {
+                this.hud.showAchievementToast('Muestra de Óptica', 'Esta exhibición es un homenaje a la física de la luz y calibración visual.', '🌈');
+            }
+        };
+
+        this.optics.getInteractables().forEach(mesh => {
+            this.interactables.push({ object: mesh, ...opticsInteractable });
+        });
+
+        // -------------------------------------------------------------
+        // ROBOT GUÍA MEL-BOT (ATRIO CENTRAL)
+        // -------------------------------------------------------------
         const robotInteractable: Omit<Interactable, 'object'> = {
-            id: 99,
-            title: "Mel-Bot · Dron Robot Guía",
-            tag: "🤖 ASISTENTE CIENTÍFICO 3D",
-            description: "¡Soy Mel-Bot, tu asistente personal en el museo! Probá e interactuá con los experimentos tantas veces como quieras y respondé los desafíos para ganar XP. ¡Explorá las esquinas para hallar orbes de energía!",
-            badge: "💡 Consejos de Física en Vivo",
-            modeText: "ESTADO: ACOMPAÑANDO AL CIENTÍFICO",
+            id: 0,
+            title: "Mel-Bot: Asistente Robótico",
+            tag: "🤖 GUÍA DEL MUSEO",
+            description: "¡Hola Científico! Soy Mel-Bot, tu asistente en el Museo de la Energía. Explorá las 7 salas temáticas, buscá los orbes ocultos y demostrá tu conocimiento respondiendo los desafíos.",
+            badge: "ℹ️ Guía Interactiva",
+            getModeText: () => "ESTADO: EN LÍNEA",
             quiz: {
-                id: 99,
-                title: "Trivia de Mel-Bot",
-                question: "¿Cuál es la mejor forma de aprender física en este museo?",
-                options: [
-                    "A) Experimentar primero, observar los efectos e interactuar antes de responder el desafío.",
-                    "B) Correr con los ojos cerrados sin mirar las luces.",
-                    "C) Salir del museo sin probar los experimentos."
-                ],
+                id: 0,
+                title: "Guía del Museo",
+                question: "¿Estás listo para completar la gran expedición científica?",
+                options: ["¡Sí, vamos a explorar las salas!", "Necesito investigar más"],
                 correctIndex: 0,
-                explanation: "¡Exacto! El método científico se basa en observar, formular hipótesis y experimentar."
+                explanation: "¡Excelente! Caminá por los pasillos hacia cada sala temática."
             },
             onInteract: () => {
                 const tip = this.robotGuide.talk();
-                this.hud.showAchievementToast('Consejo de Mel-Bot 🤖', tip);
+                this.hud.showAchievementToast('Consejo de Mel-Bot', tip, '🤖');
             },
             onChallenge: () => {
                 const tip = this.robotGuide.talk();
-                this.hud.showAchievementToast('Consejo de Mel-Bot 🤖', tip);
+                this.hud.showAchievementToast('Consejo de Mel-Bot', tip, '🤖');
             }
         };
 
         this.robotGuide.getInteractables().forEach(mesh => {
             this.interactables.push({ object: mesh, ...robotInteractable });
         });
-
-        // 8. ORBES CUÁNTICOS COLECCIONABLES SECRETOS
-        this.orbsManager = new QuantumOrbsManager(this.scene, this.hud);
     }
 
     public update(delta: number, playerPos?: THREE.Vector3) {
@@ -406,20 +604,26 @@ export class World {
         const circuitActive = this.switchExhibit.getState() && this.isPlugged;
         this.cables.update(time, circuitActive);
 
-        // Actualizar óptica
-        if (this.optics) this.optics.update(time);
+        // Actualizar nuevos experimentos
+        if (this.windTurbine) this.windTurbine.update(time, delta);
+        if (this.solarPanel) this.solarPanel.update(time, delta);
+        if (this.vanDeGraaff) this.vanDeGraaff.update(time, delta);
+        if (this.dynamoExhibit) this.dynamoExhibit.update(time, delta);
 
-        // Actualizar cuna de newton con audio posicional
-        if (this.cradle) {
-            const dist = playerPos ? playerPos.distanceTo(new THREE.Vector3(0, 1.2, 15)) : undefined;
-            this.cradle.update(time, dist);
-        }
-
-        // Actualizar bobina de tesla con audio posicional y arcos de plasma
+        // Actualizar bobina de tesla con audio posicional
         if (this.teslaCoil) {
             const distTesla = playerPos ? playerPos.distanceTo(new THREE.Vector3(16, 1.2, 0)) : undefined;
             this.teslaCoil.update(time, distTesla);
         }
+
+        // Actualizar cuna de newton con audio posicional
+        if (this.cradle) {
+            const dist = playerPos ? playerPos.distanceTo(new THREE.Vector3(0, 1.2, 14)) : undefined;
+            this.cradle.update(time, dist);
+        }
+
+        // Actualizar óptica
+        if (this.optics) this.optics.update(time);
 
         // Actualizar Mel-Bot y Orbes coleccionables con posición del jugador
         if (playerPos) {
