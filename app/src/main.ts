@@ -71,6 +71,8 @@ playBtn.addEventListener('click', () => {
     world.setIsMobile(isTouchDevice);
 
     if (isTouchDevice) {
+        targetRotationY = camera.rotation.y;
+        targetRotationX = camera.rotation.x;
         if (touchControlsEl) touchControlsEl.classList.remove('hidden');
     } else {
         controls.lock();
@@ -154,10 +156,12 @@ let joystickTouchId: number | null = null;
 let joystickCenterX = 0;
 let joystickCenterY = 0;
 
-// Variables para Rotación Táctil de Cámara
+// Variables para Rotación Táctil de Cámara con Suavizado Cinematográfico
 let lookTouchId: number | null = null;
 let lastLookX = 0;
 let lastLookY = 0;
+let targetRotationY = camera.rotation.y;
+let targetRotationX = camera.rotation.x;
 
 let prevTime = performance.now();
 const velocity = new THREE.Vector3();
@@ -253,16 +257,25 @@ if (isTouchDevice) {
                     const dx = touch.clientX - joystickCenterX;
                     const dy = touch.clientY - joystickCenterY;
                     const dist = Math.sqrt(dx * dx + dy * dy);
-                    const maxDist = 42;
-                    const clampedDist = Math.min(dist, maxDist);
                     const angle = Math.atan2(dy, dx);
-                    
+                    const maxDist = 45;
+                    const clampedDist = Math.min(dist, maxDist);
+                    const distRatio = clampedDist / maxDist;
                     const thumbX = Math.cos(angle) * clampedDist;
                     const thumbY = Math.sin(angle) * clampedDist;
                     
                     joystickThumb.style.transform = `translate(${thumbX}px, ${thumbY}px)`;
-                    touchMoveX = thumbX / maxDist;
-                    touchMoveZ = -thumbY / maxDist; // Arriba = avanzar (+Z hacia adelante)
+                    
+                    // Zona muerta ergonómica (5%) y aceleración progresiva
+                    if (distRatio < 0.05) {
+                        touchMoveX = 0;
+                        touchMoveZ = 0;
+                    } else {
+                        const normalized = (distRatio - 0.05) / 0.95;
+                        const curved = Math.pow(normalized, 1.35);
+                        touchMoveX = (thumbX / clampedDist) * curved;
+                        touchMoveZ = (-thumbY / clampedDist) * curved; // Arriba = avanzar (+Z hacia adelante)
+                    }
                     break;
                 }
             }
@@ -287,7 +300,7 @@ if (isTouchDevice) {
         window.addEventListener('touchcancel', resetJoystick);
     }
 
-    // Rotación de Cámara por Arrastre en pantalla táctil
+    // Rotación de Cámara por Arrastre en pantalla táctil con Suavizado Cinematográfico
     window.addEventListener('touchstart', (e) => {
         if (!gameStarted || hud.isModalOpen) return;
         SoundSynthesizer.getInstance().init();
@@ -317,8 +330,8 @@ if (isTouchDevice) {
                 lastLookX = touch.clientX;
                 lastLookY = touch.clientY;
 
-                camera.rotation.y -= deltaX * 0.004;
-                camera.rotation.x = Math.max(-Math.PI / 2.3, Math.min(Math.PI / 2.3, camera.rotation.x - deltaY * 0.004));
+                targetRotationY -= deltaX * 0.0035;
+                targetRotationX = Math.max(-Math.PI / 2.3, Math.min(Math.PI / 2.3, targetRotationX - deltaY * 0.0035));
                 break;
             }
         }
@@ -377,6 +390,12 @@ function animate() {
     const isSimActive = controls.isLocked || (isTouchDevice && gameStarted && !hud.isModalOpen);
 
     if (isSimActive) {
+        // Suavizado cinemático de rotación en pantalla táctil móvil
+        if (isTouchDevice) {
+            camera.rotation.y += (targetRotationY - camera.rotation.y) * 0.38;
+            camera.rotation.x += (targetRotationX - camera.rotation.x) * 0.38;
+        }
+
         // Amortiguación y gravedad
         velocity.x -= velocity.x * 10.0 * delta;
         velocity.z -= velocity.z * 10.0 * delta;

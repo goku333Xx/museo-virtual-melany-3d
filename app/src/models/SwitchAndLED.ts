@@ -164,29 +164,61 @@ export class SwitchExhibit {
         this.buildSparkSystem();
     }
 
-    // MULTÍMETRO DIGITAL A LA DERECHA EN FRENTE DE LAS PAPAS (INCLINADO A 65°, PERFECTA LECTURA)
+    // MULTÍMETRO DIGITAL ASENTADO EN LA MESA CON ALFOMBRILLA Y CABALLETE TRIPODE REAL
     private buildDigitalMultimeter() {
         this.meterGroup = new THREE.Group();
-        // Ubicado a la derecha (X = 0.52, Z = 0.38), orientado diagonalmente hacia el alumno que mira de frente
-        this.meterGroup.position.set(0.52, 0.19, 0.36);
-        this.meterGroup.rotation.y = -Math.PI / 6; // Girado hacia el centro del alumno
-        this.meterGroup.rotation.x = -Math.PI / 7; // Inclinado 65° hacia atrás para máxima legibilidad
+        // Ubicado firmemente sobre la mesa (Y = 0) al frente derecho del circuito
+        this.meterGroup.position.set(0.48, 0.0, 0.30);
+        this.meterGroup.rotation.y = -Math.PI / 5.2; // Orientado ergonómicamente hacia el centro de la mirada
+
+        // 1. Alfombrilla antiestática de laboratorio (0.36m x 0.32m) asentada sobre la mesa
+        const matGeom = new THREE.BoxGeometry(0.36, 0.006, 0.32);
+        const matMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.9, metalness: 0.1 });
+        const labMat = new THREE.Mesh(matGeom, matMat);
+        labMat.position.set(0, 0.003, 0);
+        labMat.receiveShadow = true;
+        this.meterGroup.add(labMat);
+
+        // Borde cian sutil serigrafiado en la alfombrilla
+        const matRimGeom = new THREE.BoxGeometry(0.364, 0.002, 0.324);
+        const matRimMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.4 });
+        const matRim = new THREE.Mesh(matRimGeom, matRimMat);
+        matRim.position.set(0, 0.006, 0);
+        this.meterGroup.add(matRim);
+
+        // 2. Patas frontales de goma antideslizante (descansan sobre la alfombrilla en Y = 0.006)
+        const footGeom = new THREE.CylinderGeometry(0.014, 0.016, 0.016, 16);
+        const footMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.95, metalness: 0.05 });
+        const leftFrontFoot = new THREE.Mesh(footGeom, footMat);
+        leftFrontFoot.position.set(-0.10, 0.014, 0.07);
+        const rightFrontFoot = new THREE.Mesh(footGeom, footMat);
+        rightFrontFoot.position.set(0.10, 0.014, 0.07);
+        this.meterGroup.add(leftFrontFoot, rightFrontFoot);
+
+        // 3. Grupo de inclinación del tester (Pivota desde el eje de las patas frontales)
+        const tiltGroup = new THREE.Group();
+        tiltGroup.position.set(0, 0.022, 0.07);
+        const tiltAngle = -Math.PI / 6.6; // ~27.2° de inclinación hacia atrás (62.8° sobre la mesa)
+        tiltGroup.rotation.x = tiltAngle;
 
         // Carcasa del tester (Amarillo industrial Fluke de alta gama)
-        const caseWidth = 0.29;
-        const caseHeight = 0.39;
+        const caseWidth = 0.27;
+        const caseHeight = 0.37;
         const caseDepth = 0.065;
 
         const caseGeom = new THREE.BoxGeometry(caseWidth, caseHeight, caseDepth);
         const caseMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.35, metalness: 0.2 });
         const caseMesh = new THREE.Mesh(caseGeom, caseMat);
-        this.meterGroup.add(caseMesh);
+        caseMesh.position.set(0, caseHeight / 2, 0);
+        caseMesh.castShadow = true;
+        tiltGroup.add(caseMesh);
 
-        // Bumper de goma protectora grafito
-        const bumperGeom = new THREE.BoxGeometry(caseWidth + 0.016, caseHeight + 0.016, caseDepth - 0.01);
-        const bumperMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.8, metalness: 0.1 });
+        // Bumper de goma protectora grafito perimetral
+        const bumperGeom = new THREE.BoxGeometry(caseWidth + 0.016, caseHeight + 0.016, caseDepth - 0.008);
+        const bumperMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.85, metalness: 0.1 });
         const bumperMesh = new THREE.Mesh(bumperGeom, bumperMat);
-        this.meterGroup.add(bumperMesh);
+        bumperMesh.position.set(0, caseHeight / 2, 0);
+        tiltGroup.add(bumperMesh);
 
         // Pantalla LCD grande nítida (512x256)
         this.meterCanvas = document.createElement('canvas');
@@ -197,19 +229,19 @@ export class SwitchExhibit {
         this.meterTexture = new THREE.CanvasTexture(this.meterCanvas);
         this.renderMeterScreen(false, 0);
 
-        const screenGeom = new THREE.PlaneGeometry(0.24, 0.135);
+        const screenGeom = new THREE.PlaneGeometry(0.23, 0.13);
         const screenMat = new THREE.MeshBasicMaterial({ map: this.meterTexture });
         this.meterScreenMesh = new THREE.Mesh(screenGeom, screenMat);
-        this.meterScreenMesh.position.set(0, 0.09, caseDepth / 2 + 0.005);
-        this.meterGroup.add(this.meterScreenMesh);
+        this.meterScreenMesh.position.set(0, caseHeight / 2 + 0.08, caseDepth / 2 + 0.005);
+        tiltGroup.add(this.meterScreenMesh);
 
         // Perilla selectora central
-        const knobGeom = new THREE.CylinderGeometry(0.046, 0.049, 0.026, 24);
+        const knobGeom = new THREE.CylinderGeometry(0.044, 0.047, 0.024, 24);
         const knobMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.4, metalness: 0.6 });
         const knobMesh = new THREE.Mesh(knobGeom, knobMat);
         knobMesh.rotation.x = Math.PI / 2;
-        knobMesh.position.set(0, -0.04, caseDepth / 2 + 0.013);
-        this.meterGroup.add(knobMesh);
+        knobMesh.position.set(0, caseHeight / 2 - 0.05, caseDepth / 2 + 0.013);
+        tiltGroup.add(knobMesh);
 
         // Puntero blanco en la perilla
         const pointerGeom = new THREE.BoxGeometry(0.008, 0.035, 0.004);
@@ -219,62 +251,86 @@ export class SwitchExhibit {
         knobMesh.add(pointerMesh);
 
         // Bornes de conexión para sondas
-        const jackGeom = new THREE.CylinderGeometry(0.01, 0.01, 0.015, 16);
+        const jackGeom = new THREE.CylinderGeometry(0.009, 0.009, 0.016, 16);
         jackGeom.rotateX(Math.PI / 2);
 
         const jackBlack = new THREE.Mesh(jackGeom, new THREE.MeshBasicMaterial({ color: 0x111827 }));
-        jackBlack.position.set(-0.05, -0.13, caseDepth / 2 + 0.008);
+        jackBlack.position.set(-0.045, caseHeight / 2 - 0.135, caseDepth / 2 + 0.008);
         const jackRed = new THREE.Mesh(jackGeom, new THREE.MeshBasicMaterial({ color: 0xef4444 }));
-        jackRed.position.set(0.05, -0.13, caseDepth / 2 + 0.008);
-        this.meterGroup.add(jackBlack, jackRed);
+        jackRed.position.set(0.045, caseHeight / 2 - 0.135, caseDepth / 2 + 0.008);
+        tiltGroup.add(jackBlack, jackRed);
 
-        // Caballete metálico trasero que apoya en la mesa
-        const standGeom = new THREE.CylinderGeometry(0.006, 0.006, 0.28, 12);
-        const standMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9, roughness: 0.1 });
+        // 4. Caballete metálico trasero que apoya perfectamente en la alfombrilla (Y = 0.006)
+        const standGeom = new THREE.CylinderGeometry(0.006, 0.006, 0.25, 12);
+        const standMat = new THREE.MeshStandardMaterial({ color: 0xd1d5db, metalness: 0.95, roughness: 0.1 });
+        
+        // Pata trasera izquierda
         const leftLeg = new THREE.Mesh(standGeom, standMat);
-        leftLeg.rotation.x = -Math.PI / 5;
-        leftLeg.position.set(-0.10, -0.08, -0.09);
-        const rightLeg = new THREE.Mesh(standGeom, standMat);
-        rightLeg.rotation.x = -Math.PI / 5;
-        rightLeg.position.set(0.10, -0.08, -0.09);
-        this.meterGroup.add(leftLeg, rightLeg);
+        leftLeg.position.set(-0.09, 0.11, -0.08);
+        leftLeg.rotation.x = 0.38;
+        tiltGroup.add(leftLeg);
 
+        // Pata trasera derecha
+        const rightLeg = new THREE.Mesh(standGeom, standMat);
+        rightLeg.position.set(0.09, 0.11, -0.08);
+        rightLeg.rotation.x = 0.38;
+        tiltGroup.add(rightLeg);
+
+        // Barra transversal estabilizadora con topes de goma apoyados en la alfombrilla
+        const crossbarGeom = new THREE.CylinderGeometry(0.006, 0.006, 0.19, 12);
+        crossbarGeom.rotateZ(Math.PI / 2);
+        const crossbar = new THREE.Mesh(crossbarGeom, standMat);
+        crossbar.position.set(0, -0.01, -0.155);
+        tiltGroup.add(crossbar);
+
+        // Topes de goma traseros que tocan la alfombrilla
+        [-0.09, 0.09].forEach(px => {
+            const legFoot = new THREE.Mesh(new THREE.SphereGeometry(0.012, 12, 12), footMat);
+            legFoot.position.set(px, -0.01, -0.155);
+            tiltGroup.add(legFoot);
+        });
+
+        this.meterGroup.add(tiltGroup);
         this.group.add(this.meterGroup);
         this.interactableMeshes.push(caseMesh, this.meterScreenMesh);
 
-        // 6. CABLES DE PRUEBA REALISTAS (SONDAS ROJA Y NEGRA CONECTADAS AL CIRCUITO)
+        // 5. CABLES DE PRUEBA REALISTAS (SONDAS ROJA Y NEGRA APOYADAS EN LA MESA)
         this.buildProbeCables();
     }
 
     private buildProbeCables() {
-        // Cable Negro (COM): Va desde el multímetro (0.52, 0.19, 0.36) hasta el borne de entrada del circuito (-0.24, 0.05, 0.10)
+        // Cable Negro (COM): Sale del jack negro, cae suavemente a la mesa y se conecta al borne de entrada (-0.24, 0.05, 0.10)
         const blackCurve = new THREE.CatmullRomCurve3([
-            new THREE.Vector3(0.48, 0.06, 0.38),
-            new THREE.Vector3(0.35, 0.04, 0.30),
-            new THREE.Vector3(0.05, 0.04, 0.22),
+            new THREE.Vector3(0.44, 0.08, 0.37),
+            new THREE.Vector3(0.42, 0.015, 0.35),
+            new THREE.Vector3(0.28, 0.015, 0.28),
+            new THREE.Vector3(0.05, 0.015, 0.20),
             new THREE.Vector3(-0.20, 0.05, 0.12)
         ]);
-        const blackGeom = new THREE.TubeGeometry(blackCurve, 20, 0.007, 8, false);
+        const blackGeom = new THREE.TubeGeometry(blackCurve, 24, 0.007, 8, false);
         const blackMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.6, metalness: 0.2 });
         const blackProbeWire = new THREE.Mesh(blackGeom, blackMat);
+        blackProbeWire.castShadow = true;
         this.group.add(blackProbeWire);
 
-        // Cable Rojo (V): Va desde el multímetro hasta el borne de salida del circuito (0.24, 0.05, 0.10)
+        // Cable Rojo (V): Sale del jack rojo, cae a la mesa y se conecta al borne de salida (0.24, 0.05, 0.10)
         const redCurve = new THREE.CatmullRomCurve3([
-            new THREE.Vector3(0.56, 0.06, 0.38),
-            new THREE.Vector3(0.48, 0.04, 0.28),
-            new THREE.Vector3(0.35, 0.04, 0.20),
+            new THREE.Vector3(0.52, 0.08, 0.37),
+            new THREE.Vector3(0.50, 0.015, 0.33),
+            new THREE.Vector3(0.42, 0.015, 0.24),
+            new THREE.Vector3(0.30, 0.02, 0.16),
             new THREE.Vector3(0.24, 0.05, 0.12)
         ]);
-        const redGeom = new THREE.TubeGeometry(redCurve, 20, 0.007, 8, false);
+        const redGeom = new THREE.TubeGeometry(redCurve, 24, 0.007, 8, false);
         const redMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.6, metalness: 0.2 });
         const redProbeWire = new THREE.Mesh(redGeom, redMat);
+        redProbeWire.castShadow = true;
         this.group.add(redProbeWire);
 
-        // Pinzas cocodrilo / probes en los extremos
+        // Pinzas cocodrilo doradas en los bornes
         const clipGeom = new THREE.CylinderGeometry(0.008, 0.008, 0.04, 12);
         clipGeom.rotateX(Math.PI / 2);
-        const clipMat = new THREE.MeshStandardMaterial({ color: 0xd1d5db, metalness: 0.9, roughness: 0.1 });
+        const clipMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.95, roughness: 0.15 });
 
         const blackClip = new THREE.Mesh(clipGeom, clipMat);
         blackClip.position.set(-0.21, 0.05, 0.11);

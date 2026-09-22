@@ -16,6 +16,8 @@ export class OpticsExhibit {
     private monochromaticBeam: THREE.Mesh;
     private screenMesh: THREE.Mesh;
     private screenMaterial: THREE.MeshStandardMaterial;
+    private rearScreenMaterial!: THREE.MeshStandardMaterial;
+    private inGlowMesh!: THREE.Mesh;
     private interactableMeshes: THREE.Object3D[] = [];
 
     private currentMode: number = 0;
@@ -143,20 +145,33 @@ export class OpticsExhibit {
 
         carrierLaser.add(emitterGroup);
 
-        const beamY = railHeight + 0.022 + 0.02 + 0.26; // Altura exacta del eje óptico: ~0.36m
+        const beamY = railHeight + 0.022 + 0.02 + 0.26; // Altura exacta del eje óptico: ~0.362m
+        const beamSpan = 0.628; // Distancia exacta desde cara de salida del prisma (+0.105) hasta la pantalla (+0.733)
 
-        // 4. HAZ DE LUZ ENTRANTE (Colimado, va del láser a la cara izquierda del prisma)
-        const beamStartX = -0.60;
-        const beamEndX = -0.16;
-        const inBeamLen = beamEndX - beamStartX;
-        const inBeamGeom = new THREE.CylinderGeometry(0.014, 0.014, inBeamLen, 16);
+        // 4. HAZ DE LUZ ENTRANTE (Colimado, va del láser a la cara izquierda del prisma SIN HUECOS)
+        // Salida colimador: X = -0.61. Cara izquierda del prisma: X = -0.105. Longitud = 0.505m
+        const inBeamLen = 0.505;
+        const inBeamStartX = -0.61;
+        const inBeamGeom = new THREE.CylinderGeometry(0.013, 0.013, inBeamLen, 16);
         inBeamGeom.rotateZ(Math.PI / 2);
-        const inBeamMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.95 });
+        const inBeamMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.96 });
         this.incomingBeam = new THREE.Mesh(inBeamGeom, inBeamMat);
-        this.incomingBeam.position.set(beamStartX + inBeamLen / 2, beamY, 0);
+        this.incomingBeam.position.set(inBeamStartX + inBeamLen / 2, beamY, 0);
         this.group.add(this.incomingBeam);
 
-        // 5. ETAPA GONIOMÉTRICA DE PRECISIÓN Y PRISMA GIGANTE (Montado sobre carrierPrism)
+        // Halo luminiscente exterior del haz incidente
+        const inGlowGeom = new THREE.CylinderGeometry(0.024, 0.024, inBeamLen, 16);
+        inGlowGeom.rotateZ(Math.PI / 2);
+        const inGlowMat = new THREE.MeshBasicMaterial({
+            color: 0x93c5fd,
+            transparent: true,
+            opacity: 0.35,
+            blending: THREE.AdditiveBlending
+        });
+        const inGlow = new THREE.Mesh(inGlowGeom, inGlowMat);
+        this.incomingBeam.add(inGlow);
+
+        // 5. ETAPA GONIOMÉTRICA DE PRECISIÓN Y PRISMA GIGANTE (Montado sobre carrierPrism en X = 0)
         this.prismStage.position.set(0, railHeight + 0.022, 0);
 
         // Torreta circular con escala en grados (radio 0.22m)
@@ -183,8 +198,8 @@ export class OpticsExhibit {
         prismPlate.position.set(0, 0.065, 0);
         this.prismStage.add(prismPlate);
 
-        // PRISMA DE CRISTAL FLINT EQUILÁTERO GIGANTE Y REALISTA (Lado 0.44m, Altura 0.36m, Profundidad 0.28m)
-        const s = 0.42; // Lado del triángulo equilátero (+300% de tamaño)
+        // PRISMA DE CRISTAL FLINT EQUILÁTERO GIGANTE Y REALISTA (Lado 0.42m, centrado verticalmente en el haz)
+        const s = 0.42; // Lado del triángulo equilátero
         const h = s * Math.sin(Math.PI / 3);
         const prismShape = new THREE.Shape();
         prismShape.moveTo(-s / 2, -h / 3);
@@ -217,28 +232,29 @@ export class OpticsExhibit {
         });
 
         this.prismMesh = new THREE.Mesh(prismGeom, prismMat);
-        // Centrar verticalmente en la trayectoria del haz óptico
-        this.prismMesh.position.set(0, 0.25, 0);
+        // Altura exacta del eje óptico dentro del stage: 0.362 - 0.082 = 0.28m
+        this.prismMesh.position.set(0, 0.28, 0);
         this.prismMesh.castShadow = true;
         this.prismStage.add(this.prismMesh);
         this.interactableMeshes.push(this.prismMesh);
 
-        // Haz interno que viaja y se refracta dentro del cristal
-        const internalBeamGeom = new THREE.CylinderGeometry(0.015, 0.025, 0.26, 16);
-        internalBeamGeom.rotateZ(Math.PI / 2.3);
-        const internalMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 });
+        // Haz interno que viaja y se refracta dentro del cristal de entrada (-0.105) a salida (+0.105)
+        const intBeamLen = 0.21;
+        const internalBeamGeom = new THREE.CylinderGeometry(0.013, 0.022, intBeamLen, 16);
+        internalBeamGeom.rotateZ(Math.PI / 2);
+        const internalMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.88 });
         this.internalBeam = new THREE.Mesh(internalBeamGeom, internalMat);
-        this.internalBeam.position.set(0.0, 0.25, 0);
+        this.internalBeam.position.set(0.0, 0.28, 0);
         this.prismStage.add(this.internalBeam);
 
         this.group.add(this.prismStage);
 
-        // 6. ABANICO ESPECTRAL DE SALIDA CONTINUO (EL ARCOÍRIS NÍTIDO Y SATURADO)
+        // 6. ABANICO ESPECTRAL DE SALIDA CONTINUO (NACE EN X = +0.105 EXACTO)
         this.rainbowGroup = new THREE.Group();
-        this.rainbowGroup.position.set(0.14, beamY, 0);
+        this.rainbowGroup.position.set(0.105, beamY, 0);
 
-        // Construir la malla continua del arcoíris sin blanquearse
-        this.buildVibrantRainbowFan();
+        // Construir la malla continua del arcoíris que llega directo a la pantalla (0.628m)
+        this.buildVibrantRainbowFan(beamSpan);
 
         // Rayos de guía espectral nítidos con colores saturados puros
         const spectralRays = [
@@ -251,9 +267,8 @@ export class OpticsExhibit {
             { col: 0x8800ff, angle: 0.18, name: "400nm Violeta" }
         ];
 
-        const beamSpan = 0.60;
         spectralRays.forEach(ray => {
-            const rayGeo = new THREE.CylinderGeometry(0.006, 0.01, beamSpan, 8);
+            const rayGeo = new THREE.CylinderGeometry(0.005, 0.009, beamSpan, 8);
             rayGeo.rotateZ(Math.PI / 2);
             const rayMat = new THREE.MeshBasicMaterial({
                 color: ray.col,
@@ -271,8 +286,8 @@ export class OpticsExhibit {
 
         this.group.add(this.rainbowGroup);
 
-        // 7. HAZ MONOCROMÁTICO (Para modos Láser Verde y Rojo)
-        const monoGeo = new THREE.CylinderGeometry(0.014, 0.014, beamSpan, 12);
+        // 7. HAZ MONOCROMÁTICO (Nace en X = +0.105 hasta la pantalla en X = 0.733)
+        const monoGeo = new THREE.CylinderGeometry(0.013, 0.013, beamSpan, 12);
         monoGeo.rotateZ(Math.PI / 2);
         const monoMat = new THREE.MeshBasicMaterial({
             color: 0x22c55e,
@@ -280,11 +295,11 @@ export class OpticsExhibit {
             opacity: 0.95
         });
         this.monochromaticBeam = new THREE.Mesh(monoGeo, monoMat);
-        this.monochromaticBeam.position.set(0.14 + beamSpan / 2, beamY, 0);
+        this.monochromaticBeam.position.set(0.105 + beamSpan / 2, beamY, 0);
         this.monochromaticBeam.visible = false;
         this.group.add(this.monochromaticBeam);
 
-        // 8. PANTALLA RECEPTORA ESMERILADA DE LABORATORIO (carrierScreen)
+        // 8. PANTALLA RECEPTORA ESMERILADA DE LABORATORIO 360° (carrierScreen)
         const screenHolder = new THREE.Group();
         screenHolder.position.set(0, 0.02, 0);
 
@@ -298,34 +313,64 @@ export class OpticsExhibit {
             screenHolder.add(sPost);
         });
 
-        // Marco de la pantalla receptora (0.50m x 0.38m)
+        // Marco exterior de la pantalla receptora (abierto en el centro para ver a través del vidrio)
         const screenFrame = new THREE.Mesh(
-            new THREE.BoxGeometry(0.03, 0.38, 0.50),
+            new THREE.BoxGeometry(0.024, 0.38, 0.50),
             new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.85, roughness: 0.25 })
         );
         screenFrame.position.set(0, 0.26, 0);
         screenHolder.add(screenFrame);
 
-        // Pantalla receptora con textura de espectro proyectado en tiempo real
-        const screenGeom = new THREE.PlaneGeometry(0.46, 0.34);
+        // Panel difusor de vidrio esmerilado translúcido con espesor 3D
+        const diffuserGeom = new THREE.BoxGeometry(0.012, 0.34, 0.46);
+        const diffuserMat = new THREE.MeshPhysicalMaterial({
+            color: 0xf8fafc,
+            transmission: 0.75,
+            roughness: 0.25,
+            thickness: 0.015,
+            transparent: true,
+            opacity: 0.92
+        });
+        const diffuserMesh = new THREE.Mesh(diffuserGeom, diffuserMat);
+        diffuserMesh.position.set(0, 0.26, 0);
+        screenHolder.add(diffuserMesh);
+
+        // Pantalla receptora FRONTAL (mirando hacia el láser y prisma, -X)
+        const screenGeom = new THREE.PlaneGeometry(0.45, 0.33);
         this.screenMaterial = new THREE.MeshStandardMaterial({
             map: this.generateScreenTexture(0),
-            roughness: 0.9,
-            metalness: 0.05
+            roughness: 0.8,
+            metalness: 0.05,
+            emissive: new THREE.Color(0xffffff),
+            emissiveMap: this.generateScreenTexture(0),
+            emissiveIntensity: 0.4
         });
         this.screenMesh = new THREE.Mesh(screenGeom, this.screenMaterial);
-        this.screenMesh.position.set(-0.017, 0.26, 0);
+        this.screenMesh.position.set(-0.007, 0.26, 0);
         this.screenMesh.rotation.y = -Math.PI / 2;
         screenHolder.add(this.screenMesh);
         this.interactableMeshes.push(this.screenMesh);
 
+        // Pantalla receptora TRASERA (mirando hacia afuera, +X) para que se vea iluminada en 360°
+        this.rearScreenMaterial = new THREE.MeshStandardMaterial({
+            map: this.generateRearScreenTexture(0),
+            roughness: 0.85,
+            metalness: 0.05,
+            emissive: new THREE.Color(0xffffff),
+            emissiveMap: this.generateRearScreenTexture(0),
+            emissiveIntensity: 0.35
+        });
+        const rearScreenMesh = new THREE.Mesh(screenGeom, this.rearScreenMaterial);
+        rearScreenMesh.position.set(0.007, 0.26, 0);
+        rearScreenMesh.rotation.y = Math.PI / 2; // Orientada hacia atrás
+        screenHolder.add(rearScreenMesh);
+
         carrierScreen.add(screenHolder);
     }
 
-    private buildVibrantRainbowFan() {
+    private buildVibrantRainbowFan(length: number = 0.628) {
         const fanGeom = new THREE.BufferGeometry();
         const segments = 36;
-        const length = 0.60;
         const startWidth = 0.025;
 
         const positions: number[] = [];
@@ -502,6 +547,82 @@ export class OpticsExhibit {
         return new THREE.CanvasTexture(canvas);
     }
 
+    private generateRearScreenTexture(mode: number): THREE.CanvasTexture {
+        const canvas = document.createElement('canvas');
+        canvas.width = 512;
+        canvas.height = 512;
+        const ctx = canvas.getContext('2d')!;
+
+        // Fondo difusor esmerilado translúcido visto desde atrás
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(0, 0, 512, 512);
+
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+        ctx.lineWidth = 1;
+        for (let x = 0; x < 512; x += 32) {
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 512); ctx.stroke();
+        }
+        for (let y = 0; y < 512; y += 32) {
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(512, y); ctx.stroke();
+        }
+
+        // Marco del sensor óptico
+        ctx.strokeStyle = 'rgba(0, 240, 255, 0.5)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(100, 150, 312, 212);
+
+        if (mode === 0) {
+            // Banda espectral invertida vista desde atrás (efecto translúcido a través del vidrio)
+            const grad = ctx.createLinearGradient(110, 256, 402, 256);
+            grad.addColorStop(0.00, '#8800ff'); // Violeta
+            grad.addColorStop(0.15, '#1155ff'); // Azul
+            grad.addColorStop(0.30, '#00d4ff'); // Cian
+            grad.addColorStop(0.48, '#00dd44'); // Verde
+            grad.addColorStop(0.65, '#ffcc00'); // Amarillo
+            grad.addColorStop(0.82, '#ff6600'); // Naranja
+            grad.addColorStop(1.00, '#ff0022'); // Rojo
+
+            ctx.fillStyle = grad;
+            ctx.fillRect(110, 210, 292, 92);
+
+            ctx.fillStyle = '#f8fafc';
+            ctx.font = 'bold 16px "Segoe UI", Arial, sans-serif';
+            ctx.fillText('PANTALLA DIFUSORA TRASERA (360°)', 105, 335);
+            ctx.font = 'bold 12px monospace';
+            ctx.fillText('TRANSMISIÓN ESPECTRAL • CAPTURA ÓPTICA', 105, 358);
+        } else if (mode === 1) {
+            // Mancha láser verde monocromática vista desde atrás
+            const radGrad = ctx.createRadialGradient(256, 256, 0, 256, 256, 40);
+            radGrad.addColorStop(0, '#ffffff');
+            radGrad.addColorStop(0.35, '#22c55e');
+            radGrad.addColorStop(1, 'rgba(34, 197, 94, 0)');
+            ctx.fillStyle = radGrad;
+            ctx.beginPath();
+            ctx.arc(256, 256, 40, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#f8fafc';
+            ctx.font = 'bold 16px "Segoe UI", Arial, sans-serif';
+            ctx.fillText('PANTALLA TRASERA • LÁSER 532 nm', 110, 335);
+        } else {
+            // Mancha láser roja monocromática vista desde atrás
+            const radGrad = ctx.createRadialGradient(287, 256, 0, 287, 256, 40);
+            radGrad.addColorStop(0, '#ffffff');
+            radGrad.addColorStop(0.35, '#ef4444');
+            radGrad.addColorStop(1, 'rgba(239, 68, 68, 0)');
+            ctx.fillStyle = radGrad;
+            ctx.beginPath();
+            ctx.arc(287, 256, 40, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#f8fafc';
+            ctx.font = 'bold 16px "Segoe UI", Arial, sans-serif';
+            ctx.fillText('PANTALLA TRASERA • LÁSER 650 nm', 110, 335);
+        }
+
+        return new THREE.CanvasTexture(canvas);
+    }
+
     public cycleMode(): OpticsModeInfo {
         this.currentMode = (this.currentMode + 1) % this.modes.length;
         this.applyCurrentMode();
@@ -517,20 +638,46 @@ export class OpticsExhibit {
         const intMat = this.internalBeam.material as THREE.MeshBasicMaterial;
         const monoMat = this.monochromaticBeam.material as THREE.MeshBasicMaterial;
 
-        // Actualizar textura proyectada en la pantalla
+        // Actualizar textura proyectada en pantalla frontal y trasera
+        const frontTex = this.generateScreenTexture(this.currentMode);
         this.screenMaterial.map?.dispose();
-        this.screenMaterial.map = this.generateScreenTexture(this.currentMode);
+        this.screenMaterial.map = frontTex;
+        this.screenMaterial.emissiveMap?.dispose();
+        this.screenMaterial.emissiveMap = frontTex;
         this.screenMaterial.needsUpdate = true;
+
+        if (this.rearScreenMaterial) {
+            const rearTex = this.generateRearScreenTexture(this.currentMode);
+            this.rearScreenMaterial.map?.dispose();
+            this.rearScreenMaterial.map = rearTex;
+            this.rearScreenMaterial.emissiveMap?.dispose();
+            this.rearScreenMaterial.emissiveMap = rearTex;
+            this.rearScreenMaterial.needsUpdate = true;
+        }
 
         if (this.currentMode === 0) {
             inMat.color.setHex(0xffffff);
             intMat.color.setHex(0xffffff);
+            if (this.inGlowMesh) (this.inGlowMesh.material as THREE.MeshBasicMaterial).color.setHex(0x93c5fd);
+            this.screenMaterial.emissive.setHex(0xffffff);
+            this.screenMaterial.emissiveIntensity = 0.45;
+            if (this.rearScreenMaterial) {
+                this.rearScreenMaterial.emissive.setHex(0xffffff);
+                this.rearScreenMaterial.emissiveIntensity = 0.40;
+            }
             this.rainbowGroup.visible = true;
             this.monochromaticBeam.visible = false;
         } else if (this.currentMode === 1) {
             inMat.color.setHex(0x22c55e);
             intMat.color.setHex(0x22c55e);
             monoMat.color.setHex(0x22c55e);
+            if (this.inGlowMesh) (this.inGlowMesh.material as THREE.MeshBasicMaterial).color.setHex(0x4ade80);
+            this.screenMaterial.emissive.setHex(0x22c55e);
+            this.screenMaterial.emissiveIntensity = 0.65;
+            if (this.rearScreenMaterial) {
+                this.rearScreenMaterial.emissive.setHex(0x22c55e);
+                this.rearScreenMaterial.emissiveIntensity = 0.55;
+            }
             this.rainbowGroup.visible = false;
             this.monochromaticBeam.visible = true;
             this.monochromaticBeam.rotation.y = 0.05;
@@ -538,6 +685,13 @@ export class OpticsExhibit {
             inMat.color.setHex(0xef4444);
             intMat.color.setHex(0xef4444);
             monoMat.color.setHex(0xef4444);
+            if (this.inGlowMesh) (this.inGlowMesh.material as THREE.MeshBasicMaterial).color.setHex(0xf87171);
+            this.screenMaterial.emissive.setHex(0xef4444);
+            this.screenMaterial.emissiveIntensity = 0.65;
+            if (this.rearScreenMaterial) {
+                this.rearScreenMaterial.emissive.setHex(0xef4444);
+                this.rearScreenMaterial.emissiveIntensity = 0.55;
+            }
             this.rainbowGroup.visible = false;
             this.monochromaticBeam.visible = true;
             this.monochromaticBeam.rotation.y = -0.03;
