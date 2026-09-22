@@ -1,0 +1,11 @@
+{
+  "name": "museo-virtual-melany-3d",
+  "version": "3.0.0",
+  "description": "Videojuego educativo 3D interactivo en Three.js + TypeScript para alumnos de ciencias",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev --prefix app",
+    "build": "npm run build --prefix app",
+    "preview": "npm run preview --prefix app"
+  }
+}

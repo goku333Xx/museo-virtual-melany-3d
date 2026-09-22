@@ -1,0 +1,448 @@
+import * as THREE from 'three';
+import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
+import { World } from './World';
+import { InteractionSystem } from './InteractionSystem';
+import { HUD } from './HUD';
+
+import { SoundSynthesizer } from './SoundSynthesizer';
+
+// --- ELEMENTOS DEL DOM ---
+const startScreen = document.getElementById('start-screen') as HTMLElement;
+const playBtn = document.getElementById('play-btn') as HTMLButtonElement;
+
+// Controles Táctiles: Detección estricta para NUNCA mostrar joysticks en PC con mouse
+const isTouchDevice = window.matchMedia('(pointer: coarse)').matches && 
+                      !window.matchMedia('(pointer: fine)').matches && 
+                      window.innerWidth < 1024;
+const touchControlsEl = document.getElementById('touch-controls') as HTMLElement | null;
+const touchInteractBtn = document.getElementById('touch-interact-btn') as HTMLButtonElement | null;
+const touchChallengeBtn = document.getElementById('touch-challenge-btn') as HTMLButtonElement | null;
+const touchJumpBtn = document.getElementById('touch-jump-btn') as HTMLButtonElement | null;
+const joystickBase = document.getElementById('joystick-base') as HTMLElement | null;
+const joystickThumb = document.getElementById('joystick-thumb') as HTMLElement | null;
+
+// --- INICIALIZACIÓN THREE.JS ---
+const scene = new THREE.Scene();
+// Fondo cósmico azul profundo de espacio exterior
+scene.background = new THREE.Color(0x020308);
+
+const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+// Spawn del jugador a escala humana (1.68m de altura)
+camera.position.set(0, 1.68, 8);
+camera.rotation.order = 'YXZ';
+
+const renderer = new THREE.WebGLRenderer({ 
+    antialias: true, 
+    powerPreference: 'high-performance' 
+});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); // Optimizado para 60+ FPS sin desperdicio
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
+document.getElementById('app')!.appendChild(renderer.domElement);
+
+const hud = new HUD();
+const world = new World(scene, hud);
+const interactionSystem = new InteractionSystem(camera, hud);
+interactionSystem.updateInteractables(world.getInteractables());
+
+// Pre-compilación instantánea de shaders en GPU (cero lag en primera interacción)
+renderer.compile(scene, camera);
+
+// --- CONTROLES EN PRIMERA PERSONA (POINTER LOCK) ---
+const controls = new PointerLockControls(camera, document.body);
+
+let gameStarted = false;
+
+// Inicio de la experiencia
+playBtn.addEventListener('click', () => {
+    SoundSynthesizer.getInstance().init();
+    gameStarted = true;
+    startScreen.classList.add('hidden');
+
+    const nameInput = document.getElementById('student-name-input') as HTMLInputElement | null;
+    const studentName = (nameInput?.value || '').trim() || 'Científico/a';
+    hud.setStudentName(studentName);
+    world.setStudentName(studentName);
+
+    if (isTouchDevice) {
+        if (touchControlsEl) touchControlsEl.classList.remove('hidden');
+    } else {
+        controls.lock();
+    }
+});
+
+// Eventos de PointerLock
+controls.addEventListener('lock', () => {
+    startScreen.classList.add('hidden');
+    hud.hidePauseModal();
+});
+
+controls.addEventListener('unlock', () => {
+    // Si el juego ya inició y no está en medio de un modal (quiz, diario, victoria), mostrar pantalla de pausa
+    if (gameStarted && !hud.isModalOpen && !isTouchDevice) {
+        hud.showPauseModal(() => {
+            controls.lock();
+        });
+    }
+});
+
+// Sincronización automática de modales con pointer lock
+hud.onOpenModal = () => {
+    if (controls.isLocked) {
+        controls.unlock();
+    }
+};
+
+hud.onCloseModal = () => {
+    if (gameStarted && !hud.isModalOpen && !isTouchDevice) {
+        controls.lock();
+    }
+};
+
+// --- FÍSICAS DE ALTURA DINÁMICA & MESAS DE EXPERIMENTOS ---
+// Las mesas son de 2.4m x 2.4m, altura 1.2m
+const pedestals = [
+    { minX: -1.2, maxX: 1.2, minZ: -1.2, maxZ: 1.2, height: 1.2 },       // Papa (Centro)
+    { minX: -1.2, maxX: 1.2, minZ: -16.2, maxZ: -13.8, height: 1.2 },    // Óptica (Fondo)
+    { minX: -1.2, maxX: 1.2, minZ: 13.8, maxZ: 16.2, height: 1.2 }       // Newton (Entrada)
+];
+
+function getGroundHeight(x: number, z: number, currentCamY: number): number {
+    for (let i = 0; i < pedestals.length; i++) {
+        const p = pedestals[i];
+        if (x >= p.minX && x <= p.maxX && z >= p.minZ && z <= p.maxZ) {
+            // Si el jugador está sobre o cerca de la superficie del pedestal
+            if (currentCamY >= 1.68 + p.height - 0.35) {
+                return 1.68 + p.height; // 2.88m (subido a la mesa)
+            }
+        }
+    }
+    return 1.68; // Suelo de mármol del museo
+}
+
+function isInsidePedestalObstacle(x: number, z: number, camY: number): boolean {
+    // Si el jugador está en el aire por encima del pedestal o parado sobre él, no hay obstáculo
+    if (camY >= 2.75) return false;
+    const bodyMargin = 0.22; // Margen reducido para poder acercarse a 22 cm de los experimentos
+    for (let i = 0; i < pedestals.length; i++) {
+        const p = pedestals[i];
+        if (x >= p.minX - bodyMargin && x <= p.maxX + bodyMargin &&
+            z >= p.minZ - bodyMargin && z <= p.maxZ + bodyMargin) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// --- ENTRADA DE TECLADO ---
+let moveForward = false;
+let moveBackward = false;
+let moveLeft = false;
+let moveRight = false;
+let isSprinting = false;
+
+// Variables para Joystick Táctil
+let touchMoveX = 0;
+let touchMoveZ = 0;
+let joystickTouchId: number | null = null;
+let joystickCenterX = 0;
+let joystickCenterY = 0;
+
+// Variables para Rotación Táctil de Cámara
+let lookTouchId: number | null = null;
+let lastLookX = 0;
+let lastLookY = 0;
+
+let prevTime = performance.now();
+const velocity = new THREE.Vector3();
+let stepTimer = 0;
+
+const tryJump = () => {
+    const currentGroundY = getGroundHeight(camera.position.x, camera.position.z, camera.position.y);
+    const isOnGround = Math.abs(camera.position.y - currentGroundY) < 0.15;
+    if (isOnGround) {
+        velocity.y = 8.8; // Salto con altura suficiente para subirse a la mesa del experimento
+    }
+};
+
+const onKeyDown = (event: KeyboardEvent) => {
+    switch (event.code) {
+        case 'ArrowUp':
+        case 'KeyW': moveForward = true; break;
+        case 'ArrowLeft':
+        case 'KeyA': moveLeft = true; break;
+        case 'ArrowDown':
+        case 'KeyS': moveBackward = true; break;
+        case 'ArrowRight':
+        case 'KeyD': moveRight = true; break;
+        case 'ShiftLeft': isSprinting = true; break;
+        case 'Space': 
+            if (controls.isLocked || isTouchDevice) {
+                tryJump();
+            }
+            break;
+        case 'KeyE':
+            if (controls.isLocked || isTouchDevice) {
+                interactionSystem.interact(); // Probar y manipular experimento
+            }
+            break;
+        case 'KeyR':
+            if (controls.isLocked || isTouchDevice) {
+                interactionSystem.challenge(); // Responder desafío pedagógico
+            }
+            break;
+        case 'KeyJ':
+            hud.toggleJournal();
+            break;
+    }
+};
+
+const onKeyUp = (event: KeyboardEvent) => {
+    switch (event.code) {
+        case 'ArrowUp':
+        case 'KeyW': moveForward = false; break;
+        case 'ArrowLeft':
+        case 'KeyA': moveLeft = false; break;
+        case 'ArrowDown':
+        case 'KeyS': moveBackward = false; break;
+        case 'ArrowRight':
+        case 'KeyD': moveRight = false; break;
+        case 'ShiftLeft': isSprinting = false; break;
+    }
+};
+
+document.addEventListener('keydown', onKeyDown);
+document.addEventListener('keyup', onKeyUp);
+
+// --- GESTIÓN DE EVENTOS TÁCTILES MÓVILES ---
+if (isTouchDevice) {
+    // Joystick Táctil
+    if (joystickBase && joystickThumb) {
+        joystickBase.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.changedTouches[0];
+            joystickTouchId = touch.identifier;
+            const rect = joystickBase.getBoundingClientRect();
+            joystickCenterX = rect.left + rect.width / 2;
+            joystickCenterY = rect.top + rect.height / 2;
+        }, { passive: false });
+
+        window.addEventListener('touchmove', (e) => {
+            if (joystickTouchId === null) return;
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                const touch = e.changedTouches[i];
+                if (touch.identifier === joystickTouchId) {
+                    const dx = touch.clientX - joystickCenterX;
+                    const dy = touch.clientY - joystickCenterY;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    const maxDist = 42;
+                    const clampedDist = Math.min(dist, maxDist);
+                    const angle = Math.atan2(dy, dx);
+                    
+                    const thumbX = Math.cos(angle) * clampedDist;
+                    const thumbY = Math.sin(angle) * clampedDist;
+                    
+                    joystickThumb.style.transform = `translate(${thumbX}px, ${thumbY}px)`;
+                    touchMoveX = thumbX / maxDist;
+                    touchMoveZ = -thumbY / maxDist; // Arriba = avanzar (+Z hacia adelante)
+                    break;
+                }
+            }
+        }, { passive: false });
+
+        const resetJoystick = () => {
+            joystickTouchId = null;
+            if (joystickThumb) joystickThumb.style.transform = 'translate(0px, 0px)';
+            touchMoveX = 0;
+            touchMoveZ = 0;
+        };
+
+        window.addEventListener('touchend', (e) => {
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === joystickTouchId) {
+                    resetJoystick();
+                    break;
+                }
+            }
+        });
+
+        window.addEventListener('touchcancel', resetJoystick);
+    }
+
+    // Rotación de Cámara por Arrastre en pantalla táctil
+    window.addEventListener('touchstart', (e) => {
+        if (!gameStarted || hud.isModalOpen) return;
+        SoundSynthesizer.getInstance().init();
+        for (let i = 0; i < e.changedTouches.length; i++) {
+            const touch = e.changedTouches[i];
+            // Si el toque es en la mitad derecha o arriba y no es el joystick
+            if (touch.clientX > window.innerWidth * 0.35 && lookTouchId === null) {
+                // Verificar que no sea un botón de acción
+                const target = touch.target as HTMLElement;
+                if (!target.closest('button')) {
+                    lookTouchId = touch.identifier;
+                    lastLookX = touch.clientX;
+                    lastLookY = touch.clientY;
+                    break;
+                }
+            }
+        }
+    });
+
+    window.addEventListener('touchmove', (e) => {
+        if (lookTouchId === null || hud.isModalOpen) return;
+        for (let i = 0; i < e.changedTouches.length; i++) {
+            const touch = e.changedTouches[i];
+            if (touch.identifier === lookTouchId) {
+                const deltaX = touch.clientX - lastLookX;
+                const deltaY = touch.clientY - lastLookY;
+                lastLookX = touch.clientX;
+                lastLookY = touch.clientY;
+
+                camera.rotation.y -= deltaX * 0.004;
+                camera.rotation.x = Math.max(-Math.PI / 2.3, Math.min(Math.PI / 2.3, camera.rotation.x - deltaY * 0.004));
+                break;
+            }
+        }
+    });
+
+    const resetLookTouch = () => {
+        lookTouchId = null;
+    };
+    window.addEventListener('touchend', (e) => {
+        for (let i = 0; i < e.changedTouches.length; i++) {
+            if (e.changedTouches[i].identifier === lookTouchId) {
+                resetLookTouch();
+                break;
+            }
+        }
+    });
+    window.addEventListener('touchcancel', resetLookTouch);
+
+    // Botones de acción táctiles
+    if (touchInteractBtn) {
+        touchInteractBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            interactionSystem.interact(); // Probar [E]
+        });
+    }
+
+    if (touchChallengeBtn) {
+        touchChallengeBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            interactionSystem.challenge(); // Responder [R]
+        });
+    }
+
+    if (touchJumpBtn) {
+        touchJumpBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            tryJump();
+        });
+    }
+}
+
+// --- CONTROL DE RESIZE ---
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// --- BUCLE PRINCIPAL DE RENDER (60+ FPS) ---
+function animate() {
+    requestAnimationFrame(animate);
+
+    const time = performance.now();
+    let delta = (time - prevTime) / 1000;
+    if (delta > 0.05) delta = 0.05; // Protección contra desfasaje de físicas
+
+    const isSimActive = controls.isLocked || (isTouchDevice && gameStarted && !hud.isModalOpen);
+
+    if (isSimActive) {
+        // Amortiguación y gravedad
+        velocity.x -= velocity.x * 10.0 * delta;
+        velocity.z -= velocity.z * 10.0 * delta;
+        velocity.y -= 22.0 * delta; // Gravedad suave
+
+        let inputZ = (Number(moveForward) - Number(moveBackward)) + touchMoveZ;
+        let inputX = (Number(moveRight) - Number(moveLeft)) + touchMoveX;
+
+        const inputLen = Math.sqrt(inputX * inputX + inputZ * inputZ);
+        if (inputLen > 1) {
+            inputX /= inputLen;
+            inputZ /= inputLen;
+        }
+
+        const speed = isSprinting ? 70.0 : 36.0; // Velocidades ergonómicas
+        
+        if (Math.abs(inputZ) > 0.01) velocity.z -= inputZ * speed * delta;
+        if (Math.abs(inputX) > 0.01) velocity.x -= inputX * speed * delta;
+
+        // --- COLISIONES SUAVES CON DESLIZAMIENTO INDEPENDIENTE EN X Y Z ---
+        const origX = camera.position.x;
+        const origZ = camera.position.z;
+
+        // Movimiento tentativo en X
+        controls.moveRight(-velocity.x * delta);
+        if (isInsidePedestalObstacle(camera.position.x, origZ, camera.position.y)) {
+            camera.position.x = origX; // Deslizarse a lo largo del pedestal sin frenarse en seco
+            velocity.x = 0;
+        }
+
+        // Movimiento tentativo en Z
+        controls.moveForward(-velocity.z * delta);
+        if (isInsidePedestalObstacle(camera.position.x, camera.position.z, camera.position.y)) {
+            camera.position.z = origZ; // Deslizarse a lo largo del pedestal sin frenarse en seco
+            velocity.z = 0;
+        }
+
+        // Límites de las paredes perimetrales del museo (72x72)
+        camera.position.x = Math.max(-34.2, Math.min(34.2, camera.position.x));
+        camera.position.z = Math.max(-34.2, Math.min(34.2, camera.position.z));
+
+        camera.position.y += velocity.y * delta;
+
+        // Límite de suelo dinámico (piso de mármol 1.68m o sobre la mesa del pedestal 2.88m)
+        const groundY = getGroundHeight(camera.position.x, camera.position.z, camera.position.y);
+        const isOnGround = Math.abs(camera.position.y - groundY) < 0.12;
+
+        if (camera.position.y < groundY) {
+            velocity.y = 0;
+            camera.position.y = groundY;
+        }
+
+        // Sonido de pasos procedurales al caminar sobre el suelo
+        if (isOnGround && (Math.abs(velocity.x) > 0.8 || Math.abs(velocity.z) > 0.8)) {
+            stepTimer += delta;
+            const stepInterval = isSprinting ? 0.28 : 0.42;
+            if (stepTimer >= stepInterval) {
+                SoundSynthesizer.getInstance().playFootstep();
+                stepTimer = 0;
+            }
+        } else {
+            stepTimer = 0.2;
+        }
+
+        // Detección de interacción
+        interactionSystem.update();
+        
+        // Minimapa 1:1 en tiempo real
+        hud.updateMinimap(camera.position.x, camera.position.z, camera.rotation.y);
+    }
+
+    // Actualizar animaciones del mundo físico (siempre, incluso en pausa para no perder continuidad visual)
+    world.update(delta, camera.position);
+
+    prevTime = time;
+    renderer.render(scene, camera);
+}
+
+animate();

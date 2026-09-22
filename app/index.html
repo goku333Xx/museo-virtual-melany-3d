@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Museo Virtual 3D de Ciencias | Experiencia Interactiva</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <!-- Canvas WebGL -->
+  <div id="app"></div>
+
+  <!-- Canvas de Confeti a Pantalla Completa (Zero overhead, pointer-events none) -->
+  <canvas id="celebration-canvas" style="position:fixed; inset:0; pointer-events:none; z-index:9999; display:none;"></canvas>
+
+  <!-- Capa HUD In-Game -->
+  <div id="hud" class="hud-container">
+    
+    <!-- Top Left: Brand / Title -->
+    <div class="panel brand-panel">
+      <div class="brand-row">
+        <span class="brand-icon">🏛️</span>
+        <div>
+          <strong>MUSEO DE CIENCIAS MELANY</strong>
+          <small>EXPEDICIÓN VIRTUAL 3D · 60 FPS ULTRA</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top Right: Score / XP & Utilities -->
+    <div class="panel score-panel">
+      <button class="glass-pill" id="journal-btn" style="cursor: pointer; background: rgba(0, 240, 255, 0.12); border-color: rgba(0, 240, 255, 0.4);">📖 DIARIO [J]</button>
+      <button class="glass-pill" id="mute-btn" style="cursor: pointer; background: rgba(253, 224, 71, 0.12); border-color: rgba(253, 224, 71, 0.4);">🔊 AUDIO ON</button>
+      <div class="glass-pill xp-badge" id="score-text">⭐ 0 XP</div>
+      <div class="glass-pill rank-badge" id="rank-text">Nivel 1: Aprendiz</div>
+    </div>
+
+    <!-- Top Center: Floating Achievement Toast -->
+    <div class="achievement-toast hidden" id="achievement-toast">
+      <div class="ach-icon">🏆</div>
+      <div class="ach-content">
+        <span class="ach-tag">¡LOGRO CIENTÍFICO DESBLOQUEADO!</span>
+        <strong id="ach-title">Nombre del Logro</strong>
+        <small id="ach-desc">Has completado un hito pedagógico</small>
+      </div>
+    </div>
+
+    <!-- Left: Multi-Mission Tracker -->
+    <div class="panel mission-panel">
+      <div class="eyebrow">📋 EXPEDICIÓN CIENTÍFICA</div>
+      <h2>Misiones del Museo</h2>
+      <p class="mission-desc">Explorá cada experimento, interactuá con <b>[E]</b> y respondé las preguntas para obtener insignias.</p>
+      
+      <div class="mission-list">
+        <div class="task pending" id="mission-1">
+          <div class="dot">1</div>
+          <div class="task-info">
+            <span class="task-title">Pila de Papa</span>
+            <span class="task-status">Cerrá el circuito y mirá el LED</span>
+          </div>
+        </div>
+
+        <div class="task pending" id="mission-2">
+          <div class="dot">2</div>
+          <div class="task-info">
+            <span class="task-title">Prisma Óptico</span>
+            <span class="task-status">Investigá la separación de la luz</span>
+          </div>
+        </div>
+
+        <div class="task pending" id="mission-3">
+          <div class="dot">3</div>
+          <div class="task-info">
+            <span class="task-title">Cuna de Newton</span>
+            <span class="task-status">Alterná los 4 modos de colisión</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="reward" id="mission-progress-text">Progreso: 0 de 3 estaciones completadas</div>
+    </div>
+
+    <!-- Right: Squircle Minimap -->
+    <div class="panel map-panel">
+      <div class="map-header">
+        <span class="glass-pill map-title">RADAR TÁCTICO 1:1</span>
+        <span class="live-dot"></span>
+      </div>
+      <canvas id="minimapCanvas" width="180" height="180"></canvas>
+      <div class="map-legend">
+        <span class="leg-item"><i style="background:#00f0ff;"></i> Papa</span>
+        <span class="leg-item"><i style="background:#d946ef;"></i> Óptica</span>
+        <span class="leg-item"><i style="background:#fde047;"></i> Newton</span>
+      </div>
+    </div>
+
+    <!-- Center Crosshair -->
+    <div class="crosshair" id="crosshair"></div>
+
+    <!-- Bottom Holographic Info Card con Píldoras Glassmorphing Épicas -->
+    <div class="panel exhibit-card hidden" id="exhibit-card">
+      <div class="card-pills-row top-row">
+        <span class="glass-pill pill-category" id="card-tag">⚡ ELECTRICIDAD Y QUÍMICA</span>
+        <span class="glass-pill pill-mode" id="card-mode">MODO ACTIVO</span>
+        <span class="glass-pill pill-keyhint">Acción: <b>[E]</b></span>
+      </div>
+
+      <h3 id="card-title">Nombre del Experimento</h3>
+      
+      <div class="glass-pill pill-concept-box">
+        <span class="pill-concept-label">💡 PRINCIPIO CIENTÍFICO</span>
+        <p id="card-desc">Explicación didáctica del fenómeno.</p>
+      </div>
+
+      <div class="card-pills-row bottom-row">
+        <span class="glass-pill pill-reward" id="card-badge">🏅 Recompensa: +100 XP</span>
+        <div class="card-actions-wrapper">
+          <span class="glass-pill pill-action-e" id="card-action-e">⚡ [E] Probar Experimento</span>
+          <span class="glass-pill pill-action-r challenge-glow-pill" id="card-action-r">📝 [R] Responder Desafío (+100 XP)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Left: Room Location -->
+    <div class="panel location-panel" id="location-text">
+      <span class="glass-pill">📍 Pabellón Abierto de Ciencias · Vista al Cosmos</span>
+    </div>
+
+    <!-- Bottom Right: Controls Indicator -->
+    <div class="panel controls-panel">
+      <div class="glass-pill ctrl-pill">
+        <span class="ctrl-key">W A S D</span> Moverse &nbsp;·&nbsp; 
+        <span class="ctrl-key">ESPACIO</span> Saltar &nbsp;·&nbsp; 
+        <span class="ctrl-key">SHIFT</span> Correr<br>
+        <span class="ctrl-key">E</span> Probar Experimento &nbsp;·&nbsp; 
+        <span class="ctrl-key">R</span> Responder Desafío &nbsp;·&nbsp; 
+        <span class="ctrl-key">J</span> Diario &nbsp;·&nbsp;
+        <span class="ctrl-key">ESC</span> Pausa
+      </div>
+    </div>
+  </div>
+
+  <!-- Controles Táctiles para Móviles / Tablets -->
+  <div id="touch-controls" class="touch-controls hidden">
+    <div id="touch-joystick-zone" class="touch-zone-left">
+      <div id="joystick-base" class="joystick-base">
+        <div id="joystick-thumb" class="joystick-thumb"></div>
+      </div>
+    </div>
+    <div class="touch-zone-right">
+      <button id="touch-interact-btn" class="touch-action-btn interact-btn" aria-label="Probar Experimento">
+        <span>⚡</span> PROBAR [E]
+      </button>
+      <button id="touch-challenge-btn" class="touch-action-btn challenge-btn" aria-label="Responder Desafío">
+        <span>📝</span> DESAFÍO [R]
+      </button>
+      <button id="touch-jump-btn" class="touch-action-btn" aria-label="Saltar">
+        <span>▲</span> SALTAR
+      </button>
+    </div>
+  </div>
+
+  <!-- Interactive Quiz Modal (Desafío Pedagógico) -->
+  <div id="quiz-overlay" class="modal-overlay hidden">
+    <div class="panel quiz-card">
+      <div class="quiz-header">
+        <span class="glass-pill quiz-badge">🧪 DESAFÍO CIENTÍFICO</span>
+        <span class="glass-pill quiz-reward">+100 XP</span>
+      </div>
+      <h2 id="quiz-question">¿Pregunta del experimento?</h2>
+      <p class="quiz-subtitle">Demostrá lo que aprendiste eligiendo la respuesta correcta:</p>
+      
+      <div class="quiz-options" id="quiz-options"></div>
+
+      <div class="quiz-feedback hidden" id="quiz-feedback">
+        <div id="feedback-icon">🎉</div>
+        <div id="feedback-text">¡Respuesta correcta!</div>
+      </div>
+
+      <div id="quiz-particles-container" class="quiz-particles-container"></div>
+
+      <div class="quiz-actions" style="display: flex; gap: 10px; justify-content: flex-end; align-items: center;">
+        <button id="quiz-retry-close-btn" class="glass-pill" style="background: rgba(255,255,255,0.06); cursor: pointer; padding: 10px 18px; border-color: rgba(255,255,255,0.2);">
+          👀 Cerrar para observar de nuevo
+        </button>
+        <button id="quiz-continue-btn" class="action-btn hidden">CONTINUAR EXPLORANDO</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Victoria y Graduación Épica (Al terminar las 3 misiones) -->
+  <div id="victory-modal" class="modal-overlay hidden" style="z-index: 200;">
+    <div class="panel victory-card" style="text-align: center; max-width: 580px; padding: 36px 28px; border: 2px solid var(--gold); box-shadow: 0 0 50px rgba(253, 224, 71, 0.35);">
+      <div style="font-size: 64px; margin-bottom: 8px;">🏆</div>
+      <div class="glass-pill xp-badge" style="margin-bottom: 12px; font-size: 13px;">⭐ EXPEDICIÓN 100% COMPLETADA</div>
+      <h1 id="victory-title" style="color: #ffffff; font-size: 24px; font-weight: 800; margin-bottom: 10px;">¡FELICITACIONES, CIENTÍFICO DE ÉLITE!</h1>
+      <p style="color: var(--text-muted); font-size: 13px; line-height: 1.6; margin-bottom: 20px;">
+        Descubriste cómo fluyen los electrones en la <b>Pila de Papa</b>, cómo se abren los colores en el <b>Prisma Óptico</b> y cómo viaja la energía en la <b>Cuna de Newton</b>.
+      </p>
+
+      <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 24px; flex-wrap: wrap;">
+        <div class="glass-pill" style="border-color: #4ade80; color: #bbf7d0;">⚡ Medalla de Energía</div>
+        <div class="glass-pill" style="border-color: #d946ef; color: #f5d0fe;">🌈 Medalla de Luz</div>
+        <div class="glass-pill" style="border-color: #00f0ff; color: #cffafe;">⚖️ Medalla de Choques</div>
+      </div>
+
+      <div class="glass-pill rank-badge" style="font-size: 13px; padding: 8px 20px; margin-bottom: 24px; background: rgba(0, 240, 255, 0.15); display: inline-flex;">
+        RANGO MÁXIMO ALCANZADO: MAESTRO FÍSICO DEL COSMOS ⭐ 300 XP
+      </div>
+
+      <div>
+        <button id="victory-close-btn" class="action-btn" style="width: 100%; font-size: 14px; padding: 14px;">
+          🚀 CONTINUAR EXPLORANDO EN MODO LIBRE
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Diario del Científico (Libreta de Campo) -->
+  <div id="journal-modal" class="modal-overlay hidden" style="z-index: 150;">
+    <div class="panel journal-card" style="max-width: 680px; width: 92%; max-height: 85vh; overflow-y: auto; padding: 28px; border: 1px solid var(--cyan);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 24px;">📖</span>
+          <h2 style="font-size: 20px; font-weight: 800; color: #ffffff;">DIARIO DEL CIENTÍFICO</h2>
+        </div>
+        <button id="journal-close-btn" class="glass-pill" style="cursor: pointer;">✕ Cerrar [J]</button>
+      </div>
+
+      <div style="display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap;">
+        <button class="glass-pill journal-tab active" data-tab="tab-potato" style="cursor: pointer;">⚡ Pila de Papa (1.94V)</button>
+        <button class="glass-pill journal-tab" data-tab="tab-optics" style="cursor: pointer;">🌈 Prisma Óptico</button>
+        <button class="glass-pill journal-tab" data-tab="tab-newton" style="cursor: pointer;">⚖️ Cuna de Newton</button>
+      </div>
+
+      <!-- Tab 1: Papa -->
+      <div class="journal-content-tab" id="tab-potato">
+        <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
+          <span class="pill-concept-label">🔋 PRINCIPIO ELECTROQUÍMICO</span>
+          <p>
+            El ácido fosfórico dentro de la pulpa de la papa actúa como <b>electrolito</b>. Al introducir un clavo de <b>Zinc (Zn)</b> y otro de <b>Cobre (Cu)</b>, ocurre una reacción redox: el zinc cede electrones con avidez, los cuales viajan por el cable conductor hacia el cobre.
+          </p>
+        </div>
+        <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
+          <span class="pill-concept-label">⚡ CELDAS EN SERIE (MULTÍMETRO DIGITAL)</span>
+          <p>
+            Una sola papa genera entre <b>0.8V y 0.95V</b>. Dado que el diodo LED necesita al menos <b>1.8V</b> para vencer su barrera de potencial, conectamos <b>dos papas en serie</b> (+ con -), sumando <b>~1.94V</b> reales, lo que permite encender la bombilla.
+          </p>
+        </div>
+      </div>
+
+      <!-- Tab 2: Óptica -->
+      <div class="journal-content-tab hidden" id="tab-optics">
+        <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
+          <span class="pill-concept-label">🌈 DISPERSIÓN DE NEWTON (1666)</span>
+          <p>
+            La luz blanca no es un color único, sino la combinación de todo el espectro visible (de <b>380 nm</b> en el violeta a <b>750 nm</b> en el rojo). En el aire viajan a igual velocidad, pero al penetrar en el cristal, cada frecuencia sufre una reducción de velocidad distinta (índice de refracción <i>n</i>), abriéndose en un abanico multicolor.
+          </p>
+        </div>
+        <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
+          <span class="pill-concept-label">🎯 LÁSER MONOCROMÁTICO</span>
+          <p>
+            Los láseres verde (532nm) y rojo (650nm) poseen una sola longitud de onda pura. Al atravesar el prisma se desvían pero <b>no se dividen en colores</b>, demostrando la naturaleza monocromática.
+          </p>
+        </div>
+      </div>
+
+      <!-- Tab 3: Newton -->
+      <div class="journal-content-tab hidden" id="tab-newton">
+        <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
+          <span class="pill-concept-label">⚖️ LEY DE CONSERVACIÓN DEL MOMENTO</span>
+          <p>
+            La cantidad de movimiento se define como <b>p = m · v</b>. En una colisión perfectamente elástica entre esferas de acero templado de idéntica masa, la velocidad se transfiere íntegramente a través de ondas de compresión de alta velocidad en el metal sin desplazar a las esferas intermedias.
+          </p>
+        </div>
+        <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
+          <span class="pill-concept-label">🔄 MODOS DE IMPACTO</span>
+          <p>
+            Si impactan 2 esferas, la conservación simultánea del momento y de la energía cinética (<b>Ek = ½·m·v²</b>) exige matemáticamente que <b>salgan 2 esferas</b>, dejando a la esfera central completamente en reposo.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Pausa / Mouse Liberado -->
+  <div id="pause-modal" class="modal-overlay hidden">
+    <div class="panel pause-card">
+      <div class="pause-icon">🖱️</div>
+      <h2>Mouse liberado</h2>
+      <p>El museo sigue en marcha. Hacé clic abajo para recuperar el control de la cámara y seguir caminando.</p>
+      <button id="resume-btn" class="action-btn">CONTINUAR</button>
+    </div>
+  </div>
+
+  <!-- Pantalla de Inicio Inicial -->
+  <div id="start-screen" class="modal-overlay">
+    <div class="panel start-card">
+      <div class="start-logo">🌌</div>
+      <h1>MUSEO VIRTUAL MELANY</h1>
+      <p class="start-desc">
+        Una experiencia interactiva de física y ciencia en 3D bajo las estrellas. Caminá por la sala, descubrí los 3 experimentos interactivos y poné a prueba tu conocimiento.
+      </p>
+
+      <div class="student-input-container" style="margin: 18px auto 22px auto; max-width: 360px; text-align: left;">
+        <label for="student-name-input" style="display:block; font-size: 13px; font-weight: 700; color: #38bdf8; margin-bottom: 8px;">
+          🧑‍🔬 ¿Cómo te llamás, Científico/a?
+        </label>
+        <input 
+          id="student-name-input" 
+          type="text" 
+          placeholder="Escribí tu nombre aquí..." 
+          maxlength="20" 
+          class="glass-input"
+          autocomplete="off"
+        />
+      </div>
+      
+      <div class="features-row">
+        <div class="feat-box glass-pill"><span>🥔</span> Pila de Papa</div>
+        <div class="feat-box glass-pill"><span>🌈</span> Prisma Óptico</div>
+        <div class="feat-box glass-pill"><span>⚖️</span> Cuna de Newton</div>
+      </div>
+
+      <button id="play-btn" class="action-btn start-btn">ENTRAR A LA EXPEDICIÓN</button>
+      <small class="start-hints">Usa WASD para caminar, mouse para mirar, [E] para probar y [R] para responder</small>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
