@@ -46,6 +46,7 @@ document.getElementById('app')!.appendChild(renderer.domElement);
 
 const hud = new HUD();
 const world = new World(scene, hud);
+world.setIsMobile(isTouchDevice);
 const interactionSystem = new InteractionSystem(camera, hud);
 interactionSystem.updateInteractables(world.getInteractables());
 
@@ -67,6 +68,7 @@ playBtn.addEventListener('click', () => {
     const studentName = (nameInput?.value || '').trim() || 'Científico/a';
     hud.setStudentName(studentName);
     world.setStudentName(studentName);
+    world.setIsMobile(isTouchDevice);
 
     if (isTouchDevice) {
         if (touchControlsEl) touchControlsEl.classList.remove('hidden');
@@ -163,9 +165,10 @@ let stepTimer = 0;
 
 const tryJump = () => {
     const currentGroundY = getGroundHeight(camera.position.x, camera.position.z, camera.position.y);
-    const isOnGround = Math.abs(camera.position.y - currentGroundY) < 0.15;
+    const isOnGround = Math.abs(camera.position.y - currentGroundY) < 0.28 || Math.abs(velocity.y) < 0.12;
     if (isOnGround) {
         velocity.y = 8.8; // Salto con altura suficiente para subirse a la mesa del experimento
+        SoundSynthesizer.getInstance().playFootstep();
     }
 };
 
@@ -334,30 +337,26 @@ if (isTouchDevice) {
     });
     window.addEventListener('touchcancel', resetLookTouch);
 
-    // Botones de acción táctiles
-    if (touchInteractBtn) {
-        touchInteractBtn.addEventListener('click', (e) => {
+    // Botones de acción táctiles con soporte multi-touch simultáneo al joystick
+    const bindTouchAction = (btn: HTMLElement | null, action: () => void) => {
+        if (!btn) return;
+        let lastTrigger = 0;
+        const trigger = (e: Event) => {
             e.preventDefault();
             e.stopPropagation();
-            interactionSystem.interact(); // Probar [E]
-        });
-    }
+            const now = performance.now();
+            if (now - lastTrigger < 200) return;
+            lastTrigger = now;
+            SoundSynthesizer.getInstance().init();
+            action();
+        };
+        btn.addEventListener('touchstart', trigger, { passive: false });
+        btn.addEventListener('click', trigger);
+    };
 
-    if (touchChallengeBtn) {
-        touchChallengeBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            interactionSystem.challenge(); // Responder [R]
-        });
-    }
-
-    if (touchJumpBtn) {
-        touchJumpBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            tryJump();
-        });
-    }
+    bindTouchAction(touchInteractBtn, () => interactionSystem.interact());
+    bindTouchAction(touchChallengeBtn, () => interactionSystem.challenge());
+    bindTouchAction(touchJumpBtn, () => tryJump());
 }
 
 // --- CONTROL DE RESIZE ---

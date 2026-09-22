@@ -13,7 +13,7 @@ export class HUD {
     // HUD Elements
     private scoreText: HTMLElement;
     private rankText: HTMLElement;
-    private progressText: HTMLElement;
+    private progressText: HTMLElement | null;
     
     // Exhibit Card
     private exhibitCard: HTMLElement;
@@ -55,7 +55,14 @@ export class HUD {
     // Mission Panel & Mobile Toggle
     private missionToggleBtn: HTMLButtonElement | null;
     private missionBody: HTMLElement | null;
+    private missionCounterBadge: HTMLElement | null;
     private isMissionCollapsed: boolean = false;
+
+    // Mobile exhibit action buttons
+    private touchExhibitActions: HTMLElement | null;
+    private touchInteractLabel: HTMLElement | null;
+    private touchChallengeBtn: HTMLButtonElement | null;
+    private touchChallengeLabel: HTMLElement | null;
 
     // Audio & Journal Controls
     private muteBtn: HTMLButtonElement | null;
@@ -87,18 +94,14 @@ export class HUD {
     constructor() {
         this.scoreText = document.getElementById('score-text') as HTMLElement;
         this.rankText = document.getElementById('rank-text') as HTMLElement;
-        this.progressText = document.getElementById('mission-progress-text') as HTMLElement;
+        this.progressText = document.getElementById('mission-progress-text');
 
         this.missionToggleBtn = document.getElementById('mission-toggle-btn') as HTMLButtonElement | null;
         this.missionBody = document.getElementById('mission-body');
+        this.missionCounterBadge = document.getElementById('mission-counter-badge');
 
-        // En pantallas móviles comenzar con el panel de misiones colapsado para no tapar la vista
-        if (window.innerWidth <= 768 && this.missionBody && this.missionToggleBtn) {
-            this.isMissionCollapsed = true;
-            this.missionBody.classList.add('collapsed');
-            const toggleSpan = this.missionToggleBtn.querySelector('#mission-toggle-text');
-            if (toggleSpan) toggleSpan.textContent = 'Ver Misiones ▼';
-        }
+        // Las misiones comienzan siempre expandidas
+        this.isMissionCollapsed = false;
 
         this.exhibitCard = document.getElementById('exhibit-card') as HTMLElement;
         this.cardTag = document.getElementById('card-tag') as HTMLElement;
@@ -108,6 +111,11 @@ export class HUD {
         this.cardBadge = document.getElementById('card-badge') as HTMLElement;
         this.cardActionE = document.getElementById('card-action-e');
         this.cardActionR = document.getElementById('card-action-r');
+
+        this.touchExhibitActions = document.getElementById('touch-exhibit-actions');
+        this.touchInteractLabel = document.getElementById('touch-interact-label');
+        this.touchChallengeBtn = document.getElementById('touch-challenge-btn') as HTMLButtonElement | null;
+        this.touchChallengeLabel = document.getElementById('touch-challenge-label');
 
         this.minimapCanvas = document.getElementById('minimapCanvas') as HTMLCanvasElement;
         this.ctx = this.minimapCanvas.getContext('2d');
@@ -208,13 +216,10 @@ export class HUD {
             this.missionToggleBtn.onclick = (e) => {
                 e.stopPropagation();
                 this.isMissionCollapsed = !this.isMissionCollapsed;
-                const toggleSpan = this.missionToggleBtn!.querySelector('#mission-toggle-text');
                 if (this.isMissionCollapsed) {
                     this.missionBody!.classList.add('collapsed');
-                    if (toggleSpan) toggleSpan.textContent = 'Ver Misiones ▼';
                 } else {
                     this.missionBody!.classList.remove('collapsed');
-                    if (toggleSpan) toggleSpan.textContent = 'Ocultar ▲';
                 }
             };
         }
@@ -324,7 +329,37 @@ export class HUD {
             this.cardMode.style.display = 'none';
         }
 
+        this.updateMobileActions(true, isDone);
         this.exhibitCard.classList.remove('hidden');
+    }
+
+    public updateMobileActions(show: boolean, isDone?: boolean) {
+        if (!this.touchExhibitActions) return;
+        if (!show) {
+            this.touchExhibitActions.classList.add('hidden');
+            return;
+        }
+
+        this.touchExhibitActions.classList.remove('hidden');
+
+        if (this.touchInteractLabel) {
+            this.touchInteractLabel.textContent = isDone ? 'MANIPULAR' : 'INTERACTUAR';
+        }
+
+        if (this.touchChallengeBtn && this.touchChallengeLabel) {
+            const xpChip = this.touchChallengeBtn.querySelector('.touch-xp-chip') as HTMLElement | null;
+            if (isDone) {
+                this.touchChallengeLabel.textContent = 'Desafío Aprobado ⭐';
+                this.touchChallengeBtn.classList.remove('challenge-glow-pill');
+                this.touchChallengeBtn.classList.add('done-pill');
+                if (xpChip) xpChip.style.display = 'none';
+            } else {
+                this.touchChallengeLabel.textContent = 'Responder Desafío';
+                this.touchChallengeBtn.classList.add('challenge-glow-pill');
+                this.touchChallengeBtn.classList.remove('done-pill');
+                if (xpChip) xpChip.style.display = 'inline-block';
+            }
+        }
     }
 
     public setCardModePill(modeText: string) {
@@ -335,6 +370,7 @@ export class HUD {
     }
 
     public hideExhibitCard() {
+        this.updateMobileActions(false);
         this.exhibitCard.classList.add('hidden');
     }
 
@@ -538,9 +574,16 @@ export class HUD {
 
     private updateProgressText() {
         const count = this.completedMissions.size;
-        this.progressText.innerText = `Progreso: ${count} de 3 estaciones completadas`;
-        if (count === 3) {
-            this.progressText.innerText = '🏆 ¡EXPEDICIÓN COMPLETA! Felicitaciones Científico';
+        if (this.progressText) {
+            this.progressText.innerText = count === 3 
+                ? '🏆 ¡EXPEDICIÓN COMPLETA! Felicitaciones Científico' 
+                : `Progreso: ${count} de 3 estaciones completadas`;
+        }
+        if (this.missionCounterBadge) {
+            this.missionCounterBadge.innerText = count === 3 ? '3/3 ⭐' : `${count}/3`;
+            if (count === 3) {
+                this.missionCounterBadge.parentElement?.classList.add('all-done');
+            }
         }
     }
 

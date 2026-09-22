@@ -8,29 +8,49 @@ export class RobotGuide {
     private antennaBeacon: THREE.Mesh;
     private interactableMeshes: THREE.Object3D[] = [];
 
-    private tips: string[] = [
-        "🤖 Mel-Bot: ¡Hola científico/a! Con la tecla [E] podés encender o probar los experimentos sin apuro ni exámenes sorpresas.",
-        "🤖 Mel-Bot: Cuando sientas que descubriste el misterio, pulsá la tecla [R] para responder el desafío pedagógico y ganar +100 XP.",
-        "🤖 Mel-Bot: En el cielo tenés un domo cósmico con más de 4000 estrellas y nebulosas. ¡El techo del museo está abierto al universo!",
-        "🤖 Mel-Bot: Hay 3 Orbes de Energía Cuántica escondidos en rincones secretos del museo... ¿Podrás encontrarlos todos?",
-        "🤖 Mel-Bot: Pulsá [J] en cualquier momento para abrir tu Diario del Científico con las fórmulas y principios físicos reales.",
-        "🤖 Mel-Bot: Las 4 papas en serie suman ~1.96V reales, superando el umbral de conducción del diodo LED."
-    ];
+    private tips: string[] = [];
     private currentTipIndex: number = 0;
     private studentName: string = 'Científico/a';
+    private isMobile: boolean = false;
+
+    public setIsMobile(isMobile: boolean): void {
+        this.isMobile = isMobile;
+        this.refreshTips();
+    }
 
     public setStudentName(name: string): void {
         this.studentName = name;
-        this.tips = [
-            `🤖 Mel-Bot: ¡Hola ${this.studentName}! Soy Mel-Bot, tu asistente de ciencias. Con [E] podés probar los experimentos libremente.`,
-            `🤖 Mel-Bot: ¡Mirá a la derecha de las papas, ${this.studentName}! El multímetro digital marca 1.96V reales de las 4 papas en serie.`,
-            `🤖 Mel-Bot: ¡En el prisma, ${this.studentName}, el cristal divide la luz en arcoíris! Con [E] podés cambiar entre luz blanca y láseres.`,
-            `🤖 Mel-Bot: En la Cuna de Newton, ${this.studentName}, la energía viaja a través del acero sin que las bolas del medio se muevan.`,
-            `🤖 Mel-Bot: ¡Pulsá [R] para responder el desafío pedagógico y ganar +100 XP, ${this.studentName}!`
-        ];
+        this.refreshTips();
+    }
+
+    private refreshTips(): void {
+        if (this.isMobile) {
+            this.tips = [
+                `🤖 Mel-Bot: ¡Hola ${this.studentName}! Soy Mel-Bot, tu asistente de ciencias. Tocá el botón [⚡ INTERACTUAR] para probar los experimentos libremente.`,
+                `🤖 Mel-Bot: ¡Mirá a la derecha de las papas, ${this.studentName}! El multímetro digital marca 1.96V reales de las 4 papas en serie.`,
+                `🤖 Mel-Bot: ¡En el prisma, ${this.studentName}, el cristal divide la luz en arcoíris! Tocá [⚡ INTERACTUAR] para cambiar entre luz blanca y láseres.`,
+                `🤖 Mel-Bot: En la Cuna de Newton, ${this.studentName}, la energía viaja por las esferas de acero sin mover a las del medio.`,
+                `🤖 Mel-Bot: ¡Tocá el botón dorado [📝 Responder Desafío] para ganar +100 XP, ${this.studentName}!`,
+                `🤖 Mel-Bot: En el cielo tenés un domo cósmico con estrellas reales. ¡El museo está abierto al universo!`,
+                `🤖 Mel-Bot: Hay 3 Orbes de Energía Cuántica escondidos en rincones del museo, ¿podrás encontrarlos todos?`,
+                `🤖 Mel-Bot: Tocá [📖 DIARIO] arriba a la derecha para ver tus notas y fórmulas científicas.`
+            ];
+        } else {
+            this.tips = [
+                `🤖 Mel-Bot: ¡Hola ${this.studentName}! Soy Mel-Bot, tu asistente de ciencias. Con la tecla [E] podés probar los experimentos libremente.`,
+                `🤖 Mel-Bot: ¡Mirá a la derecha de las papas, ${this.studentName}! El multímetro digital marca 1.96V reales de las 4 papas en serie.`,
+                `🤖 Mel-Bot: ¡En el prisma, ${this.studentName}, el cristal divide la luz en arcoíris! Con [E] podés cambiar entre luz blanca y láseres.`,
+                `🤖 Mel-Bot: En la Cuna de Newton, ${this.studentName}, la energía viaja a través del acero sin que las bolas del medio se muevan.`,
+                `🤖 Mel-Bot: ¡Pulsá [R] para responder el desafío pedagógico y ganar +100 XP, ${this.studentName}!`,
+                `🤖 Mel-Bot: En el cielo tenés un domo cósmico con más de 4000 estrellas y nebulosas. ¡El techo del museo está abierto al universo!`,
+                `🤖 Mel-Bot: Hay 3 Orbes de Energía Cuántica escondidos en rincones secretos del museo, ¿podrás encontrarlos todos?`,
+                `🤖 Mel-Bot: Pulsá [J] en cualquier momento para abrir tu Diario del Científico con las fórmulas y principios físicos reales.`
+            ];
+        }
     }
 
     constructor() {
+        this.refreshTips();
         this.group = new THREE.Group();
         this.group.position.set(1.5, 1.6, 6.0); // Cerca del spawn del jugador
 

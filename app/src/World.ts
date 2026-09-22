@@ -309,7 +309,7 @@ export class World {
             id: 99,
             title: "Mel-Bot · Dron Robot Guía",
             tag: "🤖 ASISTENTE CIENTÍFICO 3D",
-            description: "¡Soy Mel-Bot, tu asistente personal en el museo! Probá los experimentos con [E] tantas veces como quieras y respondé las preguntas con [R] cuando te sientas listo. ¡Explorá las esquinas para hallar orbes de energía!",
+            description: "¡Soy Mel-Bot, tu asistente personal en el museo! Probá e interactuá con los experimentos tantas veces como quieras y respondé los desafíos para ganar XP. ¡Explorá las esquinas para hallar orbes de energía!",
             badge: "💡 Consejos de Física en Vivo",
             modeText: "ESTADO: ACOMPAÑANDO AL CIENTÍFICO",
             quiz: {
@@ -317,7 +317,7 @@ export class World {
                 title: "Trivia de Mel-Bot",
                 question: "¿Cuál es la mejor forma de aprender física en este museo?",
                 options: [
-                    "A) Experimentar primero con [E], observar los efectos y responder el desafío con [R].",
+                    "A) Experimentar primero, observar los efectos e interactuar antes de responder el desafío.",
                     "B) Correr con los ojos cerrados sin mirar las luces.",
                     "C) Salir del museo sin probar los experimentos."
                 ],
@@ -374,6 +374,12 @@ export class World {
     public setStudentName(name: string): void {
         if (this.robotGuide) {
             this.robotGuide.setStudentName(name);
+        }
+    }
+
+    public setIsMobile(isMobile: boolean): void {
+        if (this.robotGuide) {
+            this.robotGuide.setIsMobile(isMobile);
         }
     }
 

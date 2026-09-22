@@ -46,15 +46,15 @@
       </div>
     </div>
 
-    <!-- Left: Multi-Mission Tracker (EXPEDICIÓN CIENTÍFICA) con XP y Rango integrados -->
+    <!-- Left / Center: Expedición Científica (Misiones del Museo) con XP y Rango integrados -->
     <div class="panel mission-panel" id="mission-panel">
       <div class="mission-header-bar">
         <div class="mission-title-group">
           <div class="eyebrow">📋 EXPEDICIÓN CIENTÍFICA</div>
-          <h2>Misiones del Museo</h2>
+          <h2 class="mission-main-title">Misiones del Museo</h2>
         </div>
-        <button id="mission-toggle-btn" class="glass-pill mission-toggle-mobile" aria-label="Alternar misiones">
-          <span id="mission-toggle-text">Ocultar ▲</span>
+        <button id="mission-toggle-btn" class="glass-pill mission-counter-pill" aria-label="Progreso y alternar misiones">
+          <span id="mission-counter-badge">0/3</span>
         </button>
       </div>
 
@@ -65,8 +65,6 @@
       </div>
       
       <div class="mission-body" id="mission-body">
-        <p class="mission-desc">Explorá cada experimento, interactuá y respondé las preguntas para obtener insignias.</p>
-        
         <div class="mission-list">
           <div class="task pending" id="mission-1">
             <div class="dot">1</div>
@@ -92,13 +90,11 @@
             </div>
           </div>
         </div>
-        
-        <div class="reward" id="mission-progress-text">Progreso: 0 de 3 estaciones completadas</div>
       </div>
     </div>
 
-    <!-- Right: Squircle Minimap -->
-    <div class="panel map-panel">
+    <!-- Right: Squircle Minimap (Solo en PC) -->
+    <div class="panel map-panel pc-only">
       <div class="map-header">
         <span class="glass-pill map-title">RADAR TÁCTICO 1:1</span>
         <span class="live-dot"></span>
@@ -131,15 +127,15 @@
 
       <div class="card-pills-row bottom-row">
         <span class="glass-pill pill-reward" id="card-badge">🏅 Recompensa: +100 XP</span>
-        <div class="card-actions-wrapper">
-          <span class="glass-pill pill-action-e" id="card-action-e">⚡ [E] Probar Experimento</span>
+        <div class="card-actions-wrapper pc-only">
+          <span class="glass-pill pill-action-e" id="card-action-e">⚡ [E] Interactuar</span>
           <span class="glass-pill pill-action-r challenge-glow-pill" id="card-action-r">📝 [R] Responder Desafío (+100 XP)</span>
         </div>
       </div>
     </div>
 
-    <!-- Bottom Left: Room Location -->
-    <div class="panel location-panel" id="location-text">
+    <!-- Bottom Left: Room Location (Solo en PC) -->
+    <div class="panel location-panel pc-only" id="location-text">
       <span class="glass-pill">📍 Pabellón Abierto de Ciencias · Vista al Cosmos</span>
     </div>
 
@@ -149,7 +145,7 @@
         <span class="ctrl-key">W A S D</span> Moverse &nbsp;·&nbsp; 
         <span class="ctrl-key">ESPACIO</span> Saltar &nbsp;·&nbsp; 
         <span class="ctrl-key">SHIFT</span> Correr<br>
-        <span class="ctrl-key">E</span> Probar Experimento &nbsp;·&nbsp; 
+        <span class="ctrl-key">E</span> Interactuar &nbsp;·&nbsp; 
         <span class="ctrl-key">R</span> Responder Desafío &nbsp;·&nbsp; 
         <span class="ctrl-key">J</span> Diario &nbsp;·&nbsp;
         <span class="ctrl-key">ESC</span> Pausa
@@ -157,7 +153,7 @@
     </div>
   </div>
 
-  <!-- Controles Táctiles para Móviles / Tablets (Limpio, sin teclas [E] ni [R]) -->
+  <!-- Controles Táctiles para Móviles / Tablets con botones contextuales dinámicos -->
   <div id="touch-controls" class="touch-controls hidden mobile-only">
     <div id="touch-joystick-zone" class="touch-zone-left">
       <div id="joystick-base" class="joystick-base">
@@ -165,13 +161,17 @@
       </div>
     </div>
     <div class="touch-zone-right">
-      <button id="touch-interact-btn" class="touch-action-btn interact-btn" aria-label="Probar Experimento">
-        <span>⚡</span> PROBAR
-      </button>
-      <button id="touch-challenge-btn" class="touch-action-btn challenge-btn" aria-label="Responder Desafío">
-        <span>📝</span> DESAFÍO
-      </button>
-      <button id="touch-jump-btn" class="touch-action-btn" aria-label="Saltar">
+      <div id="touch-exhibit-actions" class="touch-exhibit-actions hidden">
+        <button id="touch-interact-btn" class="touch-action-btn interact-btn" aria-label="Interactuar con el experimento">
+          <span>⚡</span> <span id="touch-interact-label">INTERACTUAR</span>
+        </button>
+        <button id="touch-challenge-btn" class="touch-action-btn challenge-btn challenge-glow-pill" aria-label="Responder Desafío">
+          <span>📝</span> 
+          <span id="touch-challenge-label">Responder Desafío</span>
+          <span class="touch-xp-chip">+100 XP</span>
+        </button>
+      </div>
+      <button id="touch-jump-btn" class="touch-action-btn jump-btn" aria-label="Saltar">
         <span>▲</span> SALTAR
       </button>
     </div>
@@ -331,7 +331,7 @@
         <input 
           id="student-name-input" 
           type="text" 
-          placeholder="Escribí tu nombre aquí..." 
+          placeholder="Escribí tu nombre aquí" 
           maxlength="20" 
           class="glass-input"
           autocomplete="off"
