@@ -23,6 +23,9 @@ export class MuseumRoom {
     private internalWallBoxes: WallBox[] = [];
     private roomLights: { roomLight: THREE.PointLight, accentLight: THREE.PointLight }[] = [];
     private activeRoomIndex: number = 0;
+    private clouds: Array<{sprite: THREE.Sprite; speed: number; originalX: number}> = [];
+    private pigeons: Array<{sprite: THREE.Sprite; isPerched: boolean; speed: number; angle: number; radius: number; baseY: number; wingPhase: number}> = [];
+    private doorBarriers: THREE.Mesh[] = [];
 
     constructor() {
         this.group = new THREE.Group();
@@ -34,8 +37,10 @@ export class MuseumRoom {
         this.buildEnclosedRooms();
         this.buildCeilingTruss();
         this.buildPedestals();
+        this.buildViewingIndicators();
+        this.buildDoorBarriers();
         this.buildLightingAndDecor();
-        this.createGalaxy();
+        this.createRealisticSky();
     }
 
     private buildRoom() {
@@ -47,9 +52,9 @@ export class MuseumRoom {
         // Suelo de galería de ciencias moderna: Mármol grafito mate premium
         const floorGeom = new THREE.PlaneGeometry(width, depth);
         const floorMaterial = new THREE.MeshStandardMaterial({
-            color: 0x111620,
-            roughness: 0.8,
-            metalness: 0.15
+            color: 0xe2e8f0,
+            roughness: 0.25,
+            metalness: 0.1
         });
         const floor = new THREE.Mesh(floorGeom, floorMaterial);
         floor.rotation.x = -Math.PI / 2;
@@ -59,9 +64,9 @@ export class MuseumRoom {
 
         // Paredes de galería arquitectónica sobria (piedra pizarra oscura)
         const wallMaterial = new THREE.MeshStandardMaterial({
-            color: 0x181f2c,
-            roughness: 0.85,
-            metalness: 0.1
+            color: 0xf1f5f9,
+            roughness: 0.7,
+            metalness: 0.05
         });
 
         const wallGeomX = new THREE.BoxGeometry(width, height, wallThickness);
@@ -247,9 +252,9 @@ export class MuseumRoom {
     // --- PISTA CENTRAL DE VISITA Y ZONAS DE PEDESTAL ---
     private buildFloorRunwayAndZones() {
         const runwayMat = new THREE.MeshStandardMaterial({
-            color: 0x161c28,
-            roughness: 0.5,
-            metalness: 0.2
+            color: 0xcbd5e1,
+            roughness: 0.3,
+            metalness: 0.12
         });
         const brassMat = new THREE.MeshStandardMaterial({
             color: 0xc49b55,
@@ -445,9 +450,9 @@ export class MuseumRoom {
     // --- SALAS DE VERDAD CERRADAS Y BIEN ILUMINADAS ---
     private buildEnclosedRooms() {
         const wallMat = new THREE.MeshStandardMaterial({
-            color: 0x151c28,
-            roughness: 0.8,
-            metalness: 0.15
+            color: 0xf8fafc,
+            roughness: 0.65,
+            metalness: 0.05
         });
         const trimMat = new THREE.MeshStandardMaterial({
             color: 0xc49b55,
@@ -586,16 +591,15 @@ export class MuseumRoom {
         ];
 
         roomConfigs.forEach((rc, idx) => {
+            const isActive = idx === 0;
             // Luz cenital cálida de galería (3200K) que inunda la sala
-            const roomLight = new THREE.PointLight(0xfff7ed, 2.4, 18.0, 1.2);
+            const roomLight = new THREE.PointLight(0xfff7ed, isActive ? 1.4 : 0.25, 18.0, 1.2);
             roomLight.position.set(rc.x, 4.2, rc.z);
-            roomLight.visible = (idx === 0);
             this.group.add(roomLight);
 
             // Foco de acento con el color de la temática reflejado en el techo/pared
-            const accentLight = new THREE.PointLight(rc.color, 1.2, 8.0, 2.0);
+            const accentLight = new THREE.PointLight(rc.color, isActive ? 0.8 : 0.1, 8.0, 2.0);
             accentLight.position.set(rc.x, 3.8, rc.z);
-            accentLight.visible = (idx === 0);
             this.group.add(accentLight);
 
             this.roomLights.push({ roomLight, accentLight });
@@ -680,9 +684,9 @@ export class MuseumRoom {
     // --- ESTRUCTURA RETICULAR DEL TECHO (OBSERVATORIO DE CIENCIAS) ---
     private buildCeilingTruss() {
         const trussMat = new THREE.MeshStandardMaterial({
-            color: 0x181f2a,
-            roughness: 0.45,
-            metalness: 0.75
+            color: 0x94a3b8,
+            roughness: 0.4,
+            metalness: 0.7
         });
 
         const width = 72;
@@ -703,6 +707,45 @@ export class MuseumRoom {
             beam.position.set(0, 14, z);
             this.group.add(beam);
         }
+
+        // Glass ceiling panels between truss beams
+        const glassMat = new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.08,
+            roughness: 0.1,
+            metalness: 0.3,
+            side: THREE.DoubleSide
+        });
+        // 4 large skylight panels
+        const panelPositions = [
+            [-12, 0], [12, 0], [0, -12], [0, 12]
+        ];
+        for (const [px, pz] of panelPositions) {
+            const panel = new THREE.Mesh(
+                new THREE.PlaneGeometry(10, 10),
+                glassMat
+            );
+            panel.rotation.x = -Math.PI / 2;
+            panel.position.set(px, 13.85, pz);
+            panel.receiveShadow = false;
+            panel.castShadow = false;
+            this.group.add(panel);
+            // Skylight frame
+            const frameMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.3, metalness: 0.8 });
+            const frameGeo = new THREE.BoxGeometry(10.4, 0.15, 0.15);
+            for (let s = 0; s < 4; s++) {
+                const frame = new THREE.Mesh(frameGeo, frameMat);
+                frame.position.set(
+                    px + (s < 2 ? 0 : (s === 2 ? -5.1 : 5.1)),
+                    13.9,
+                    pz + (s < 2 ? (s === 0 ? -5.1 : 5.1) : 0)
+                );
+                if (s >= 2) frame.rotation.y = Math.PI / 2;
+                frame.castShadow = false;
+                this.group.add(frame);
+            }
+        }
     }
 
     // --- PEDESTALES DE EXHIBICIÓN ---
@@ -714,9 +757,9 @@ export class MuseumRoom {
         // Base de pedestal de granito oscuro pulido
         const baseGeom = new THREE.BoxGeometry(pedestalWidth, pedestalHeight, pedestalDepth);
         const baseMaterial = new THREE.MeshStandardMaterial({ 
-            color: 0x1c2331, 
-            roughness: 0.6, 
-            metalness: 0.2 
+            color: 0x334155, 
+            roughness: 0.5, 
+            metalness: 0.25 
         });
 
         // Ribete de latón arquitectónico en los bordes
@@ -791,10 +834,10 @@ export class MuseumRoom {
         haloGroup.add(ringMesh);
 
         // Foco de museo descendente sobre el experimento (activo solo en la sala actual)
-        const spot = new THREE.SpotLight(0xfff5eb, 35, 12, Math.PI / 4, 0.5, 1.5);
+        const isActive = this.floatingHalos.length === 0;
+        const spot = new THREE.SpotLight(0xfff5eb, isActive ? 12 : 1.5, 12, Math.PI / 4, 0.5, 1.5);
         spot.position.set(0, 0, 0);
         spot.target.position.set(0, -3.0, 0);
-        spot.visible = (this.floatingHalos.length === 0);
         haloGroup.add(spot);
         haloGroup.add(spot.target);
 
@@ -814,14 +857,15 @@ export class MuseumRoom {
         if (this.activeRoomIndex === targetIdx) return;
         this.activeRoomIndex = targetIdx;
 
-        for (let i = 0; i < this.floatingHalos.length; i++) {
-            this.floatingHalos[i].spotLight.visible = (this.activeRoomIndex === i);
-        }
-
         for (let i = 0; i < this.roomLights.length; i++) {
-            const isTarget = (this.activeRoomIndex === i);
-            this.roomLights[i].roomLight.visible = isTarget;
-            this.roomLights[i].accentLight.visible = isTarget;
+            const rl = this.roomLights[i];
+            const isActive = i === targetIdx;
+            // Active room: full brightness. Inactive: gentle fill (NOT pitch black)
+            rl.roomLight.intensity = isActive ? 1.4 : 0.25;
+            rl.accentLight.intensity = isActive ? 0.8 : 0.1;
+            if (this.floatingHalos[i] && this.floatingHalos[i].spotLight) {
+                this.floatingHalos[i].spotLight.intensity = isActive ? 12 : 1.5;
+            }
         }
     }
 
@@ -834,17 +878,34 @@ export class MuseumRoom {
             halo.group.position.y = halo.baseY + Math.sin(t) * 0.08;
             halo.group.rotation.y = time * 0.08 + halo.phase;
         }
+
+        // Clouds drift
+        for (const cloud of this.clouds) {
+            cloud.sprite.position.x += cloud.speed * 0.016; // ~60fps
+            if (cloud.sprite.position.x > 130) cloud.sprite.position.x = -130;
+        }
+        // Flying pigeons circle
+        for (const p of this.pigeons) {
+            if (!p.isPerched) {
+                p.angle += p.speed * 0.003;
+                p.sprite.position.x = Math.cos(p.angle) * p.radius;
+                p.sprite.position.z = Math.sin(p.angle) * p.radius;
+                p.sprite.position.y = p.baseY + Math.sin(time * 2 + p.wingPhase) * 1.5;
+                // Wing flap via scale pulsing
+                p.sprite.scale.y = 0.6 + Math.sin(time * 8 + p.wingPhase) * 0.15;
+            }
+        }
     }
 
     private buildLightingAndDecor() {
         // 1. Luz hemisférica natural y cálida de museo (ilumina uniformemente sin costo de sombras)
-        const hemiLight = new THREE.HemisphereLight(0xfffaea, 0x334155, 1.85);
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0xe2e8f0, 1.2);
         hemiLight.position.set(0, 32, 0);
         this.group.add(hemiLight);
 
         // 2. Luz solar direccional cálida (proyectada desde el Sol Celestial)
         const sunPos = new THREE.Vector3(24, 38, -26);
-        const sunLight = new THREE.DirectionalLight(0xfffaea, 2.4);
+        const sunLight = new THREE.DirectionalLight(0xfffaea, 1.6);
         sunLight.position.copy(sunPos);
         sunLight.castShadow = true;
         sunLight.shadow.mapSize.width = 1024;
@@ -857,158 +918,340 @@ export class MuseumRoom {
         sunLight.shadow.camera.bottom = -38;
         sunLight.shadow.bias = -0.0004;
         this.group.add(sunLight);
-
-        // 3. SOL CELESTIAL REALISTA 3D EN LA CÚPULA CÓSMICA
-        const sunGroup = new THREE.Group();
-        sunGroup.position.copy(sunPos);
-
-        // Núcleo solar incandescente
-        const sunCoreGeom = new THREE.SphereGeometry(3.6, 32, 32);
-        const sunCoreMat = new THREE.MeshBasicMaterial({
-            color: 0xfffbeb,
-            transparent: false
-        });
-        const sunCore = new THREE.Mesh(sunCoreGeom, sunCoreMat);
-        sunGroup.add(sunCore);
-
-        // Corona solar atmosférica difusa (gradiente procedural de alta fidelidad)
-        const coronaCanvas = document.createElement('canvas');
-        coronaCanvas.width = 256;
-        coronaCanvas.height = 256;
-        const cCtx = coronaCanvas.getContext('2d')!;
-        const grad = cCtx.createRadialGradient(128, 128, 10, 128, 128, 128);
-        grad.addColorStop(0, 'rgba(255, 255, 255, 1.0)');
-        grad.addColorStop(0.18, 'rgba(254, 240, 138, 0.85)');
-        grad.addColorStop(0.45, 'rgba(251, 146, 60, 0.4)');
-        grad.addColorStop(0.8, 'rgba(234, 88, 12, 0.1)');
-        grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        cCtx.fillStyle = grad;
-        cCtx.fillRect(0, 0, 256, 256);
-        const coronaTex = new THREE.CanvasTexture(coronaCanvas);
-
-        const coronaGeom = new THREE.PlaneGeometry(28, 28);
-        const coronaMat = new THREE.MeshBasicMaterial({
-            map: coronaTex,
-            transparent: true,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false
-        });
-        const coronaMesh = new THREE.Mesh(coronaGeom, coronaMat);
-        coronaMesh.lookAt(0, 0, 0); // Orientado hacia el centro del museo
-        sunGroup.add(coronaMesh);
-
-        // Corona exterior ultra amplia
-        const outerCoronaGeom = new THREE.PlaneGeometry(54, 54);
-        const outerCoronaMat = new THREE.MeshBasicMaterial({
-            map: coronaTex,
-            transparent: true,
-            opacity: 0.45,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false
-        });
-        const outerCorona = new THREE.Mesh(outerCoronaGeom, outerCoronaMat);
-        outerCorona.lookAt(0, 0, 0);
-        sunGroup.add(outerCorona);
-
-        this.group.add(sunGroup);
     }
 
-    private createGalaxy() {
-        const canvas = document.createElement('canvas');
-        canvas.width = 64;
-        canvas.height = 64;
-        const ctx = canvas.getContext('2d')!;
-        
-        const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
-        gradient.addColorStop(0, 'rgba(255, 255, 255, 1.0)');
-        gradient.addColorStop(0.25, 'rgba(200, 230, 255, 0.7)');
-        gradient.addColorStop(0.55, 'rgba(190, 140, 255, 0.2)');
-        gradient.addColorStop(1, 'rgba(0, 0, 0, 0.0)');
-        
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, 64, 64);
-        
-        const starTexture = new THREE.CanvasTexture(canvas);
+    private createRealisticSky(): void {
+        // NOTE: scene.background must be changed to 0x87CEEB in main.ts
+        // 1. SKY DOME - Simple gradient sphere
+        const skyGeo = new THREE.SphereGeometry(180, 24, 12);
+        const skyCanvas = document.createElement('canvas');
+        skyCanvas.width = 512;
+        skyCanvas.height = 256;
+        const skyCtx = skyCanvas.getContext('2d')!;
+        // Beautiful midday gradient: deep blue zenith → light blue → white horizon
+        const grad = skyCtx.createLinearGradient(0, 0, 0, 256);
+        grad.addColorStop(0, '#4A90D9');      // Deep sky blue zenith
+        grad.addColorStop(0.3, '#87CEEB');    // Classic sky blue
+        grad.addColorStop(0.6, '#B8DCF0');    // Light blue
+        grad.addColorStop(0.85, '#E8F4F8');   // Very pale blue
+        grad.addColorStop(1.0, '#FFFFFF');    // White horizon
+        skyCtx.fillStyle = grad;
+        skyCtx.fillRect(0, 0, 512, 256);
+        const skyTexture = new THREE.CanvasTexture(skyCanvas);
+        const skyMat = new THREE.MeshBasicMaterial({
+            map: skyTexture,
+            side: THREE.BackSide,
+            fog: false
+        });
+        const skyDome = new THREE.Mesh(skyGeo, skyMat);
+        skyDome.position.y = 10;
+        this.group.add(skyDome);
 
-        const starsGeometry = new THREE.BufferGeometry();
-        const starsCount = 4000;
-        const posArray = new Float32Array(starsCount * 3);
-        const colorsArray = new Float32Array(starsCount * 3);
+        // 2. SUN - Large, beautiful, warm
+        const sunGroup = new THREE.Group();
+        const sunGeo = new THREE.SphereGeometry(5, 24, 24);
+        const sunMat = new THREE.MeshBasicMaterial({ color: 0xFFF8E1 });
+        const sunMesh = new THREE.Mesh(sunGeo, sunMat);
+        sunGroup.add(sunMesh);
+        // Sun corona glow sprite
+        const coronaCanvas = document.createElement('canvas');
+        coronaCanvas.width = 128;
+        coronaCanvas.height = 128;
+        const coronaCtx = coronaCanvas.getContext('2d')!;
+        const coronaGrad = coronaCtx.createRadialGradient(64, 64, 8, 64, 64, 64);
+        coronaGrad.addColorStop(0, 'rgba(255, 248, 225, 1.0)');
+        coronaGrad.addColorStop(0.15, 'rgba(255, 236, 179, 0.8)');
+        coronaGrad.addColorStop(0.4, 'rgba(255, 213, 79, 0.3)');
+        coronaGrad.addColorStop(0.7, 'rgba(255, 183, 77, 0.08)');
+        coronaGrad.addColorStop(1.0, 'rgba(255, 183, 77, 0.0)');
+        coronaCtx.fillStyle = coronaGrad;
+        coronaCtx.fillRect(0, 0, 128, 128);
+        const coronaTexture = new THREE.CanvasTexture(coronaCanvas);
+        const coronaSprite = new THREE.Sprite(
+            new THREE.SpriteMaterial({ map: coronaTexture, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })
+        );
+        coronaSprite.scale.set(40, 40, 1);
+        sunGroup.add(coronaSprite);
+        sunGroup.position.set(30, 55, -35);
+        this.group.add(sunGroup);
 
-        const softCyan = new THREE.Color(0xa5f3fc);
-        const softViolet = new THREE.Color(0xe9d5ff);
-        const softWarm = new THREE.Color(0xfef08a);
-        const whiteColor = new THREE.Color(0xffffff);
+        // 3. CLOUDS - 14 lightweight sprites with slow movement
+        const cloudCanvas = document.createElement('canvas');
+        cloudCanvas.width = 128;
+        cloudCanvas.height = 64;
+        const cloudCtx = cloudCanvas.getContext('2d')!;
+        // Soft fluffy cloud shape
+        cloudCtx.fillStyle = 'rgba(0,0,0,0)';
+        cloudCtx.clearRect(0, 0, 128, 64);
+        const drawCloudBlob = (cx: number, cy: number, rx: number, ry: number, opacity: number) => {
+            const g = cloudCtx.createRadialGradient(cx, cy, 0, cx, cy, rx);
+            g.addColorStop(0, `rgba(255, 255, 255, ${opacity})`);
+            g.addColorStop(0.6, `rgba(245, 248, 255, ${opacity * 0.6})`);
+            g.addColorStop(1, 'rgba(240, 245, 255, 0)');
+            cloudCtx.fillStyle = g;
+            cloudCtx.beginPath();
+            cloudCtx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+            cloudCtx.fill();
+        };
+        drawCloudBlob(40, 35, 35, 20, 0.9);
+        drawCloudBlob(70, 30, 30, 22, 0.85);
+        drawCloudBlob(55, 28, 28, 18, 0.95);
+        drawCloudBlob(85, 35, 25, 16, 0.8);
+        drawCloudBlob(25, 32, 22, 15, 0.75);
+        const cloudTexture = new THREE.CanvasTexture(cloudCanvas);
 
-        for (let i = 0; i < starsCount * 3; i += 3) {
-            const radius = 120 + Math.random() * 180;
-            const theta = 2 * Math.PI * Math.random();
-            const phi = Math.acos(Math.random());
-            
-            posArray[i] = radius * Math.sin(phi) * Math.cos(theta);
-            posArray[i + 1] = Math.abs(radius * Math.cos(phi)) + 12;
-            posArray[i + 2] = radius * Math.sin(phi) * Math.sin(theta);
-
-            const rand = Math.random();
-            let col = whiteColor;
-            if (rand < 0.25) col = softCyan;
-            else if (rand < 0.45) col = softViolet;
-            else if (rand < 0.6) col = softWarm;
-
-            colorsArray[i] = col.r;
-            colorsArray[i + 1] = col.g;
-            colorsArray[i + 2] = col.b;
+        this.clouds = [];
+        for (let i = 0; i < 14; i++) {
+            const cloud = new THREE.Sprite(
+                new THREE.SpriteMaterial({
+                    map: cloudTexture,
+                    transparent: true,
+                    opacity: 0.55 + Math.random() * 0.3,
+                    depthWrite: false,
+                    fog: false
+                })
+            );
+            const scale = 18 + Math.random() * 28;
+            cloud.scale.set(scale, scale * 0.45, 1);
+            cloud.position.set(
+                (Math.random() - 0.5) * 240,
+                42 + Math.random() * 30,
+                (Math.random() - 0.5) * 240
+            );
+            this.group.add(cloud);
+            this.clouds.push({
+                sprite: cloud,
+                speed: 0.15 + Math.random() * 0.4,
+                originalX: cloud.position.x
+            });
         }
 
-        starsGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-        starsGeometry.setAttribute('color', new THREE.BufferAttribute(colorsArray, 3));
+        // 4. PIGEONS (Argentine palomas!) - 6 simple sprites
+        const pigeonCanvas = document.createElement('canvas');
+        pigeonCanvas.width = 64;
+        pigeonCanvas.height = 32;
+        const pigeonCtx = pigeonCanvas.getContext('2d')!;
+        pigeonCtx.clearRect(0, 0, 64, 32);
+        // Simple bird silhouette - body
+        pigeonCtx.fillStyle = '#6b7280';
+        pigeonCtx.beginPath();
+        pigeonCtx.ellipse(32, 18, 8, 5, 0, 0, Math.PI * 2);
+        pigeonCtx.fill();
+        // Wings
+        pigeonCtx.fillStyle = '#9ca3af';
+        pigeonCtx.beginPath();
+        pigeonCtx.moveTo(24, 16);
+        pigeonCtx.quadraticCurveTo(12, 6, 8, 12);
+        pigeonCtx.quadraticCurveTo(16, 16, 24, 16);
+        pigeonCtx.fill();
+        pigeonCtx.beginPath();
+        pigeonCtx.moveTo(40, 16);
+        pigeonCtx.quadraticCurveTo(52, 6, 56, 12);
+        pigeonCtx.quadraticCurveTo(48, 16, 40, 16);
+        pigeonCtx.fill();
+        const pigeonTexture = new THREE.CanvasTexture(pigeonCanvas);
 
-        const starsMaterial = new THREE.PointsMaterial({
-            size: 2.0,
-            map: starTexture,
-            transparent: true,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false,
-            vertexColors: true,
-            sizeAttenuation: true
-        });
-
-        const starField = new THREE.Points(starsGeometry, starsMaterial);
-        this.group.add(starField);
-
-        const nebulaGeom = new THREE.BufferGeometry();
-        const nebulaCount = 450;
-        const nebPos = new Float32Array(nebulaCount * 3);
-        const nebCol = new Float32Array(nebulaCount * 3);
-
-        for (let i = 0; i < nebulaCount * 3; i += 3) {
-            nebPos[i] = (Math.random() - 0.5) * 180;
-            nebPos[i + 1] = 30 + Math.random() * 50;
-            nebPos[i + 2] = (Math.random() - 0.5) * 180;
-
-            const isViolet = Math.random() > 0.5;
-            const c = isViolet ? softViolet : softCyan;
-            nebCol[i] = c.r;
-            nebCol[i + 1] = c.g;
-            nebCol[i + 2] = c.b;
+        this.pigeons = [];
+        for (let i = 0; i < 6; i++) {
+            const pigeon = new THREE.Sprite(
+                new THREE.SpriteMaterial({
+                    map: pigeonTexture,
+                    transparent: true,
+                    depthWrite: false
+                })
+            );
+            const isPerched = i < 3; // 3 posadas, 3 volando
+            pigeon.scale.set(1.2, 0.6, 1);
+            if (isPerched) {
+                // Posadas en el techo de vidrio
+                pigeon.position.set(
+                    -10 + i * 10 + Math.random() * 4,
+                    13.9,
+                    -8 + Math.random() * 16
+                );
+            } else {
+                pigeon.position.set(
+                    (Math.random() - 0.5) * 50,
+                    16 + Math.random() * 12,
+                    (Math.random() - 0.5) * 50
+                );
+            }
+            this.group.add(pigeon);
+            this.pigeons.push({
+                sprite: pigeon,
+                isPerched,
+                speed: isPerched ? 0 : 1.5 + Math.random() * 2,
+                angle: Math.random() * Math.PI * 2,
+                radius: 15 + Math.random() * 20,
+                baseY: pigeon.position.y,
+                wingPhase: Math.random() * Math.PI * 2
+            });
         }
+    }
 
-        nebulaGeom.setAttribute('position', new THREE.BufferAttribute(nebPos, 3));
-        nebulaGeom.setAttribute('color', new THREE.BufferAttribute(nebCol, 3));
+    private buildViewingIndicators(): void {
+        const roomData = [
+            { name: '🥔 PILA DE PAPA', pos: [-15, 0], viewDir: [1, 0], color: '#4ade80' },
+            { name: '⚡ BOBINA DE TESLA', pos: [16, 0], viewDir: [-1, 0], color: '#38bdf8' },
+            { name: '🌪️ AEROGENERADOR', pos: [0, -15], viewDir: [0, 1], color: '#00f0ff' },
+            { name: '☀️ PANEL SOLAR', pos: [12, -12], viewDir: [-0.7, 0.7], color: '#fde047' },
+            { name: '⚡ VAN DE GRAAFF', pos: [-12, -12], viewDir: [0.7, 0.7], color: '#c084fc' },
+            { name: '⚖️ CUNA DE NEWTON', pos: [0, 14], viewDir: [0, -1], color: '#f59e0b' },
+            { name: '⚙️ DÍNAMO MANUAL', pos: [12, 10], viewDir: [-0.7, -0.7], color: '#f97316' },
+            { name: '🌈 PRISMA ÓPTICO', pos: [0, 24], viewDir: [0, -1], color: '#d946ef' }
+        ];
 
-        const nebulaMat = new THREE.PointsMaterial({
-            size: 14.0,
-            map: starTexture,
+        for (const room of roomData) {
+            // Floor arrow "OBSERVÁ DESDE ACÁ" - positioned in front of pedestal
+            const arrowCanvas = document.createElement('canvas');
+            arrowCanvas.width = 256;
+            arrowCanvas.height = 128;
+            const ctx = arrowCanvas.getContext('2d')!;
+            ctx.clearRect(0, 0, 256, 128);
+            // Arrow chevron
+            ctx.fillStyle = room.color;
+            ctx.globalAlpha = 0.8;
+            ctx.beginPath();
+            ctx.moveTo(128, 15);
+            ctx.lineTo(180, 50);
+            ctx.lineTo(145, 50);
+            ctx.lineTo(145, 75);
+            ctx.lineTo(111, 75);
+            ctx.lineTo(111, 50);
+            ctx.lineTo(76, 50);
+            ctx.closePath();
+            ctx.fill();
+            // Text
+            ctx.globalAlpha = 1;
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 16px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('👀 OBSERVÁ', 128, 95);
+            ctx.fillText('DESDE ACÁ', 128, 115);
+            const arrowTex = new THREE.CanvasTexture(arrowCanvas);
+            const arrow = new THREE.Mesh(
+                new THREE.PlaneGeometry(1.6, 0.8),
+                new THREE.MeshBasicMaterial({ map: arrowTex, transparent: true, depthWrite: false, side: THREE.DoubleSide })
+            );
+            arrow.rotation.x = -Math.PI / 2;
+            // Place arrow 2.5m in front of pedestal (in viewing direction)
+            arrow.position.set(
+                room.pos[0] + room.viewDir[0] * 2.5,
+                0.02,
+                room.pos[1] + room.viewDir[1] * 2.5
+            );
+            arrow.rotation.z = Math.atan2(-room.viewDir[0], room.viewDir[1]);
+            arrow.castShadow = false;
+            this.group.add(arrow);
+
+            // Pedestal title plaque on front face
+            const plaqueCanvas = document.createElement('canvas');
+            plaqueCanvas.width = 512;
+            plaqueCanvas.height = 128;
+            const pCtx = plaqueCanvas.getContext('2d')!;
+            // Bronze background
+            pCtx.fillStyle = '#92400e';
+            pCtx.fillRect(0, 0, 512, 128);
+            pCtx.fillStyle = '#b45309';
+            pCtx.fillRect(4, 4, 504, 120);
+            // Gold border
+            pCtx.strokeStyle = '#d4af37';
+            pCtx.lineWidth = 3;
+            pCtx.strokeRect(8, 8, 496, 112);
+            // Title text
+            pCtx.fillStyle = '#fef3c7';
+            pCtx.font = 'bold 32px Inter, sans-serif';
+            pCtx.textAlign = 'center';
+            pCtx.fillText(room.name, 256, 55);
+            pCtx.font = '18px Inter, sans-serif';
+            pCtx.fillStyle = '#fde68a';
+            pCtx.fillText('Tocá [E] para experimentar', 256, 90);
+            const plaqueTex = new THREE.CanvasTexture(plaqueCanvas);
+            const plaque = new THREE.Mesh(
+                new THREE.PlaneGeometry(1.6, 0.4),
+                new THREE.MeshBasicMaterial({ map: plaqueTex })
+            );
+            // Place on front face of pedestal at Y=0.9 (middle of 1.2m pedestal)
+            plaque.position.set(
+                room.pos[0] + room.viewDir[0] * 1.22,
+                0.9,
+                room.pos[1] + room.viewDir[1] * 1.22
+            );
+            plaque.rotation.y = Math.atan2(room.viewDir[0], room.viewDir[1]);
+            plaque.castShadow = false;
+            this.group.add(plaque);
+        }
+    }
+
+    private buildDoorBarriers(): void {
+        const doorData = [
+            { pos: [-7.5, 0], rotY: Math.PI / 2, room: 'SALA 01' },
+            { pos: [7.5, 0], rotY: -Math.PI / 2, room: 'SALA 02' },
+            { pos: [0, -7.5], rotY: 0, room: 'SALA 03' },
+            { pos: [5.5, -5.5], rotY: -Math.PI / 4, room: 'SALA 04' },
+            { pos: [-5.5, -5.5], rotY: Math.PI / 4, room: 'SALA 05' },
+            { pos: [0, 7.5], rotY: Math.PI, room: 'SALA 06' },
+            { pos: [5.5, 4.8], rotY: -3 * Math.PI / 4, room: 'SALA 07' },
+            { pos: [0, 19.0], rotY: Math.PI, room: 'GALERÍA' }
+        ];
+        const doorMat = new THREE.MeshStandardMaterial({
+            color: 0x64748b,
+            roughness: 0.6,
+            metalness: 0.3,
             transparent: true,
-            opacity: 0.12,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false,
-            vertexColors: true,
-            sizeAttenuation: true
+            opacity: 0.85
         });
+        for (const d of doorData) {
+            const door = new THREE.Mesh(
+                new THREE.BoxGeometry(3.0, 3.6, 0.12),
+                doorMat.clone()
+            );
+            door.position.set(d.pos[0], 1.9, d.pos[1]);
+            door.rotation.y = d.rotY;
+            door.castShadow = false;
+            door.receiveShadow = false;
+            door.visible = false; // Will be controlled by World.ts
+            door.name = `door-barrier-${d.room}`;
+            this.group.add(door);
+            this.doorBarriers.push(door);
 
-        const nebulaMesh = new THREE.Points(nebulaGeom, nebulaMat);
-        this.group.add(nebulaMesh);
+            // Lock sign on door
+            const signCanvas = document.createElement('canvas');
+            signCanvas.width = 256;
+            signCanvas.height = 128;
+            const sCtx = signCanvas.getContext('2d')!;
+            sCtx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+            sCtx.fillRect(0, 0, 256, 128);
+            sCtx.strokeStyle = '#f59e0b';
+            sCtx.lineWidth = 3;
+            sCtx.strokeRect(4, 4, 248, 120);
+            sCtx.fillStyle = '#fde047';
+            sCtx.font = 'bold 36px Inter, sans-serif';
+            sCtx.textAlign = 'center';
+            sCtx.fillText('🔒', 128, 50);
+            sCtx.font = 'bold 16px Inter, sans-serif';
+            sCtx.fillStyle = '#f1f5f9';
+            sCtx.fillText('SALA BLOQUEADA', 128, 80);
+            sCtx.font = '12px Inter, sans-serif';
+            sCtx.fillStyle = '#94a3b8';
+            sCtx.fillText('Completá la sala anterior', 128, 105);
+            const signTex = new THREE.CanvasTexture(signCanvas);
+            const sign = new THREE.Mesh(
+                new THREE.PlaneGeometry(1.4, 0.7),
+                new THREE.MeshBasicMaterial({ map: signTex, transparent: true, depthWrite: false })
+            );
+            sign.position.set(0, 0.3, 0.08);
+            door.add(sign);
+            // Duplicate sign on back face
+            const signBack = sign.clone();
+            signBack.rotation.y = Math.PI;
+            signBack.position.z = -0.08;
+            door.add(signBack);
+        }
+    }
+
+    public getDoorBarriers(): THREE.Mesh[] {
+        return this.doorBarriers;
     }
 
     public getMesh(): THREE.Group {

@@ -39,12 +39,12 @@ Este documento establece las reglas y directrices inquebrantables que todo compo
 ### 2.1 Principio de Analogía Cotidiana Directa
 * **Regla Inquebrantable:** Todo concepto científico debe ser explicado utilizando analogías cotidianas, visuales y entretenidas. Se prohíbe el uso de fórmulas matemáticas complejas o jerga académica impenetrable.
 * **Guía de Analogías Aprobadas:**
-  - 🥔 **Pila de Papa:** *"El jugo ácido de la papa actúa como un tobogán donde los electrones saltan del zinc al cobre como chicos en el recreo."* (No decir "reacción redox con potencial de celda galvánica").
-  - ⚡ **Bobina de Tesla:** *"Emite olas invisibles de energía que viajan por el aire y encienden tubos de luz sin necesidad de cables."* (No decir "ruptura dieléctrica de alta frecuencia").
-  - 🌪️ **Aerogenerador:** *"El viento empuja las aspas gigantes para hacer girar imanes de fuerza dentro de rollos de cobre y generar luz para una ciudad."* (No decir "inducción electromagnética de flujo variable").
-  - ☀️ **Panel Solar:** *"La luz del sol está hecha de pelotitas diminutas llamadas fotones que golpean el silicio y hacen correr a los electrones."* (No decir "efecto fotoeléctrico cuántico de banda prohibida").
-  - ⚡ **Van de Graaff:** *"Una cinta de goma frota y junta un montón de electrones traviesos hasta que saltan chispas, como frotar un globo en el pelo pero a lo gigante."* (No decir "acumulación triboeléctrica electrostática").
-  - ⚖️ **Cuna de Newton:** *"La energía del choque viaja invisible a través de las esferas del medio y empuja solo a la última, como en el billar o las filas de dominó."* (No decir "conservación del momento lineal p=mv").
+  - 🥔 **Pila de Papa:** *"El jugo ácido de la papa actúa como un tobogán donde los electrones saltan del zinc al cobre como chicos en el recreo."*
+  - ⚡ **Bobina de Tesla:** *"Emite olas invisibles de energía que viajan por el aire y encienden tubos de luz sin necesidad de cables."*
+  - 🌪️ **Aerogenerador:** *"El viento empuja las aspas gigantes para hacer girar imanes de fuerza dentro de rollos de cobre y generar luz para una ciudad."*
+  - ☀️ **Panel Solar:** *"La luz del sol está hecha de pelotitas diminutas llamadas fotones que golpean el silicio y hacen correr a los electrones."*
+  - ⚡ **Van de Graaff:** *"Una cinta de goma frota y junta un montón de electrones traviesos hasta que saltan chispas, como frotar un globo en el pelo pero a lo gigante."*
+  - ⚖️ **Cuna de Newton:** *"La energía del choque viaja invisible a través de las esferas del medio y empuja solo a la última, como en el billar o las filas de dominó."*
   - ⚙️ **Dínamo Manual:** *"Tus músculos transfieren fuerza a los engranajes para hacer girar imanes que empujan la electricidad y calientan el filamento de la bombilla, como los faros de bicicletas."*
 
 ### 2.2 Robot Guía Mel-Bot Amigable y Empático
@@ -80,3 +80,40 @@ Este documento establece las reglas y directrices inquebrantables que todo compo
 * Brazo de sol artificial articulado que se mueve suavemente con interpolación cinemática continua (cenital 90°, inclinado 45°, sombra).
 * Motor DC con hélice de aviación aerodinámica de 3 palas y aro protector.
 * Pantalla LCD digital interactiva que muestra en tiempo real la radiación (W/m²), tensión (V) y RPM.
+
+## 5. ESTÁNDARES DE CIELO Y ATMÓSFERA
+
+### 5.1 Cielo Realista Obligatorio
+* **Regla:** Queda prohibido el cielo cósmico/galaxia. El museo debe tener cielo diurno celeste de mediodía.
+* **Implementación:** Sky dome con gradiente celeste, sol grande con corona, 14 nubes procedurales móviles.
+* **Palomas:** 6 sprites de palomas argentinas (3 posadas en el techo de vidrio, 3 volando en círculos).
+
+### 5.2 Materiales de Museo Real
+* **Regla:** Paredes blancas galería (#f1f5f9), piso mármol claro (#e2e8f0). Prohibido materiales con albedo < 30%.
+* **Razón:** Los materiales claros reflejan la luz naturalmente, permitiendo menos luces a menor intensidad.
+
+## 6. ESTÁNDARES DE SEÑALIZACIÓN Y DIRECCIÓN
+
+### 6.1 Indicador de Dirección por Sala
+* **Regla:** Toda sala DEBE tener flecha en el piso ("OBSERVÁ DESDE ACÁ") + placa de bronce en el frente del pedestal.
+
+### 6.2 Sistema de Puertas Progresivas
+* **Regla:** Las salas se desbloquean secuencialmente. Las puertas cerradas muestran cartel "🔒 SALA BLOQUEADA - Completá la sala anterior".
+* **Mel-Bot contextual:** Si el jugador se acerca a una puerta bloqueada, Mel-Bot le avisa cuál sala debe completar primero.
+
+## 7. ESTÁNDARES DE MODELOS 3D
+
+### 7.1 setSleep() Obligatorio
+* **Regla:** Todo modelo 3D DEBE implementar `setSleep(sleep: boolean)`. Cuando `sleep=true`, el método `update()` debe retornar inmediatamente sin cálculos.
+* **PointLights:** Los modelos con PointLight dinámicas deben ponerlas en `visible=false` al dormir.
+
+### 7.2 Polígonos Máximos
+* **Regla:** Ningún modelo individual debe superar 20,000 triángulos. Usar subdivisiones razonables (16-24, no 64).
+
+### 7.3 Prohibición de MeshPhysicalMaterial con Transmisión
+* **Regla:** Queda prohibido `MeshPhysicalMaterial` con `transmission` en objetos visibles. Usar `MeshStandardMaterial` con `transparent: true` y `opacity` baja.
+* **Causa:** Cada objeto con `transmission` genera un render pass adicional completo (copia del framebuffer).
+
+### 7.4 Hacer Visible lo Invisible
+* **Regla:** Todo fenómeno físico invisible (campo magnético, viento, fotones, ondas, corriente eléctrica) DEBE tener representación visual para chicos de 11 años.
+* **Ejemplos:** Líneas de campo magnético en dínamo, estelas de viento en aerogenerador, lluvia de fotones en panel solar, onda de choque en Cuna de Newton, polaridad +/- en cables.

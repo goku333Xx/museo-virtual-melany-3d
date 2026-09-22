@@ -22,6 +22,8 @@ export class SwitchExhibit {
     private sparkPoints!: THREE.Points;
     private sparksActive: boolean = false;
     private wasActive: boolean = false;
+    private isSleeping: boolean = false;
+    private hintRing!: THREE.Mesh;
 
     // Multímetro Digital ubicado a la derecha, en diagonal, bien visible y sin tapar las papas
     private meterGroup!: THREE.Group;
@@ -86,6 +88,14 @@ export class SwitchExhibit {
         btnRing.rotation.x = Math.PI / 2;
         btnRing.position.set(0.18, 0.075, 0.05);
         this.group.add(btnRing);
+
+        this.hintRing = new THREE.Mesh(
+            new THREE.TorusGeometry(0.075, 0.005, 8, 24),
+            new THREE.MeshStandardMaterial({ color: 0xfde047, emissive: 0xfde047, metalness: 0.85, roughness: 0.2 })
+        );
+        this.hintRing.rotation.x = Math.PI / 2;
+        this.hintRing.position.set(0.18, 0.075, 0.05);
+        this.group.add(this.hintRing);
 
         // 3. MÓDULO DEL DIODO LED DE POTENCIA (+15% tamaño: radio 0.055)
         const socketGeom = new THREE.CylinderGeometry(0.08, 0.085, 0.045, 24);
@@ -464,8 +474,14 @@ export class SwitchExhibit {
         return this.isOn;
     }
 
+    public setSleep(sleep: boolean): void {
+        this.isSleeping = sleep;
+    }
+
     public update(delta: number, isPlugged: boolean) {
+        if (this.isSleeping) return;
         const time = performance.now() * 0.001;
+        (this.hintRing.material as THREE.MeshStandardMaterial).emissiveIntensity = Math.sin(time * 3) * 0.5 + 0.5;
         const active = this.isOn && isPlugged;
 
         // Detección de flanco ascendente para chispas

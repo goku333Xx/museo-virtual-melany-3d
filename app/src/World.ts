@@ -57,16 +57,46 @@ export class World {
     private hud: HUD;
     private lastPlayerPos = new THREE.Vector3(0, 1.68, 4.5);
 
+    private unlockedRooms: Set<number> = new Set([0]); // Room 0 (Sala 01) always unlocked
+    private doorBarriers: THREE.Mesh[] = [];
+    private lastDoorWarningIdx?: number;
+    private currentRoomIdx: number | null = null;
+    private roomEntryTime: number = 0;
+
     constructor(scene: THREE.Scene, hud: HUD) {
         this.scene = scene;
         this.hud = hud;
         this.init();
     }
 
+    private initDoorBarriers(): void {
+        if (this.room.getDoorBarriers) {
+            this.doorBarriers = this.room.getDoorBarriers();
+            this.updateDoorStates();
+        }
+    }
+
+    private updateDoorStates(): void {
+        const roomOrder = [0, 1, 2, 3, 4, 5, 6, 7]; // Sequential order
+        for (let i = 0; i < this.doorBarriers.length; i++) {
+            // Door is visible (blocked) if the room is NOT unlocked
+            this.doorBarriers[i].visible = !this.unlockedRooms.has(roomOrder[i]);
+        }
+    }
+
+    private unlockNextRoom(completedMissionId: number): void {
+        const completedIdx = completedMissionId - 1;
+        if (completedIdx + 1 < 8) {
+            this.unlockedRooms.add(completedIdx + 1);
+            this.updateDoorStates();
+        }
+    }
+
     private init() {
         // 1. Habitación Arquitectónica con 6 Salas Temáticas y Atrio Central
         this.room = new MuseumRoom();
         this.scene.add(this.room.getMesh());
+        this.initDoorBarriers();
 
         const pHeight = 1.2;
 
@@ -236,7 +266,10 @@ export class World {
             onChallenge: () => {
                 if (!this.hud.isMissionCompleted(1)) {
                     this.hud.openQuiz(quizPapa, (success) => {
-                        if (success) this.hud.completeMission(1);
+                        if (success) {
+                            this.hud.completeMission(1);
+                            this.unlockNextRoom(1);
+                        }
                     });
                 } else {
                     this.hud.showAchievementToast('Pila de Papa: ¡Completado!', 'Ya obtuviste la medalla de esta sala. Podés seguir probando el circuito.');
@@ -285,7 +318,10 @@ export class World {
             onChallenge: () => {
                 if (!this.hud.isMissionCompleted(2)) {
                     this.hud.openQuiz(quizTesla, (success) => {
-                        if (success) this.hud.completeMission(2);
+                        if (success) {
+                            this.hud.completeMission(2);
+                            this.unlockNextRoom(2);
+                        }
                     });
                 } else {
                     this.hud.showAchievementToast('Bobina de Tesla: ¡Completado!', 'Ya dominás la transmisión de energía inalámbrica.');
@@ -329,7 +365,10 @@ export class World {
             onChallenge: () => {
                 if (!this.hud.isMissionCompleted(3)) {
                     this.hud.openQuiz(quizWind, (success) => {
-                        if (success) this.hud.completeMission(3);
+                        if (success) {
+                            this.hud.completeMission(3);
+                            this.unlockNextRoom(3);
+                        }
                     });
                 } else {
                     this.hud.showAchievementToast('Energía Eólica: ¡Completado!', 'Ya conocés cómo se genera la energía limpia del viento.');
@@ -373,7 +412,10 @@ export class World {
             onChallenge: () => {
                 if (!this.hud.isMissionCompleted(4)) {
                     this.hud.openQuiz(quizSolar, (success) => {
-                        if (success) this.hud.completeMission(4);
+                        if (success) {
+                            this.hud.completeMission(4);
+                            this.unlockNextRoom(4);
+                        }
                     });
                 } else {
                     this.hud.showAchievementToast('Energía Solar: ¡Completado!', 'Ya dominás la conversión de fotones en movimiento.');
@@ -421,7 +463,10 @@ export class World {
             onChallenge: () => {
                 if (!this.hud.isMissionCompleted(5)) {
                     this.hud.openQuiz(quizVanDeGraaff, (success) => {
-                        if (success) this.hud.completeMission(5);
+                        if (success) {
+                            this.hud.completeMission(5);
+                            this.unlockNextRoom(5);
+                        }
                     });
                 } else {
                     this.hud.showAchievementToast('Van de Graaff: ¡Completado!', 'Ya entendés cómo funciona la repulsión electrostática.');
@@ -465,7 +510,10 @@ export class World {
             onChallenge: () => {
                 if (!this.hud.isMissionCompleted(6)) {
                     this.hud.openQuiz(quizNewton, (success) => {
-                        if (success) this.hud.completeMission(6);
+                        if (success) {
+                            this.hud.completeMission(6);
+                            this.unlockNextRoom(6);
+                        }
                     });
                 } else {
                     this.hud.showAchievementToast('Cuna de Newton: ¡Completado!', 'Ya comprendés el principio de conservación de energía.');
@@ -509,7 +557,10 @@ export class World {
             onChallenge: () => {
                 if (!this.hud.isMissionCompleted(7)) {
                     this.hud.openQuiz(quizDynamo, (success) => {
-                        if (success) this.hud.completeMission(7);
+                        if (success) {
+                            this.hud.completeMission(7);
+                            this.unlockNextRoom(7);
+                        }
                     });
                 } else {
                     this.hud.showAchievementToast('Dínamo Manual: ¡Completado!', 'Ya dominás la conversión de energía humana en luz.', '⚙️');
@@ -614,13 +665,18 @@ export class World {
                 const currentRoom = getCurrentPlayerRoom(this.lastPlayerPos);
                 const nextRoom = getNextIncompleteRoom(currentRoom ? currentRoom.id : undefined);
                 const isAllCompleted = this.hud.getCompletedCount() >= 7;
+                const timeInRoom = (performance.now() * 0.001) - this.roomEntryTime;
 
                 let speech: string;
 
                 if (isAllCompleted) {
                     speech = `🎉 ¡FELICITACIONES, <b>${this.hud.getStudentName()}</b>! 🏆<br><br>¡Ya completaste las 7 salas temáticas y sos un <b>Gran Maestro de la Energía Universal</b>!<br><br>¿Querés que volemos juntos a la <b>Galería Óptica</b> a ver el prisma de Newton o preferís ver tu diploma en el Diario? 🌈`;
                 } else if (currentRoom && !this.hud.isMissionCompleted(currentRoom.id)) {
-                    speech = `¡Ya estamos acá en la <b>${currentRoom.name}</b>, <b>${this.hud.getStudentName()}</b>! 🔬<br><br>Tu misión en esta sala es interactuar con el experimento y luego presionar el botón 🏆 <b>[DESAFÍO CIENTÍFICO]</b> para responder la pregunta y ganar tu medalla.<br><br>¿Querés que te lleve directamente a la siguiente sala (<b>${nextRoom.name}</b>) o preferís resolver esta primero? 🚀`;
+                    if (timeInRoom > 60) {
+                        speech = `¿Necesitás una pista? 🤔 ¡Probá interactuar con [E] y después hacé el desafío con [R]!`;
+                    } else {
+                        speech = `¡Ya estamos acá en la <b>${currentRoom.name}</b>, <b>${this.hud.getStudentName()}</b>! 🔬<br><br>Tu misión en esta sala es interactuar con el experimento y luego presionar el botón 🏆 <b>[DESAFÍO CIENTÍFICO]</b> para responder la pregunta y ganar tu medalla.<br><br>¿Querés que te lleve directamente a la siguiente sala (<b>${nextRoom.name}</b>) o preferís resolver esta primero? 🚀`;
+                    }
                 } else if (currentRoom && this.hud.isMissionCompleted(currentRoom.id)) {
                     speech = `¡Genial, <b>${this.hud.getStudentName()}</b>! 🌟 Ya ganaste la medalla de la <b>${currentRoom.name}</b>.<br><br>¿Volamos juntos a tu próxima misión en la <b>${nextRoom.name}</b>? ¡Seguime de cerca mientras te abro paso! 🚀`;
                 } else {
@@ -689,6 +745,46 @@ export class World {
             if (minDistanceSq < 324) { // 18m * 18m
                 activeRoomIdx = closestIdx;
             }
+
+            if (activeRoomIdx !== this.currentRoomIdx) {
+                this.currentRoomIdx = activeRoomIdx;
+                this.roomEntryTime = time;
+            }
+
+            // Check if player is near a locked door
+            for (let i = 0; i < this.doorBarriers.length; i++) {
+                if (this.doorBarriers[i].visible) { // Door is locked
+                    const doorPos = this.doorBarriers[i].position;
+                    const distToDoor = playerPos.distanceTo(doorPos);
+                    if (distToDoor < 4.0) {
+                        // Player is near a locked door! Mel-Bot warns them
+                        const roomNames = [
+                            'Pila de Papa', 'Bobina de Tesla', 'Aerogenerador',
+                            'Panel Solar', 'Van de Graaff', 'Cuna de Newton',
+                            'Dínamo Manual', 'Prisma Óptico'
+                        ];
+                        // Find which room they need to complete first
+                        const requiredRoom = i > 0 ? i - 1 : 0;
+                        if (!this.lastDoorWarningIdx || this.lastDoorWarningIdx !== i) {
+                            this.lastDoorWarningIdx = i;
+                            this.robotGuide.showDoorBlockedMessage(
+                                roomNames[requiredRoom],
+                                roomNames[i]
+                            );
+                        }
+                        break;
+                    }
+                }
+            }
+            // Reset warning when player moves away from all doors
+            let nearAnyDoor = false;
+            for (const barrier of this.doorBarriers) {
+                if (barrier.visible && playerPos.distanceTo(barrier.position) < 5.0) {
+                    nearAnyDoor = true;
+                    break;
+                }
+            }
+            if (!nearAnyDoor) this.lastDoorWarningIdx = undefined;
         }
 
         // Iluminación inteligente: solo la sala activa tiene focos dinámicos encendidos (ahorro del 80% de GPU)
@@ -699,16 +795,22 @@ export class World {
 
         // SIMULACIÓN SELECTIVA (Active Room LOD): Solo 1 experimento se simula a la vez
         // Sala 0: Pila de Papa y Cables
-        if (activeRoomIdx === 0) {
-            this.switchExhibit.update(delta, this.isPlugged);
-            const circuitActive = this.switchExhibit.getState() && this.isPlugged;
-            this.cables.update(time, circuitActive);
+        if (this.switchExhibit) {
+            // Asumiendo que SwitchExhibit y Cables podrían tener setSleep en el futuro
+            if (activeRoomIdx === 0) {
+                this.switchExhibit.update(delta, this.isPlugged);
+                const circuitActive = this.switchExhibit.getState() && this.isPlugged;
+                this.cables.update(time, circuitActive);
+            }
         }
 
         // Sala 1: Bobina de Tesla
-        if (this.teslaCoil && activeRoomIdx === 1) {
-            const distTesla = playerPos ? playerPos.distanceTo(new THREE.Vector3(16, 1.2, 0)) : undefined;
-            this.teslaCoil.update(time, distTesla);
+        if (this.teslaCoil) {
+            this.teslaCoil.setSleep(activeRoomIdx !== 1);
+            if (activeRoomIdx === 1) {
+                const distTesla = playerPos ? playerPos.distanceTo(new THREE.Vector3(16, 1.2, 0)) : undefined;
+                this.teslaCoil.update(time, distTesla);
+            }
         }
 
         // Sala 2: Aerogenerador Eólico
@@ -728,24 +830,36 @@ export class World {
         }
 
         // Sala 4: Generador de Van de Graaff
-        if (this.vanDeGraaff && activeRoomIdx === 4) {
-            this.vanDeGraaff.update(time, delta);
+        if (this.vanDeGraaff) {
+            this.vanDeGraaff.setSleep(activeRoomIdx !== 4);
+            if (activeRoomIdx === 4) {
+                this.vanDeGraaff.update(time, delta);
+            }
         }
 
         // Sala 5: Cuna de Newton
-        if (this.cradle && activeRoomIdx === 5) {
-            const dist = playerPos ? playerPos.distanceTo(new THREE.Vector3(0, 1.2, 14)) : undefined;
-            this.cradle.update(time, dist);
+        if (this.cradle) {
+            this.cradle.setSleep(activeRoomIdx !== 5);
+            if (activeRoomIdx === 5) {
+                const dist = playerPos ? playerPos.distanceTo(new THREE.Vector3(0, 1.2, 14)) : undefined;
+                this.cradle.update(time, dist);
+            }
         }
 
         // Sala 6: Dínamo Manual
-        if (this.dynamoExhibit && activeRoomIdx === 6) {
-            this.dynamoExhibit.update(time, delta);
+        if (this.dynamoExhibit) {
+            this.dynamoExhibit.setSleep(activeRoomIdx !== 6);
+            if (activeRoomIdx === 6) {
+                this.dynamoExhibit.update(time, delta);
+            }
         }
 
         // Sala 7: Galería Óptica
-        if (this.optics && activeRoomIdx === 7) {
-            this.optics.update(time);
+        if (this.optics) {
+            this.optics.setSleep(activeRoomIdx !== 7);
+            if (activeRoomIdx === 7) {
+                this.optics.update(time);
+            }
         }
 
         // Mel-Bot y Orbes Coleccionables

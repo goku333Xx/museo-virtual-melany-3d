@@ -8,7 +8,7 @@ export const RobotState = {
 } as const;
 export type RobotState = (typeof RobotState)[keyof typeof RobotState];
 
-export type RobotEmotion = 'neutral' | 'happy' | 'wink' | 'guiding' | 'celebrate' | 'blink';
+export type RobotEmotion = 'neutral' | 'happy' | 'wink' | 'guiding' | 'celebrate' | 'blink' | 'pointing';
 
 export class RobotGuide {
     private group: THREE.Group;
@@ -319,6 +319,36 @@ export class RobotGuide {
             ctx.lineTo(eyeRX + 22, eyeY);
             ctx.stroke();
 
+        } else if (emotion === 'pointing') {
+            // Ojos mirando de lado con expresión decidida
+            drawBlush();
+            const grad = ctx.createLinearGradient(eyeLX, eyeY - 26, eyeLX, eyeY + 26);
+            grad.addColorStop(0, '#00f0ff');
+            grad.addColorStop(1, '#0284c7');
+            ctx.fillStyle = grad;
+
+            ctx.beginPath();
+            ctx.ellipse(eyeLX, eyeY, 24, 28, 0, 0, Math.PI * 2);
+            ctx.ellipse(eyeRX, eyeY, 24, 28, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Pupilas desplazadas a la derecha
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(eyeLX + 12, eyeY - 4, 8, 0, Math.PI * 2);
+            ctx.arc(eyeRX + 12, eyeY - 4, 8, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Cejas en ángulo
+            ctx.strokeStyle = '#e0f2fe';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(eyeLX - 20, eyeY - 35);
+            ctx.lineTo(eyeLX + 20, eyeY - 25);
+            ctx.moveTo(eyeRX - 20, eyeY - 35);
+            ctx.lineTo(eyeRX + 20, eyeY - 25);
+            ctx.stroke();
+
         } else {
             // 'neutral': Ojos anime kawaii grandes con degradado azul cian, brillo doble y blush
             drawBlush();
@@ -401,6 +431,11 @@ export class RobotGuide {
         ctx.fillText(text, w / 2, padY + boxH / 2);
 
         this.speechTexture.needsUpdate = true;
+    }
+
+    public showDoorBlockedMessage(currentRoomName: string, requiredRoomName: string): void {
+        this.updateSpeechBubble(`💬 🔒 ¡${requiredRoomName} está bloqueada! Primero completá ${currentRoomName} 🏆`, '#f87171');
+        this.renderEyes('happy');
     }
 
     public startGuiding(roomId: number, roomName: string, destination: THREE.Vector3, directFlight: boolean = false) {
@@ -561,17 +596,43 @@ export class RobotGuide {
             }
 
         } else if (this.state === RobotState.ARRIVED) {
-            // Mel-Bot flotando en la sala y mirando al jugador
+            // Secuencia de llegada dividida en fases
             this.arrivedTimer -= delta;
+            const elapsed = 7.0 - this.arrivedTimer;
 
-            const dirToPlayer = new THREE.Vector3().subVectors(playerPos, this.group.position);
-            const targetRot = Math.atan2(dirToPlayer.x, dirToPlayer.z);
-            this.group.rotation.y = THREE.MathUtils.lerp(this.group.rotation.y, targetRot, 0.08);
-            this.group.rotation.z = THREE.MathUtils.lerp(this.group.rotation.z, 0, 0.1);
+            if (elapsed < 4.0) {
+                // Phase 1 (0-4s): Mirar al pedestal y señalar
+                const dirToTarget = new THREE.Vector3().subVectors(this.targetDestination, this.group.position);
+                const targetRot = Math.atan2(dirToTarget.x, dirToTarget.z);
+                this.group.rotation.y = THREE.MathUtils.lerp(this.group.rotation.y, targetRot, 0.1);
+                this.group.rotation.z = THREE.MathUtils.lerp(this.group.rotation.z, 0, 0.1);
 
-            // Brazos saludando de bienvenida
-            this.rightArmGroup.rotation.x = -Math.PI / 2.0 + Math.sin(time * 6.0) * 0.25;
-            this.leftArmGroup.rotation.x = -Math.PI / 2.0 + Math.cos(time * 6.0) * 0.25;
+                this.rightArmGroup.rotation.x = -Math.PI / 2.2;
+                this.rightArmGroup.rotation.z = -0.1;
+                this.leftArmGroup.rotation.x = -Math.PI / 3;
+                this.leftArmGroup.rotation.z = 0.3;
+
+                if (elapsed < delta * 2) {
+                    this.renderEyes('pointing');
+                    this.updateSpeechBubble('💬 ¡Mirá! 👉 ¡Probá el experimento con [E]!', '#4ade80');
+                }
+            } else if (elapsed < 7.0) {
+                // Phase 2 (4-7s): Mirar al jugador y bajar los brazos
+                const dirToPlayer = new THREE.Vector3().subVectors(playerPos, this.group.position);
+                const targetRot = Math.atan2(dirToPlayer.x, dirToPlayer.z);
+                this.group.rotation.y = THREE.MathUtils.lerp(this.group.rotation.y, targetRot, 0.08);
+                this.group.rotation.z = THREE.MathUtils.lerp(this.group.rotation.z, 0, 0.1);
+
+                this.rightArmGroup.rotation.x = THREE.MathUtils.lerp(this.rightArmGroup.rotation.x, Math.sin(time * 2.0) * 0.08, 0.1);
+                this.rightArmGroup.rotation.z = THREE.MathUtils.lerp(this.rightArmGroup.rotation.z, 0, 0.1);
+                this.leftArmGroup.rotation.x = THREE.MathUtils.lerp(this.leftArmGroup.rotation.x, -Math.sin(time * 2.0) * 0.08, 0.1);
+                this.leftArmGroup.rotation.z = THREE.MathUtils.lerp(this.leftArmGroup.rotation.z, 0, 0.1);
+
+                if (elapsed - 4.0 < delta * 2) {
+                    this.renderEyes('happy');
+                    this.updateSpeechBubble('💬 ¿Necesitás ayuda? ¡Tocame!', '#fde047');
+                }
+            }
 
             if (this.arrivedTimer <= 0) {
                 this.state = RobotState.IDLE;

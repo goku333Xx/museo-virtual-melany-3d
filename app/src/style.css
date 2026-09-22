@@ -1322,7 +1322,7 @@ html, body {
 
   .mission-stats-bar .xp-badge,
   .mission-stats-bar .rank-badge {
-    font-size: 9px;
+    font-size: 10px;
     padding: 3px 7px;
   }
 
@@ -1338,7 +1338,7 @@ html, body {
   .task .dot {
     width: 18px;
     height: 18px;
-    font-size: 9px;
+    font-size: 10px;
   }
 
   .task-title {
@@ -1346,11 +1346,11 @@ html, body {
   }
 
   .task-status {
-    font-size: 8.5px;
+    font-size: 10px;
   }
 
   .reward {
-    font-size: 9px;
+    font-size: 10px;
     margin-top: 8px;
     padding-top: 6px;
   }
@@ -1405,7 +1405,7 @@ html, body {
   }
 
   .pill-category, .pill-mode {
-    font-size: 9.5px;
+    font-size: 10px;
     padding: 4px 9px;
   }
 
@@ -1426,7 +1426,7 @@ html, body {
   }
 
   .pill-concept-label {
-    font-size: 9.5px;
+    font-size: 10px;
     letter-spacing: 1.2px;
   }
 
@@ -1540,5 +1540,34 @@ html, body {
 .mel-guide-btn:hover {
   transform: translateY(-2px) scale(1.02);
   box-shadow: 0 10px 32px rgba(0, 240, 255, 0.65);
+}
+
+.journal-card, .journal-card * {
+    user-select: text !important;
+}
+
+.door-blocked-toast {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.9);
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.98));
+    border: 2px solid rgba(245, 158, 11, 0.8);
+    border-radius: 16px;
+    padding: 20px 28px;
+    color: #f1f5f9;
+    font-size: 15px;
+    font-weight: 600;
+    text-align: center;
+    z-index: 2000;
+    pointer-events: none;
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 2px rgba(255, 255, 255, 0.15);
+    max-width: 340px;
+}
+.door-blocked-toast.visible {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
 }
 

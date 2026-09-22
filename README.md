@@ -2,7 +2,7 @@
 
 Un videojuego educativo 3D de exploración en primera persona para el aprendizaje de física, química y óptica, desarrollado íntegramente en el navegador con **Three.js**, **TypeScript** y **Vite**.
 
-Diseñado especialmente para estudiantes jóvenes (10 a 12 años), con dinámicas pedagógicas gamificadas, explicaciones claras y un apartado audiovisual inmersivo a 60+ FPS sin dependencias externas.
+Diseñado especialmente para estudiantes jóvenes (10 a 12 años), con dinámicas pedagógicas gamificadas, explicaciones claras y un apartado audiovisual inmersivo a 60+ FPS sin dependencias externas. Cuenta con un **cielo realista con nubes y sol**, **salas tipo museo real con paredes blancas**, **techo de vidrio con palomas**, un **sistema de progresión por salas**, y un **robot Mel-Bot guía inteligente que apunta a los experimentos**.
 
 ---
 

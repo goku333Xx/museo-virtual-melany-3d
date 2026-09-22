@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { SoundSynthesizer } from '../SoundSynthesizer';
 
 export interface VanDeGraaffModeInfo {
     id: number;
@@ -16,6 +17,11 @@ export class VanDeGraaffExhibit {
     private sparkPosAttr: THREE.BufferAttribute;
     private sparkLight: THREE.PointLight;
     private interactableMeshes: THREE.Object3D[] = [];
+    
+    private isSleeping = false;
+    private headGroup: THREE.Group;
+    private hairCylinders: THREE.Mesh[] = [];
+    private hairLift: number = 0;
 
     private currentMode: number = 0;
     private beltOffset: number = 0;
@@ -98,13 +104,12 @@ export class VanDeGraaffExhibit {
         const columnY = tableH + baseH + columnH / 2;
         const column = new THREE.Mesh(
             new THREE.CylinderGeometry(0.12, 0.12, columnH, 32),
-            new THREE.MeshPhysicalMaterial({
-                color: 0xe0f2fe,
-                transmission: 0.92,
-                opacity: 0.96,
+            new THREE.MeshStandardMaterial({
+                color: 0xe8f4f8,
                 transparent: true,
-                roughness: 0.04,
-                ior: 1.49
+                opacity: 0.25,
+                roughness: 0.05,
+                metalness: 0.15
             })
         );
         column.position.set(genX, columnY, 0);
@@ -112,8 +117,24 @@ export class VanDeGraaffExhibit {
 
         // 4. CORREA DE CAUCHO INTERIOR QUE TRANSPORTA CARGA
         const beltGeom = new THREE.BoxGeometry(0.08, columnH - 0.04, 0.01);
+        const beltCanvas = document.createElement('canvas');
+        beltCanvas.width = 64;
+        beltCanvas.height = 64;
+        const bCtx = beltCanvas.getContext('2d')!;
+        bCtx.fillStyle = '#d97706';
+        bCtx.fillRect(0, 0, 64, 64);
+        bCtx.strokeStyle = '#b45309';
+        bCtx.lineWidth = 4;
+        bCtx.beginPath();
+        bCtx.moveTo(16, 48); bCtx.lineTo(32, 16); bCtx.lineTo(48, 48);
+        bCtx.stroke();
+        const beltTex = new THREE.CanvasTexture(beltCanvas);
+        beltTex.wrapS = THREE.RepeatWrapping;
+        beltTex.wrapT = THREE.RepeatWrapping;
+        beltTex.repeat.set(1, 4);
+
         const beltMat = new THREE.MeshStandardMaterial({
-            color: 0xd97706,
+            map: beltTex,
             roughness: 0.8,
             metalness: 0.1
         });
@@ -203,6 +224,46 @@ export class VanDeGraaffExhibit {
         const groundWire = new THREE.Mesh(new THREE.TubeGeometry(groundWireCurve, 20, 0.008, 8, false), groundWireMat);
         this.group.add(groundWire);
 
+        
+        // 7.5 MINI HEAD WITH STANDING HAIR
+        this.headGroup = new THREE.Group();
+        this.headGroup.position.set(genX - 0.45, domeY - 0.1, 0);
+        
+        const stick = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.015, 0.015, 0.6, 8),
+            new THREE.MeshStandardMaterial({ color: 0x475569 })
+        );
+        stick.position.set(0, -0.3, 0);
+        this.headGroup.add(stick);
+
+        const headSphere = new THREE.Mesh(
+            new THREE.SphereGeometry(0.12, 16, 16),
+            new THREE.MeshStandardMaterial({ color: 0xfcbca1 })
+        );
+        this.headGroup.add(headSphere);
+
+        const hairMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+        const numHairs = 15;
+        for(let i=0; i<numHairs; i++) {
+            const hairGeo = new THREE.CylinderGeometry(0.003, 0.002, 0.06, 4);
+            hairGeo.translate(0, 0.03, 0);
+            const hair = new THREE.Mesh(hairGeo, hairMat);
+            
+            const pivot = new THREE.Group();
+            const phi = Math.random() * (Math.PI / 2.5); // Top half
+            const theta = Math.random() * Math.PI * 2;
+            
+            pivot.rotation.set(phi, theta, 0);
+            pivot.position.setFromSphericalCoords(0.12, phi, theta);
+            
+            hair.rotation.x = Math.PI / 2; // Hanging down initially
+            
+            pivot.add(hair);
+            this.hairCylinders.push(hair);
+            this.headGroup.add(pivot);
+        }
+        this.group.add(this.headGroup);
+
         // 8. ARCOS DE CHISPAS PROCEDURALES (DESCARGA ENTRE ESFERAS)
         const sparkGeom = new THREE.BufferGeometry();
         this.sparkPosAttr = new THREE.BufferAttribute(this.sparkPositions, 3);
@@ -223,9 +284,13 @@ export class VanDeGraaffExhibit {
     }
 
     public update(time: number, delta: number = 0.016): void {
+        if (this.isSleeping) return;
         // Animación de la correa girando
         if (this.currentMode !== 2) {
-            this.beltOffset = (this.beltOffset + delta * 2.5) % 1.0;
+            this.beltOffset = (this.beltOffset - delta * 2.5) % 1.0;
+            if ((this.beltMesh.material as THREE.MeshStandardMaterial).map) {
+                (this.beltMesh.material as THREE.MeshStandardMaterial).map!.offset.y = this.beltOffset;
+            }
         }
 
         // Interpolación de levitación de las cintas
@@ -239,6 +304,14 @@ export class VanDeGraaffExhibit {
             const liftAngle = (Math.PI / 2.3) * this.ribbonLift + flutter;
             ribbon.rotation.z = Math.cos(angle) * liftAngle;
             ribbon.rotation.x = -Math.sin(angle) * liftAngle;
+        });
+
+        
+        // Interpolación de pelo
+        const targetHairRot = (this.currentMode === 0 || this.currentMode === 1) ? 1.0 : 0.0;
+        this.hairLift += (targetHairRot - this.hairLift) * Math.min(1.0, delta * 3.0);
+        this.hairCylinders.forEach(hair => {
+            hair.rotation.x = THREE.MathUtils.lerp(Math.PI/2, 0, this.hairLift);
         });
 
         // Simulación de chispas en modo de descarga
@@ -259,6 +332,7 @@ export class VanDeGraaffExhibit {
             this.sparkLight.intensity = isSparking ? (2.5 + Math.random() * 2.0) : 0;
 
             if (isSparking) {
+                SoundSynthesizer.getInstance().playElectrostaticSpark();
                 const segments = 8;
                 for (let s = 0; s <= segments; s++) {
                     const alpha = s / segments;
@@ -295,6 +369,11 @@ export class VanDeGraaffExhibit {
 
     public getCurrentModeInfo(): VanDeGraaffModeInfo {
         return this.modes[this.currentMode];
+    }
+
+    public setSleep(sleep: boolean): void {
+        this.isSleeping = sleep;
+        if (this.sparkLight) this.sparkLight.visible = !sleep && this.currentMode === 1 && Math.random() > 0.35;
     }
 
     public getMesh(): THREE.Group {

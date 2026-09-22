@@ -24,7 +24,8 @@ const joystickThumb = document.getElementById('joystick-thumb') as HTMLElement |
 // --- INICIALIZACIÓN THREE.JS ---
 const scene = new THREE.Scene();
 // Fondo cósmico azul profundo de espacio exterior
-scene.background = new THREE.Color(0x020308);
+scene.background = new THREE.Color(0x87CEEB); // Celeste cielo de mediodía
+scene.fog = new THREE.FogExp2(0xd0e8f8, 0.003); // Soft atmospheric depth
 
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
 // Spawn del jugador a escala humana (1.68m de altura)

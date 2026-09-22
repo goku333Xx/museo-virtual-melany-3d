@@ -21,6 +21,8 @@ export class OpticsExhibit {
     private interactableMeshes: THREE.Object3D[] = [];
 
     private currentMode: number = 0;
+    private isSleeping = false;
+    private labels: THREE.Sprite[] = [];
     private readonly modes: OpticsModeInfo[] = [
         {
             id: 0,
@@ -219,16 +221,12 @@ export class OpticsExhibit {
         const prismGeom = new THREE.ExtrudeGeometry(prismShape, extrudeSettings);
         prismGeom.center();
 
-        const prismMat = new THREE.MeshPhysicalMaterial({
-            color: 0xf0f9ff,
-            transmission: 0.95,
-            opacity: 1.0,
+        const prismMat = new THREE.MeshStandardMaterial({
+            color: 0xd4e8f8,
             transparent: true,
+            opacity: 0.35,
             roughness: 0.02,
-            ior: 1.66, // Cristal Flint pesado de dispersión cromática de alta fidelidad
-            thickness: 0.25,
-            specularIntensity: 1.0,
-            specularColor: 0xffffff
+            metalness: 0.4
         });
 
         this.prismMesh = new THREE.Mesh(prismGeom, prismMat);
@@ -255,6 +253,30 @@ export class OpticsExhibit {
 
         // Construir la malla continua del arcoíris que llega directo a la pantalla (0.628m)
         this.buildVibrantRainbowFan(beamSpan);
+
+        // Wavelength labels
+        const labelNames = ["ROJO", "NARANJA", "AMARILLO", "VERDE", "CIAN", "AZUL", "VIOLETA"];
+        labelNames.forEach((name, i) => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 32;
+            const ctx = canvas.getContext('2d')!;
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 20px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(name, 64, 24);
+            const tex = new THREE.CanvasTexture(canvas);
+            const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true }));
+            
+            const t = i / 6;
+            const angle = -0.06 + t * 0.24;
+            sprite.position.set(Math.cos(angle) * (length * 0.8), 0.05, Math.sin(angle) * (length * 0.8));
+            sprite.scale.set(0.08, 0.02, 1);
+            
+            this.labels.push(sprite);
+            this.rainbowGroup.add(sprite);
+        });
+
 
         // Rayos de guía espectral nítidos con colores saturados puros
         const spectralRays = [
@@ -702,11 +724,16 @@ export class OpticsExhibit {
         return this.interactableMeshes;
     }
 
+    public setSleep(sleep: boolean): void {
+        this.isSleeping = sleep;
+    }
+
     public getMesh(): THREE.Group {
         return this.group;
     }
 
     public update(time: number): void {
+        if (this.isSleeping) return;
         // Giro suave del prisma sobre su torreta goniométrica
         const rotOffset = Math.sin(time * 1.4) * 0.04;
         this.prismMesh.rotation.y = rotOffset;

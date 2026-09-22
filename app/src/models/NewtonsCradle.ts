@@ -15,6 +15,9 @@ export class NewtonsCradle {
 
     private prevSineWave: number = 0;
     private prevSymWave: number = 0;
+    private isSleeping = false;
+    private shockWaveTimer = 0;
+    private sphereMats: THREE.MeshStandardMaterial[] = [];
 
     // Modos de física realista de conservación de momento
     private currentMode: number = 0;
@@ -62,47 +65,65 @@ export class NewtonsCradle {
         });
 
         // Base geometry
-        const baseGeometry = new THREE.BoxGeometry(10, 0.6, 6);
+        const baseGeometry = new THREE.BoxGeometry(3.5, 0.25, 2.2);
         const base = new THREE.Mesh(baseGeometry, baseMaterial);
         base.position.y = 0.3;
         base.castShadow = true;
         base.receiveShadow = true;
         this.group.add(base);
+
+        // Corner caps
+        const capMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.9, roughness: 0.2 });
+        const capGeom = new THREE.BoxGeometry(0.1, 0.26, 0.1);
+        [[-1.7, -1.05], [1.7, -1.05], [-1.7, 1.05], [1.7, 1.05]].forEach(([x, z]) => {
+            const cap = new THREE.Mesh(capGeom, capMat);
+            cap.position.set(x, 0.3, z);
+            this.group.add(cap);
+        });
+
+        // Plaque
+        const plaque = new THREE.Mesh(
+            new THREE.BoxGeometry(0.8, 0.1, 0.02),
+            new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.9, roughness: 0.2 })
+        );
+        plaque.position.set(0, 0.3, 1.11);
+        this.group.add(plaque);
+
         this.interactableMeshes.push(base);
 
         // Estructura tubular de soporte
-        const frameRadius = 0.22;
-        const frameHeight = 7.5;
+        const frameRadius = 0.08;
+        const frameHeight = 2.7;
         const frameGeometry = new THREE.CylinderGeometry(frameRadius, frameRadius, frameHeight, 20);
         
         const pillar1 = new THREE.Mesh(frameGeometry, chromeMaterial);
-        pillar1.position.set(-4, frameHeight / 2 + 0.3, -2.2);
+        pillar1.position.set(-1.42, frameHeight / 2 + 0.1, -0.78);
         
         const pillar2 = new THREE.Mesh(frameGeometry, chromeMaterial);
-        pillar2.position.set(4, frameHeight / 2 + 0.3, -2.2);
+        pillar2.position.set(1.42, frameHeight / 2 + 0.1, -0.78);
         
         const pillar3 = new THREE.Mesh(frameGeometry, chromeMaterial);
-        pillar3.position.set(-4, frameHeight / 2 + 0.3, 2.2);
+        pillar3.position.set(-1.42, frameHeight / 2 + 0.1, 0.78);
         
         const pillar4 = new THREE.Mesh(frameGeometry, chromeMaterial);
-        pillar4.position.set(4, frameHeight / 2 + 0.3, 2.2);
+        pillar4.position.set(1.42, frameHeight / 2 + 0.1, 0.78);
         
-        const topBar1 = new THREE.Mesh(new THREE.CylinderGeometry(frameRadius, frameRadius, 8.4, 20), chromeMaterial);
+        const topBar1 = new THREE.Mesh(new THREE.CylinderGeometry(frameRadius, frameRadius, 3.0, 20), chromeMaterial);
         topBar1.rotation.z = Math.PI / 2;
-        topBar1.position.set(0, frameHeight + 0.3, -2.2);
+        topBar1.position.set(0, frameHeight + 0.1, -0.78);
         
-        const topBar2 = new THREE.Mesh(new THREE.CylinderGeometry(frameRadius, frameRadius, 8.4, 20), chromeMaterial);
+        const topBar2 = new THREE.Mesh(new THREE.CylinderGeometry(frameRadius, frameRadius, 3.0, 20), chromeMaterial);
         topBar2.rotation.z = Math.PI / 2;
-        topBar2.position.set(0, frameHeight + 0.3, 2.2);
+        topBar2.position.set(0, frameHeight + 0.1, 0.78);
         
         this.group.add(pillar1, pillar2, pillar3, pillar4, topBar1, topBar2);
         this.interactableMeshes.push(pillar1, pillar2, pillar3, pillar4, topBar1, topBar2);
 
         // 5 Esferas cromadas perfectamente alineadas
         const numSpheres = 5;
-        const sphereRadius = 0.8;
+        const sphereRadius = 0.28;
         const spacing = sphereRadius * 2;
-        const stringLength = 5.5;
+        const stringLength = 2.0;
         
         const stringMaterial = new THREE.LineBasicMaterial({ color: 0x94a3b8 });
         
@@ -112,7 +133,9 @@ export class NewtonsCradle {
             
             // Esfera cromada de alta calidad
             const sphereGeometry = new THREE.SphereGeometry(sphereRadius, 32, 32);
-            const sphere = new THREE.Mesh(sphereGeometry, chromeMaterial);
+            const mat = chromeMaterial.clone();
+            this.sphereMats.push(mat);
+            const sphere = new THREE.Mesh(sphereGeometry, mat);
             sphere.position.y = -stringLength;
             sphere.castShadow = true;
             this.spheres.push(sphere);
@@ -120,13 +143,13 @@ export class NewtonsCradle {
             
             // Hilos en V dobles
             const stringGeometry1 = new THREE.BufferGeometry().setFromPoints([
-                new THREE.Vector3(0, 0, -2.2),
+                new THREE.Vector3(0, 0, -0.78),
                 new THREE.Vector3(0, -stringLength, 0)
             ]);
             const string1 = new THREE.Line(stringGeometry1, stringMaterial);
             
             const stringGeometry2 = new THREE.BufferGeometry().setFromPoints([
-                new THREE.Vector3(0, 0, 2.2),
+                new THREE.Vector3(0, 0, 0.78),
                 new THREE.Vector3(0, -stringLength, 0)
             ]);
             const string2 = new THREE.Line(stringGeometry2, stringMaterial);
@@ -135,7 +158,7 @@ export class NewtonsCradle {
             pendulumGroup.add(string1);
             pendulumGroup.add(string2);
             
-            pendulumGroup.position.set(xPos, frameHeight + 0.3, 0);
+            pendulumGroup.position.set(xPos, frameHeight + 0.1, 0);
             
             this.pendulums.push(pendulumGroup);
             this.group.add(pendulumGroup);
@@ -156,7 +179,19 @@ export class NewtonsCradle {
         return this.modes[this.currentMode];
     }
 
-    public update(time: number, playerDist?: number) {
+    public setSleep(sleep: boolean): void {
+        this.isSleeping = sleep;
+    }
+
+    public update(time: number, playerDist?: number, delta: number = 0.016) {
+        if (this.isSleeping) return;
+        if (this.shockWaveTimer > 0) {
+            this.shockWaveTimer -= delta;
+            const intensity = Math.max(0, this.shockWaveTimer / 0.15);
+            for (let i = 1; i <= 3; i++) {
+                this.sphereMats[i].emissiveIntensity = intensity;
+            }
+        }
         const swingMaxAngle = Math.PI / 4.2;
         const speed = 3.4;
         const t = time * speed;
@@ -173,6 +208,10 @@ export class NewtonsCradle {
                 if (playerDist === undefined || playerDist < 14) {
                     const volumeFactor = playerDist !== undefined ? Math.max(0.08, 1 - (playerDist / 14)) : 0.45;
                     SoundSynthesizer.getInstance().playNewtonClack(volumeFactor);
+                        this.shockWaveTimer = 0.15;
+                        for (let i = 1; i <= 3; i++) {
+                            this.sphereMats[i].emissive.setHex(0x00f0ff);
+                        }
                 }
             }
             this.prevSineWave = sineWave;
@@ -223,6 +262,10 @@ export class NewtonsCradle {
                     if (playerDist === undefined || playerDist < 14) {
                         const volumeFactor = playerDist !== undefined ? Math.max(0.08, 1 - (playerDist / 14)) : 0.45;
                         SoundSynthesizer.getInstance().playNewtonClack(volumeFactor);
+                        this.shockWaveTimer = 0.15;
+                        for (let i = 1; i <= 3; i++) {
+                            this.sphereMats[i].emissive.setHex(0x00f0ff);
+                        }
                     }
                 }
                 this.prevSymWave = symRaw;

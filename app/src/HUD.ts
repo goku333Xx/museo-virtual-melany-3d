@@ -945,4 +945,12 @@ export class HUD {
         this.ctx.stroke();
         this.ctx.restore();
     }
+
+    public showDoorBlockedToast(message: string): void {
+        const toast = document.getElementById('door-blocked-toast');
+        if (!toast) return;
+        toast.innerHTML = message;
+        toast.classList.add('visible');
+        setTimeout(() => toast.classList.remove('visible'), 3500);
+    }
 }

@@ -46,6 +46,8 @@ export class DynamoExhibit {
     private needleAngle: number = -Math.PI / 4; // Aguja en 0V
 
     private currentMode: number = 0;
+    private isSleeping = false;
+    private fieldLines: THREE.Mesh[] = [];
     private readonly modes: DynamoModeInfo[] = [
         {
             id: 0,
@@ -154,15 +156,12 @@ export class DynamoExhibit {
         dynamoBaseGroup.add(post1, post2, post3, post4);
 
         // Carcasa acrílica transparente para ver los engranajes
-        const acrylicMat = new THREE.MeshPhysicalMaterial({
-            color: 0xffffff,
-            metalness: 0.05,
-            roughness: 0.08,
-            transmission: 0.92,
-            ior: 1.52,
-            thickness: 0.15,
+        const acrylicMat = new THREE.MeshStandardMaterial({
+            color: 0xe8f4f8,
             transparent: true,
-            opacity: 0.85
+            opacity: 0.2,
+            roughness: 0.05,
+            metalness: 0.15
         });
         const acrylicCover = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.38, 0.40), acrylicMat);
         acrylicCover.position.set(-0.12, 0.24, 0);
@@ -327,6 +326,33 @@ export class DynamoExhibit {
         this.rotorArmatureGroup.add(this.commutatorGroup);
 
         statorGroup.add(this.rotorArmatureGroup);
+
+        // Field lines
+        const fieldMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.4 });
+        for(let i=0; i<6; i++) {
+            const angle = (i/6) * Math.PI * 2;
+            const r1 = 0.14 + Math.random()*0.02;
+            const r2 = 0.2;
+            const curve = new THREE.CatmullRomCurve3([
+                new THREE.Vector3(-0.02, 0.16, 0), // N
+                new THREE.Vector3(-0.02 + Math.cos(angle)*r1, Math.sin(angle)*r1, Math.sin(angle)*r1),
+                new THREE.Vector3(-0.02 + Math.cos(angle)*r2, -Math.sin(angle)*r2, 0),
+                new THREE.Vector3(-0.02, -0.16, 0) // S
+            ]);
+            const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, 20, 0.006, 6), fieldMat);
+            
+            const arrowhead = new THREE.Mesh(new THREE.ConeGeometry(0.012, 0.03, 6), fieldMat);
+            const pt1 = curve.getPointAt(0.5);
+            const pt2 = curve.getPointAt(0.51);
+            arrowhead.position.copy(pt1);
+            arrowhead.lookAt(pt2);
+            arrowhead.rotateX(Math.PI/2);
+            tube.add(arrowhead);
+            
+            statorGroup.add(tube);
+            this.fieldLines.push(tube);
+        }
+
         dynamoBaseGroup.add(statorGroup);
 
         // Escobillas de carbón fijas rozando el colector
@@ -378,15 +404,12 @@ export class DynamoExhibit {
         lampGroup.add(socket);
 
         // Ampolla de vidrio tipo bombilla clásica Edison
-        const bulbGlassMat = new THREE.MeshPhysicalMaterial({
+        const bulbGlassMat = new THREE.MeshStandardMaterial({
             color: 0xffffff,
-            metalness: 0.05,
-            roughness: 0.05,
-            transmission: 0.94,
-            ior: 1.5,
-            thickness: 0.05,
             transparent: true,
-            opacity: 0.75
+            opacity: 0.3,
+            roughness: 0.05,
+            metalness: 0.15
         });
         const bulbGlass = new THREE.Mesh(new THREE.SphereGeometry(0.10, 24, 24), bulbGlassMat);
         bulbGlass.position.y = 0.22;
@@ -538,6 +561,7 @@ export class DynamoExhibit {
     }
 
     public update(_time: number, delta: number = 0.016): void {
+        if (this.isSleeping) return;
         // Suave aceleración e inercia física de rotación
         this.currentRpm += (this.targetRpm - this.currentRpm) * Math.min(1.0, delta * 3.5);
 
@@ -553,6 +577,13 @@ export class DynamoExhibit {
         this.rotorAngle += deltaRotorAngle;
         this.pinionGearMesh.rotation.z = this.rotorAngle;
         this.rotorArmatureGroup.rotation.x = this.rotorAngle;
+
+        
+        // Pulse field lines
+        const pulse = 0.4 + Math.sin(_time * 10.0 + this.currentRpm) * 0.2 * (this.currentRpm / 300);
+        this.fieldLines.forEach(line => {
+            (line.material as THREE.Material).opacity = pulse;
+        });
 
         // Cálculo dinámico de voltaje (Ley de Faraday: proporcional a la velocidad angular)
         const targetVolt = (this.currentRpm / 300) * 24.0;
@@ -655,6 +686,11 @@ export class DynamoExhibit {
 
     public getCurrentModeInfo(): DynamoModeInfo {
         return this.modes[this.currentMode];
+    }
+
+    public setSleep(sleep: boolean): void {
+        this.isSleeping = sleep;
+        if (this.bulbPointLight) this.bulbPointLight.visible = !sleep;
     }
 
     public getMesh(): THREE.Group {

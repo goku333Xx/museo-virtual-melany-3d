@@ -12,7 +12,7 @@
   <div id="app"></div>
 
   <!-- Canvas de Confeti a Pantalla Completa (Zero overhead, pointer-events none) -->
-  <canvas id="celebration-canvas" style="position:fixed; inset:0; pointer-events:none; z-index:9999; display:none;"></canvas>
+  <canvas id="celebration-canvas" style="position:fixed; inset:0; pointer-events:none; z-index:9999; display:none;" role="dialog" aria-modal="true"></canvas>
 
   <!-- Capa HUD In-Game -->
   <div id="hud" class="hud-container">
@@ -45,6 +45,8 @@
         <small id="ach-desc">Has completado un hito pedagógico</small>
       </div>
     </div>
+    
+    <div id="door-blocked-toast" class="door-blocked-toast"></div>
 
     <!-- Left / Center: Expedición Científica (Misiones del Museo) con XP y Rango integrados -->
     <div class="panel mission-panel" id="mission-panel">
@@ -132,7 +134,7 @@
         <span class="live-dot"></span>
       </div>
       <canvas id="minimapCanvas" width="180" height="180"></canvas>
-      <div class="map-legend" style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 4px; font-size: 8.5px; margin-top: 6px;">
+      <div class="map-legend" style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 4px; font-size: 10px; margin-top: 6px;">
         <span class="leg-item"><i style="background:#4ade80;"></i> Papa</span>
         <span class="leg-item"><i style="background:#38bdf8;"></i> Tesla</span>
         <span class="leg-item"><i style="background:#00f0ff;"></i> Eólica</span>
@@ -215,7 +217,7 @@
   </div>
 
   <!-- Interactive Quiz Modal (Desafío Pedagógico) -->
-  <div id="quiz-overlay" class="modal-overlay hidden">
+  <div id="quiz-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true">
     <div class="panel quiz-card">
       <div class="quiz-header">
         <span class="glass-pill quiz-badge">🧪 DESAFÍO CIENTÍFICO</span>
@@ -275,7 +277,7 @@
   </div>
 
   <!-- Modal de Diario del Científico (Libreta de Campo) -->
-  <div id="journal-modal" class="modal-overlay hidden" style="z-index: 150;">
+  <div id="journal-modal" class="modal-overlay hidden" style="z-index: 150;" role="dialog" aria-modal="true">
     <div class="panel journal-card" style="max-width: 720px; width: 94%; max-height: 85vh; overflow-y: auto; padding: 24px; border: 1px solid var(--cyan);">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
         <div style="display: flex; align-items: center; gap: 8px;">
@@ -440,7 +442,7 @@
   </div>
 
   <!-- Modal de Diálogo Interactivo con Mel-Bot -->
-  <div id="mel-dialog-modal" class="modal-overlay hidden" style="z-index: 180;">
+  <div id="mel-dialog-modal" class="modal-overlay hidden" style="z-index: 180;" role="dialog" aria-modal="true">
     <div class="panel mel-dialog-card">
       <div class="mel-avatar-container">
         <span>🤖</span>
@@ -449,7 +451,7 @@
       <h2 id="mel-dialog-title" style="color: #ffffff; font-size: 22px; font-weight: 800; margin: 0;">¡Hola, Científico/a!</h2>
       <div class="mel-dialog-speech">
         <p id="mel-dialog-text">
-          ¡Soy <b>Mel-Bot</b>, tu asistente de expedición! 🚀 Puedo guiarte volando a cada sala para que descubras los experimentos y completes tus 7 misiones. ¿Aceptás el desafío?
+          ¡Soy <b>Mel-Bot</b>, tu asistente de expedición! 🚀 Puedo guiarte volando a cada sala para que descubras los experimentos y completés tus 7 misiones. ¿Aceptás el desafío?
         </p>
       </div>
       <div class="mel-dialog-actions">
@@ -467,7 +469,7 @@
   </div>
 
   <!-- Modal Pausa / Mouse Liberado -->
-  <div id="pause-modal" class="modal-overlay hidden">
+  <div id="pause-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
     <div class="panel pause-card">
       <div class="pause-icon">🖱️</div>
       <h2>Mouse liberado</h2>

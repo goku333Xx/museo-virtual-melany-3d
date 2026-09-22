@@ -13,9 +13,12 @@ export class TeslaCoil {
 
     // Componentes visuales
     private toroidMesh: THREE.Mesh;
-    private plasmaArcs: THREE.LineSegments;
-    private arcPositions: Float32Array;
-    private maxArcSegments: number = 32;
+    private isSleeping: boolean = false;
+    private arcCurves: THREE.CatmullRomCurve3[] = [];
+    private arcGeometries: THREE.TubeGeometry[] = [];
+    private arcMeshes: THREE.Mesh[] = [];
+    private sparkSprites: THREE.Sprite[] = [];
+    private fieldRings: THREE.Mesh[] = [];
 
     // Tubo fluorescente inalámbrico
     private tubeCore: THREE.Mesh;
@@ -180,13 +183,12 @@ export class TeslaCoil {
 
         // Tubo de vidrio fluorescente vertical
         const tubeGeom = new THREE.CylinderGeometry(0.02, 0.02, 0.44, 16);
-        const tubeGlassMat = new THREE.MeshPhysicalMaterial({
-            color: 0xffffff,
-            transmission: 0.85,
-            opacity: 0.9,
+        const tubeGlassMat = new THREE.MeshStandardMaterial({
+            color: 0xd4f1ff,
             transparent: true,
-            roughness: 0.15,
-            ior: 1.5
+            opacity: 0.35,
+            roughness: 0.1,
+            metalness: 0.2
         });
         const tubeShell = new THREE.Mesh(tubeGeom, tubeGlassMat);
         tubeShell.position.set(0, 0.44, 0);
@@ -222,20 +224,62 @@ export class TeslaCoil {
         this.group.add(tubeStand);
         this.interactableMeshes.push(tubeShell);
 
-        // 7. ARCOS DE RAYOS PROCEDURALES
-        const arcGeom = new THREE.BufferGeometry();
-        this.arcPositions = new Float32Array(this.maxArcSegments * 2 * 3);
-        arcGeom.setAttribute('position', new THREE.BufferAttribute(this.arcPositions, 3));
-
-        const arcMat = new THREE.LineBasicMaterial({
+        
+        // 7. ARCOS DE RAYOS TUBE GEOMETRY
+        const arcMat = new THREE.MeshBasicMaterial({
             color: 0x67e8f9,
-            linewidth: 2,
             transparent: true,
             opacity: 0.95,
             blending: THREE.AdditiveBlending
         });
-        this.plasmaArcs = new THREE.LineSegments(arcGeom, arcMat);
-        this.group.add(this.plasmaArcs);
+        
+        for (let i = 0; i < 4; i++) {
+            const curve = new THREE.CatmullRomCurve3(Array(8).fill(new THREE.Vector3()));
+            this.arcCurves.push(curve);
+            const geom = new THREE.TubeGeometry(curve, 16, 0.015, 8, false);
+            this.arcGeometries.push(geom);
+            const mesh = new THREE.Mesh(geom, arcMat);
+            this.arcMeshes.push(mesh);
+            this.group.add(mesh);
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = 32; canvas.height = 32;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+                const grad = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+                grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+                grad.addColorStop(0.2, 'rgba(103, 232, 249, 1)');
+                grad.addColorStop(1, 'rgba(103, 232, 249, 0)');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, 32, 32);
+            }
+            
+            const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ 
+                map: new THREE.CanvasTexture(canvas),
+                blending: THREE.AdditiveBlending,
+                transparent: true
+            }));
+            sprite.scale.set(0.15, 0.15, 1);
+            this.sparkSprites.push(sprite);
+            this.group.add(sprite);
+        }
+
+        // 8. ELECTROMAGNETIC FIELD RINGS
+        const ringMat = new THREE.MeshBasicMaterial({
+            color: 0x00f0ff,
+            transparent: true,
+            opacity: 0.15,
+            blending: THREE.AdditiveBlending,
+            side: THREE.DoubleSide
+        });
+        [0.5, 0.8, 1.1].forEach(r => {
+            const ring = new THREE.Mesh(new THREE.TorusGeometry(r, 0.008, 8, 24), ringMat);
+            ring.rotation.x = Math.PI / 2;
+            ring.position.y = 0.12 + 0.58 + 0.10;
+            this.fieldRings.push(ring);
+            this.group.add(ring);
+        });
+
     }
 
     public cycleMode(): TeslaModeInfo {
@@ -247,12 +291,18 @@ export class TeslaCoil {
     public getCurrentModeInfo(): TeslaModeInfo {
         return this.modes[this.currentMode];
     }
+    
+    public setSleep(sleep: boolean): void {
+        this.isSleeping = sleep;
+        if (this.sparkLight) this.sparkLight.visible = !sleep;
+        if (this.tubeLight) this.tubeLight.visible = !sleep;
+    }
 
     public update(time: number, playerDist?: number): void {
+        if (this.isSleeping) return;
         const toroidY = 0.12 + 0.58 + 0.10;
         const startPos = new THREE.Vector3(0, toroidY + 0.02, 0);
 
-        // Sonido de descarga periódica
         if (time - this.lastZapTime > 0.18 + Math.random() * 0.12) {
             this.lastZapTime = time;
             if (playerDist === undefined || playerDist < 12) {
@@ -261,38 +311,43 @@ export class TeslaCoil {
             }
         }
 
-        // 1. Actualizar arcos de relámpago según modo
-        let segIdx = 0;
-        const setSegment = (p1: THREE.Vector3, p2: THREE.Vector3) => {
-            if (segIdx >= this.maxArcSegments) return;
-            const i = segIdx * 6;
-            this.arcPositions[i] = p1.x;
-            this.arcPositions[i + 1] = p1.y;
-            this.arcPositions[i + 2] = p1.z;
-            this.arcPositions[i + 3] = p2.x;
-            this.arcPositions[i + 4] = p2.y;
-            this.arcPositions[i + 5] = p2.z;
-            segIdx++;
+        this.arcMeshes.forEach(m => m.visible = false);
+        this.sparkSprites.forEach(s => s.visible = false);
+        this.fieldRings.forEach(r => r.visible = false);
+
+        const updateTube = (index: number, pts: THREE.Vector3[]) => {
+            this.arcCurves[index].points = pts;
+            this.arcMeshes[index].geometry.dispose();
+            this.arcMeshes[index].geometry = new THREE.TubeGeometry(this.arcCurves[index], 16, 0.015, 8, false);
+            this.arcMeshes[index].visible = true;
         };
 
         if (this.currentMode === 0) {
-            // Modo Transmisión Inalámbrica: arcos serpenteando hacia el tubo fluorescente
+            this.fieldRings.forEach((r, i) => {
+                r.visible = true;
+                const s = 1.0 + Math.sin(time * 3 + i * 2) * 0.5 + 0.5;
+                r.scale.set(s, s, s);
+                (r.material as THREE.MeshBasicMaterial).opacity = 0.15 * (1 - (s - 1.0));
+            });
+
             const targetPos = new THREE.Vector3(0.38, 0.56, 0.22);
-            let current = startPos.clone();
-            const steps = 6;
-            for (let s = 1; s <= steps; s++) {
+            let pts = [];
+            const steps = 7;
+            for (let s = 0; s <= steps; s++) {
                 const t = s / steps;
                 const next = new THREE.Vector3().lerpVectors(startPos, targetPos, t);
-                if (s < steps) {
+                if (s > 0 && s < steps) {
                     next.x += (Math.random() - 0.5) * 0.08;
                     next.y += (Math.random() - 0.5) * 0.08;
                     next.z += (Math.random() - 0.5) * 0.08;
                 }
-                setSegment(current, next);
-                current = next;
+                pts.push(next);
             }
+            updateTube(0, pts);
+            this.sparkSprites[0].position.copy(targetPos);
+            this.sparkSprites[0].visible = true;
+            this.sparkSprites[0].scale.setScalar(0.15 + Math.random() * 0.1);
 
-            // Tubo encendido intensamente con vibración electromagnética
             const coreMat = this.tubeCore.material as THREE.MeshBasicMaterial;
             const glowMat = this.tubeGlow.material as THREE.MeshBasicMaterial;
             const pulse = 0.85 + Math.sin(time * 24) * 0.15;
@@ -302,7 +357,6 @@ export class TeslaCoil {
             this.sparkLight.intensity = 1.8 * pulse;
 
         } else if (this.currentMode === 1) {
-            // Modo Tormenta de Plasma: Arcos ramificados en 360 grados
             const arcCount = 4;
             for (let a = 0; a < arcCount; a++) {
                 const angle = (a / arcCount) * Math.PI * 2 + Math.sin(time * 6 + a) * 0.5;
@@ -313,22 +367,24 @@ export class TeslaCoil {
                     Math.sin(angle) * endRadius
                 );
 
-                let current = startPos.clone();
-                const steps = 4;
-                for (let s = 1; s <= steps; s++) {
+                let pts = [];
+                const steps = 7;
+                for (let s = 0; s <= steps; s++) {
                     const t = s / steps;
                     const next = new THREE.Vector3().lerpVectors(startPos, endPos, t);
-                    if (s < steps) {
+                    if (s > 0 && s < steps) {
                         next.x += (Math.random() - 0.5) * 0.06;
                         next.y += (Math.random() - 0.5) * 0.06;
                         next.z += (Math.random() - 0.5) * 0.06;
                     }
-                    setSegment(current, next);
-                    current = next;
+                    pts.push(next);
                 }
+                updateTube(a, pts);
+                this.sparkSprites[a].position.copy(endPos);
+                this.sparkSprites[a].visible = true;
+                this.sparkSprites[a].scale.setScalar(0.1 + Math.random() * 0.1);
             }
 
-            // Tubo fluorescente parpadeando moderadamente
             const coreMat = this.tubeCore.material as THREE.MeshBasicMaterial;
             const glowMat = this.tubeGlow.material as THREE.MeshBasicMaterial;
             const pulse = 0.5 + Math.random() * 0.4;
@@ -338,23 +394,24 @@ export class TeslaCoil {
             this.sparkLight.intensity = 2.8;
 
         } else {
-            // Modo Descarga Focalizada: Rayo continuo a la barra de tierra
             const groundPos = new THREE.Vector3(-0.35, 0.67, -0.22);
-            let current = startPos.clone();
-            const steps = 8;
-            for (let s = 1; s <= steps; s++) {
+            let pts = [];
+            const steps = 7;
+            for (let s = 0; s <= steps; s++) {
                 const t = s / steps;
                 const next = new THREE.Vector3().lerpVectors(startPos, groundPos, t);
-                if (s < steps) {
+                if (s > 0 && s < steps) {
                     next.x += (Math.random() - 0.5) * 0.09;
                     next.y += (Math.random() - 0.5) * 0.09;
                     next.z += (Math.random() - 0.5) * 0.09;
                 }
-                setSegment(current, next);
-                current = next;
+                pts.push(next);
             }
+            updateTube(0, pts);
+            this.sparkSprites[0].position.copy(groundPos);
+            this.sparkSprites[0].visible = true;
+            this.sparkSprites[0].scale.setScalar(0.2 + Math.random() * 0.15);
 
-            // Tubo apagado
             const coreMat = this.tubeCore.material as THREE.MeshBasicMaterial;
             const glowMat = this.tubeGlow.material as THREE.MeshBasicMaterial;
             coreMat.opacity = 0.08;
@@ -362,13 +419,8 @@ export class TeslaCoil {
             this.tubeLight.intensity = 0.0;
             this.sparkLight.intensity = 3.2;
         }
-
-        // Rellenar segmentos sobrantes fuera de vista
-        for (let i = segIdx * 6; i < this.maxArcSegments * 6; i++) {
-            this.arcPositions[i] = 0;
-        }
-        this.plasmaArcs.geometry.attributes.position.needsUpdate = true;
     }
+
 
     public getInteractables(): THREE.Object3D[] {
         return this.interactableMeshes;
