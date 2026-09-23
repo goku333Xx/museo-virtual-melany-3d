@@ -5,6 +5,30 @@ import { InteractionSystem } from './InteractionSystem';
 import { HUD } from './HUD';
 
 import { SoundSynthesizer } from './SoundSynthesizer';
+import { SALAS, NOMBRE_MUSEO } from './salas.config';
+
+// --- TEXTOS DEL MUSEO Y DE CADA SALA (desde salas.config.ts) ---
+const escapeHtml = (s: string) => s.replace(/[&<>"']/g, ch => `&#${ch.charCodeAt(0)};`);
+document.title = `${NOMBRE_MUSEO} | Transformaciones de la Energía`;
+document.querySelectorAll<HTMLElement>('[data-museo-nombre]').forEach(el => {
+    el.textContent = el.dataset.museoNombre === 'upper' ? NOMBRE_MUSEO.toUpperCase() : NOMBRE_MUSEO;
+});
+document.querySelectorAll<HTMLElement>('#mission-body .task-title').forEach((el, i) => {
+    if (SALAS[i]) el.textContent = SALAS[i].titulo;
+});
+const featuresRow = document.querySelector('#start-screen .features-row');
+if (featuresRow) {
+    featuresRow.innerHTML = SALAS.map(s =>
+        `<div class="feat-box glass-pill"><span>${escapeHtml(s.icono)}</span> ${escapeHtml(s.titulo)}</div>`
+    ).join('');
+}
+const mapList = document.getElementById('map-sala-list');
+if (mapList) {
+    mapList.innerHTML = SALAS.map((s, i) =>
+        `<div class="map-node glass-pill" style="padding: 14px; justify-content: center; font-size: 15px; border-color: ${escapeHtml(s.colorAcento)};">` +
+        `${i + 1}. ${escapeHtml(s.icono)} ${escapeHtml(s.titulo)} <small style="opacity:.7; margin-left:8px;">${escapeHtml(s.grupo)} · ${i < 4 ? 'Oeste' : 'Este'}</small></div>`
+    ).join('<div style="text-align: center; color: var(--cyan);">↓</div>');
+}
 
 // --- ELEMENTOS DEL DOM ---
 const startScreen = document.getElementById('start-screen') as HTMLElement;

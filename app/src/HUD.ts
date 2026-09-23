@@ -1,4 +1,5 @@
 import { SoundSynthesizer } from './SoundSynthesizer';
+import { SALAS } from './salas.config';
 
 export interface QuizData {
     id: number;
@@ -617,13 +618,13 @@ export class HUD {
     }
 
     private readonly missionsData = [
-        { title: "Pila de Papa", desc: "Cerrá el circuito y mirá cómo viajan los electrones (~1.94V)" },
-        { title: "Bobina de Tesla", desc: "¡Magia pura! Pasá energía por el aire sin cables" },
-        { title: "Aerogenerador Faraday", desc: "Usá el viento para darle luz a toda la mini ciudad" },
-        { title: "Panel Solar", desc: "Atrapá fotones y hacé que gire el motor del avión" },
-        { title: "Van de Graaff", desc: "Juntá 150.000V y mirá cómo levitan las cintas locas" },
-        { title: "Cuna de Newton", desc: "Comprobá cómo la energía rebota de punta a punta" },
-        { title: "Dínamo Manual", desc: "¡Transpirá un poco y encendé la lámpara a pura manivela!" },
+        { title: SALAS[0].titulo, desc: "Cerrá el circuito y mirá cómo viajan los electrones (~1.94V)" },
+        { title: SALAS[1].titulo, desc: "¡Magia pura! Pasá energía por el aire sin cables" },
+        { title: SALAS[2].titulo, desc: "Usá el viento para darle luz a toda la mini ciudad" },
+        { title: SALAS[3].titulo, desc: "Atrapá fotones y hacé que gire el motor del avión" },
+        { title: SALAS[4].titulo, desc: "Juntá 150.000V y mirá cómo levitan las cintas locas" },
+        { title: SALAS[5].titulo, desc: "Comprobá cómo la energía rebota de punta a punta" },
+        { title: SALAS[6].titulo, desc: "¡Transpirá un poco y encendé la lámpara a pura manivela!" },
         { title: "Prisma Óptico", desc: "Separá la luz blanca y descubrí los colores escondidos" }
     ];
 

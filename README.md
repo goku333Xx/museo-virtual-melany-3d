@@ -1,8 +1,27 @@
-# 🌌 Museo Virtual Melany 3D — Edición Científica Interactiva (V3)
+# 🏛️ Museo Virtual 7mo — Transformaciones de la Energía
 
-Un videojuego educativo 3D de exploración en primera persona para el aprendizaje de física, química y óptica, desarrollado íntegramente en el navegador con **Three.js**, **TypeScript** y **Vite**.
+Un museo educativo 3D de exploración en primera persona sobre las transformaciones de la energía, desarrollado íntegramente en el navegador con **Three.js**, **TypeScript** y **Vite**.
 
-Diseñado especialmente para estudiantes jóvenes (10 a 12 años), con dinámicas pedagógicas gamificadas, explicaciones claras y un apartado audiovisual inmersivo a 60+ FPS sin dependencias externas. Cuenta con un **cielo realista con nubes y sol**, **salas tipo museo real con paredes blancas**, **techo de vidrio con palomas**, un **sistema de progresión por salas**, y un **robot Mel-Bot guía inteligente que apunta a los experimentos**.
+La ambientación imita un museo real: hall central con piso de piedra y lucernario, salas cerradas con cielorraso, piso de parquet, paredes pintadas, rieles de iluminación, bancos, rótulos sobre cada puerta, cartelas de sala y etiquetas en los plintos. Incluye un **sistema de progresión por salas** y un **robot Mel-Bot guía** que acompaña al visitante.
+
+---
+
+## 🎨 Cada grupo caracteriza su sala
+
+Cada una de las 7 salas pertenece a un grupo de 7mo. Para personalizarla, **editá solo el bloque de tu grupo** en [`app/src/salas.config.ts`](app/src/salas.config.ts):
+
+| Campo | Qué cambia en el museo |
+|---|---|
+| `grupo` | Nombre del grupo en el rótulo de la puerta, la cartela y la etiqueta |
+| `integrantes` | Lista de nombres en la cartela de la sala |
+| `titulo` | Nombre de la sala en carteles, mapa, misiones y pantalla de inicio |
+| `transformacion` | La transformación de energía (ej: `Química → Eléctrica`) |
+| `icono` | Emoji de la sala |
+| `texto` | Texto de la cartela de pared (2 a 4 oraciones) |
+| `colorPared` | Color con el que se pintan las paredes de la sala |
+| `colorAcento` | Color de detalles (subtítulos y líneas) |
+
+El nombre del museo se cambia en `NOMBRE_MUSEO`, en el mismo archivo.
 
 ---
 

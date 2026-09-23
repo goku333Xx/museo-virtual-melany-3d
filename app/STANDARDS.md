@@ -1,4 +1,4 @@
-# ESTÁNDARES DE DISEÑO, RENDIMIENTO Y PEDAGOGÍA - MUSEO MELANY 3D
+# ESTÁNDARES DE DISEÑO, RENDIMIENTO Y PEDAGOGÍA - MUSEO VIRTUAL 7MO
 
 Este documento establece las reglas y directrices inquebrantables que todo componente, modelo 3D, sistema de interfaz y mecánica educativa debe cumplir para garantizar una experiencia de 60+ FPS en computadoras y celulares, y una pedagogía 100% intuitiva para chicos de 11 años.
 
@@ -89,8 +89,10 @@ Este documento establece las reglas y directrices inquebrantables que todo compo
 * **Palomas:** 6 sprites de palomas argentinas (3 posadas en el techo de vidrio, 3 volando en círculos).
 
 ### 5.2 Materiales de Museo Real
-* **Regla:** Paredes blancas galería (#f1f5f9), piso mármol claro (#e2e8f0). Prohibido materiales con albedo < 30%.
-* **Razón:** Los materiales claros reflejan la luz naturalmente, permitiendo menos luces a menor intensidad.
+* **Hall central:** piso de losas de piedra caliza, paredes blanco cálido, abierto al lucernario (se ve el cielo).
+* **Salas y galería:** cielorraso a 6 m, piso de parquet, plintos blancos mates, riel de iluminación con proyectores y un banco.
+* **Pintura por grupo:** las paredes de cada sala usan el `colorPared` de `src/salas.config.ts`. Usar tonos de museo (apagados), nunca fluorescentes.
+* **Señalética:** rótulos en vinilo sobre las puertas, cartela de sala junto a la entrada y etiqueta en el frente del plinto. Todos se generan desde `salas.config.ts`; no escribir nombres de sala a mano en el código.
 
 ## 6. ESTÁNDARES DE SEÑALIZACIÓN Y DIRECCIÓN
 

@@ -15,6 +15,7 @@ import { QuantumOrbsManager } from './models/QuantumOrbs';
 import { SoundSynthesizer } from './SoundSynthesizer';
 import { HUD } from './HUD';
 import type { QuizData } from './HUD';
+import { SALAS, nombreSala } from './salas.config';
 
 export interface Interactable {
     object: THREE.Object3D;
@@ -240,7 +241,7 @@ export class World {
         // -------------------------------------------------------------
         const quizPapa: QuizData = {
             id: 1,
-            title: "Sala 01: Pila de Papa",
+            title: nombreSala(0),
             question: "¿Cómo hacen un par de papas comunes para encender la luz?",
             options: [
                 "Absorben calor del aire y sacan un humo mágico.",
@@ -253,7 +254,7 @@ export class World {
 
         const papaInteractable: Omit<Interactable, 'object'> = {
             id: 1,
-            title: "Sala 01: Pila de Papa",
+            title: nombreSala(0),
             tag: "🔋 DE QUÍMICA A ELÉCTRICA",
             description: "¡El jugo ácido de las papas es el secreto! Despierta a los electrones y los empuja por el cable como si fuera la presión del agua en una manguera. Así viajan del clavo de zinc al de cobre y prenden la luz.",
             badge: "🏅 +100 XP · Medalla Química",
@@ -297,7 +298,7 @@ export class World {
         // -------------------------------------------------------------
         const quizTesla: QuizData = {
             id: 2,
-            title: "Sala 02: Bobina de Tesla",
+            title: nombreSala(1),
             question: "¿Por qué el tubo se prende flotando sin estar enchufado a nada?",
             options: [
                 "La bobina tira ondas invisibles por el aire que hacen brillar al gas adentro del tubo.",
@@ -310,7 +311,7 @@ export class World {
 
         const teslaInteractable: Omit<Interactable, 'object'> = {
             id: 2,
-            title: "Sala 02: Bobina de Tesla",
+            title: nombreSala(1),
             tag: "⚡ ENERGÍA INALÁMBRICA",
             description: "¡Mirá cómo fluye la energía por el aire! Nikola Tesla inventó esta máquina para mandar electricidad sin cables. La bobina dispara ondas invisibles que hacen brillar al tubo fluorescente a la distancia. ¡Pura magia científica!",
             badge: "🏅 +100 XP · Medalla de Tesla",
@@ -344,7 +345,7 @@ export class World {
         // -------------------------------------------------------------
         const quizWind: QuizData = {
             id: 3,
-            title: "Sala 03: Aerogenerador",
+            title: nombreSala(2),
             question: "¿Cómo hace el molino gigante para que las casitas tengan luz?",
             options: [
                 "El viento empuja imanes gigantes que mueven electrones hacia la ciudad.",
@@ -357,7 +358,7 @@ export class World {
 
         const windInteractable: Omit<Interactable, 'object'> = {
             id: 3,
-            title: "Sala 03: Aerogenerador & Mini Ciudad",
+            title: nombreSala(2),
             tag: "🌪️ VIENTO A ELECTRICIDAD (EÓLICA)",
             description: "¡El viento mueve las aspas gigantes como si fueran un ventilador al revés! Adentro hay imanes enormes bailando cerca de unos cables de cobre. Ese movimiento bombea millones de electrones hacia la ciudad para encender todas las luces.",
             badge: "🏅 +100 XP · Medalla Eólica",
@@ -391,7 +392,7 @@ export class World {
         // -------------------------------------------------------------
         const quizSolar: QuizData = {
             id: 4,
-            title: "Sala 04: Panel Solar Fotovoltaico",
+            title: nombreSala(3),
             question: "¿Qué hace la luz para que gire la hélice del avioncito?",
             options: [
                 "Calienta el panel y el humo caliente empuja la hélice.",
@@ -404,7 +405,7 @@ export class World {
 
         const solarInteractable: Omit<Interactable, 'object'> = {
             id: 4,
-            title: "Sala 04: Panel Solar Fotovoltaico",
+            title: nombreSala(3),
             tag: "☀️ LUZ SOLAR A ELECTRICIDAD",
             description: "¡La luz viaja en unos minipaquetitos llamados fotones! Cuando chocan contra la placa azul, empujan a los electrones como si los patearan. ¡Esos electrones corriendo por los cables hacen girar el motor del avión!",
             badge: "🏅 +100 XP · Medalla Solar",
@@ -438,7 +439,7 @@ export class World {
         // -------------------------------------------------------------
         const quizVanDeGraaff: QuizData = {
             id: 5,
-            title: "Sala 05: Generador Van de Graaff",
+            title: nombreSala(4),
             question: "¿Por qué las cintas de colores se paran de punta y flotan en el aire?",
             options: [
                 "La bocha de metal sopla viento desde adentro.",
@@ -451,7 +452,7 @@ export class World {
 
         const vanDeGraaffInteractable: Omit<Interactable, 'object'> = {
             id: 5,
-            title: "Sala 05: Generador de Van de Graaff",
+            title: nombreSala(4),
             tag: "⚡ ELECTRICIDAD ESTÁTICA",
             description: "¡Es como cuando frotás un globo en la ropa y se te paran los pelos! La bocha junta tanta carga de electricidad estática que las tiritas se rechazan unas a otras porque tienen la misma carga, ¡y terminan flotando como locas!",
             badge: "🏅 +100 XP · Medalla Estática",
@@ -489,7 +490,7 @@ export class World {
         // -------------------------------------------------------------
         const quizNewton: QuizData = {
             id: 6,
-            title: "Sala 06: Cuna de Newton",
+            title: nombreSala(5),
             question: "Al soltar 2 bolas de acero, ¿por qué del otro lado salen 2 y no 1 sola rapidísimo?",
             options: [
                 "Porque las bolas del medio tienen resortes que cuentan los golpes.",
@@ -502,7 +503,7 @@ export class World {
 
         const newtonInteractable: Omit<Interactable, 'object'> = {
             id: 6,
-            title: "Sala 06: Cuna de Newton",
+            title: nombreSala(5),
             tag: "⚖️ ENERGÍA EN MOVIMIENTO",
             description: "¡La energía nunca desaparece, solo se pasa de mano en mano! Si soltás 2 bolas, el golpe viaja como un fantasma a través de las del medio sin moverlas y hace saltar justo a 2 del otro lado. ¡Magia de la física pura!",
             badge: "🏅 +100 XP · Medalla de Choques",
@@ -536,7 +537,7 @@ export class World {
         // -------------------------------------------------------------
         const quizDynamo: QuizData = {
             id: 7,
-            title: "Sala 07: Dínamo Manual con Manivela",
+            title: nombreSala(6),
             question: "¿Cómo es que tu fuerza con la manivela termina siendo luz en el foquito?",
             options: [
                 "Los engranajes frotan cables calientes hasta que hacen chispas.",
@@ -549,7 +550,7 @@ export class World {
 
         const dynamoInteractable: Omit<Interactable, 'object'> = {
             id: 7,
-            title: "Sala 07: Dínamo Manual con Manivela",
+            title: nombreSala(6),
             tag: "⚙️ ENERGÍA MUSCULAR A LUZ",
             description: "¡Usá tus propios músculos para hacer luz! Al girar a toda máquina, unos engranajes hacen dar vueltas a un imán rapidísimo. Esto bombea electrones por el cable que calientan un alambrecito a 2000°C hasta que brilla zarpado.",
             badge: "🏅 +100 XP · Medalla del Dínamo",
@@ -629,13 +630,13 @@ export class World {
         // ROBOT GUÍA MEL-BOT (ATRIO CENTRAL - ID: 99)
         // -------------------------------------------------------------
         const museumRooms = [
-            { id: 1, name: "Sala 01: Pila de Papa", center: new THREE.Vector3(-15, 0, 10), pedestalPos: new THREE.Vector3(-13.5, 1.75, 10) },
-            { id: 2, name: "Sala 02: Bobina de Tesla", center: new THREE.Vector3(-15, 0, 0), pedestalPos: new THREE.Vector3(-13.5, 1.75, 0) },
-            { id: 3, name: "Sala 03: Aerogenerador", center: new THREE.Vector3(-15, 0, -10), pedestalPos: new THREE.Vector3(-13.5, 1.75, -10) },
-            { id: 4, name: "Sala 04: Panel Solar", center: new THREE.Vector3(-15, 0, -20), pedestalPos: new THREE.Vector3(-13.5, 1.75, -20) },
-            { id: 5, name: "Sala 05: Generador Van de Graaff", center: new THREE.Vector3(15, 0, 10), pedestalPos: new THREE.Vector3(13.5, 1.75, 10) },
-            { id: 6, name: "Sala 06: Cuna de Newton", center: new THREE.Vector3(15, 0, 0), pedestalPos: new THREE.Vector3(13.5, 1.75, 0) },
-            { id: 7, name: "Sala 07: Dínamo Manual", center: new THREE.Vector3(15, 0, -10), pedestalPos: new THREE.Vector3(13.5, 1.75, -10) },
+            { id: 1, name: nombreSala(0), center: new THREE.Vector3(-15, 0, 10), pedestalPos: new THREE.Vector3(-13.5, 1.75, 10) },
+            { id: 2, name: nombreSala(1), center: new THREE.Vector3(-15, 0, 0), pedestalPos: new THREE.Vector3(-13.5, 1.75, 0) },
+            { id: 3, name: nombreSala(2), center: new THREE.Vector3(-15, 0, -10), pedestalPos: new THREE.Vector3(-13.5, 1.75, -10) },
+            { id: 4, name: nombreSala(3), center: new THREE.Vector3(-15, 0, -20), pedestalPos: new THREE.Vector3(-13.5, 1.75, -20) },
+            { id: 5, name: nombreSala(4), center: new THREE.Vector3(15, 0, 10), pedestalPos: new THREE.Vector3(13.5, 1.75, 10) },
+            { id: 6, name: nombreSala(5), center: new THREE.Vector3(15, 0, 0), pedestalPos: new THREE.Vector3(13.5, 1.75, 0) },
+            { id: 7, name: nombreSala(6), center: new THREE.Vector3(15, 0, -10), pedestalPos: new THREE.Vector3(13.5, 1.75, -10) },
             { id: 8, name: "Galería Óptica (Conmemorativa)", center: new THREE.Vector3(0, 0, -35), pedestalPos: new THREE.Vector3(0, 1.75, -33.0) }
         ];
 
@@ -785,11 +786,7 @@ export class World {
                     const distToDoor = playerPos.distanceTo(doorPos);
                     if (distToDoor < 4.0) {
                         // Player is near a locked door! Mel-Bot warns them
-                        const roomNames = [
-                            'Pila de Papa', 'Bobina de Tesla', 'Aerogenerador',
-                            'Panel Solar', 'Van de Graaff', 'Cuna de Newton',
-                            'Dínamo Manual', 'Prisma Óptico'
-                        ];
+                        const roomNames = [...SALAS.map(s => s.titulo), 'Prisma Óptico'];
                         // Find which room they need to complete first
                         const requiredRoom = i > 0 ? i - 1 : 0;
                         if (!this.lastDoorWarningIdx || this.lastDoorWarningIdx !== i) {
