@@ -12,14 +12,14 @@ export class PotatoBattery {
     }
 
     private createPotato(): void {
-        const geometry = new THREE.SphereGeometry(0.08, 12, 12);
+        const geometry = new THREE.SphereGeometry(0.08, 16, 16);
 
         // Realistic potato material
         const material = new THREE.MeshStandardMaterial({
             color: 0x8b6d43, // earthy brown
-            roughness: 0.85,
-            metalness: 0.05,
-            bumpScale: 0.02
+            roughness: 0.9,
+            metalness: 0.02,
+            bumpScale: 0.03
         });
         
         const potatoMesh1 = new THREE.Mesh(geometry, material);
@@ -52,34 +52,38 @@ export class PotatoBattery {
     }
 
     private createElectrodes(): void {
-        // Copper Electrode (Anode)
-        const copperGeo = new THREE.CylinderGeometry(0.005, 0.005, 0.2, 16);
+        // Copper Electrode (Anode) - highly realistic look
+        const copperGeo = new THREE.CylinderGeometry(0.004, 0.004, 0.2, 16);
         const copperMat = new THREE.MeshStandardMaterial({
             color: 0xb87333,
-            roughness: 0.3,
-            metalness: 0.9
+            roughness: 0.2,
+            metalness: 0.95
         });
         const copperElectrode = new THREE.Mesh(copperGeo, copperMat);
-        // Insert into the potato
         copperElectrode.position.set(0.1, 0.08, 0);
         copperElectrode.rotation.z = Math.PI / 8;
         copperElectrode.castShadow = true;
 
+        // Copper head
+        const copperHeadGeo = new THREE.CylinderGeometry(0.012, 0.012, 0.01, 16);
+        const copperHead = new THREE.Mesh(copperHeadGeo, copperMat);
+        copperHead.position.y = 0.1;
+        copperElectrode.add(copperHead);
+
         // Zinc Electrode (Cathode) - Galvanized nail look
-        const zincGeo = new THREE.CylinderGeometry(0.005, 0.005, 0.2, 16);
+        const zincGeo = new THREE.CylinderGeometry(0.004, 0.004, 0.2, 16);
         const zincMat = new THREE.MeshStandardMaterial({
-            color: 0xa9a9a9,
-            roughness: 0.4,
-            metalness: 0.8
+            color: 0x9ca3af,
+            roughness: 0.3,
+            metalness: 0.85
         });
         const zincElectrode = new THREE.Mesh(zincGeo, zincMat);
-        // Insert into the potato
         zincElectrode.position.set(-0.1, 0.08, 0);
         zincElectrode.rotation.z = -Math.PI / 8;
         zincElectrode.castShadow = true;
         
         // Add top head to zinc electrode for realism (like a nail head)
-        const zincHeadGeo = new THREE.CylinderGeometry(0.01, 0.01, 0.01, 16);
+        const zincHeadGeo = new THREE.CylinderGeometry(0.012, 0.012, 0.01, 16);
         const zincHead = new THREE.Mesh(zincHeadGeo, zincMat);
         zincHead.position.y = 0.1;
         zincElectrode.add(zincHead);
@@ -89,23 +93,23 @@ export class PotatoBattery {
 
         const createLabel = (text: string, color: string, pos: THREE.Vector3) => {
             const canvas = document.createElement('canvas');
-            canvas.width = 64; canvas.height = 32;
+            canvas.width = 128; canvas.height = 64;
             const ctx = canvas.getContext('2d');
             if (!ctx) return;
             ctx.fillStyle = color;
-            ctx.font = 'bold 24px Arial';
+            ctx.font = 'bold 36px Arial';
             ctx.textAlign = 'center';
-            ctx.fillText(text, 32, 24);
+            ctx.fillText(text, 64, 44);
             const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(canvas) }));
-            sprite.scale.set(0.08, 0.04, 1);
+            sprite.scale.set(0.12, 0.06, 1);
             sprite.position.copy(pos);
             this.group.add(sprite);
         };
-        createLabel('+ Cu', '#d4af37', new THREE.Vector3(0.1, 0.2, 0));
-        createLabel('- Zn', '#a9a9a9', new THREE.Vector3(-0.1, 0.2, 0));
+        createLabel('+ Cu', '#d4af37', new THREE.Vector3(0.12, 0.22, 0));
+        createLabel('- Zn', '#a9a9a9', new THREE.Vector3(-0.12, 0.22, 0));
 
         const bubbleGeo = new THREE.SphereGeometry(0.005, 8, 8);
-        const bubbleMat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+        const bubbleMat = new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.8 });
         const addBubbles = (basePos: THREE.Vector3) => {
             for(let i=0; i<3; i++) {
                 const b = new THREE.Mesh(bubbleGeo, bubbleMat);
@@ -116,10 +120,8 @@ export class PotatoBattery {
         };
         addBubbles(new THREE.Vector3(0.1, 0.08, 0));
         addBubbles(new THREE.Vector3(-0.1, 0.08, 0));
-
     }
 
-    
     public setSleep(sleep: boolean): void {
         this.isSleeping = sleep;
     }

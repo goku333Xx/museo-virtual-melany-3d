@@ -21,6 +21,7 @@ export class DynamoExhibit {
     private pinionGearMesh: THREE.Group;
     private rotorArmatureGroup: THREE.Group;
     private commutatorGroup: THREE.Group;
+    private rotorCoils: THREE.Mesh[] = [];
 
     // Componentes de la Lámpara Edison
     private bulbFilament: THREE.Mesh;
@@ -136,7 +137,7 @@ export class DynamoExhibit {
         // 2. PEDESTAL DE HIERRO FUNDIDO Y CAJA DE ENGRANAJES TRANSPARENTE
         // =========================================================================
         const dynamoBaseGroup = new THREE.Group();
-        dynamoBaseGroup.position.set(-0.25, tableH + 0.02, 0);
+        dynamoBaseGroup.position.set(-0.25, tableH, 0);
 
         // Base de soporte de hierro fundido
         const ironBase = new THREE.Mesh(
@@ -328,8 +329,10 @@ export class DynamoExhibit {
             core.position.y = 0.05;
 
             // Bobinado de hilo de cobre esmaltado
-            const coil = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.07, 0.17), copperCoilMat);
+            const coilMat = copperCoilMat.clone();
+            const coil = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.07, 0.17), coilMat);
             coil.position.y = 0.05;
+            this.rotorCoils.push(coil);
 
             // Expansión polar (cabeza del polo)
             const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.015, 0.18), ironCoreMat);
@@ -408,7 +411,7 @@ export class DynamoExhibit {
         // 6. LÁMPARA INCANDESCENTE VINTAGE EDISON (DERECHA: X = +0.45)
         // =========================================================================
         const lampGroup = new THREE.Group();
-        lampGroup.position.set(0.48, tableH + 0.02, -0.15);
+        lampGroup.position.set(0.48, tableH, -0.15);
 
         // Base de madera torneada oscura
         const lampBase = new THREE.Mesh(
@@ -492,22 +495,22 @@ export class DynamoExhibit {
         const wireMatRed = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.4 });
         const wireMatBlack = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.4 });
 
-        // Ruta del cable rojo (V): desde escobilla positiva (0.18, 0.29, 0) a la bombilla y al multímetro
+        // Ruta del cable rojo (V): desde escobilla positiva (-0.07, tableH + 0.29, 0) a la bombilla
         this.electronCurve = new THREE.CatmullRomCurve3([
-            new THREE.Vector3(0.18, tableH + 0.24, 0),
-            new THREE.Vector3(0.25, tableH + 0.02, 0.1),
-            new THREE.Vector3(0.40, tableH + 0.02, 0.05), // rodeo por detrás
+            new THREE.Vector3(-0.07, tableH + 0.29, 0),
+            new THREE.Vector3(0.25, tableH + 0.05, 0.1),
+            new THREE.Vector3(0.40, tableH + 0.05, 0.05), // rodeo por detrás
             new THREE.Vector3(0.48, tableH + 0.10, -0.15) // A la bombilla
         ]);
 
         const wirePos = new THREE.Mesh(new THREE.TubeGeometry(this.electronCurve, 32, 0.008, 8, false), wireMatRed);
         this.group.add(wirePos);
 
-        // Ruta del cable negro (COM): desde escobilla negativa (0.18, 0.21, 0) a la bombilla
+        // Ruta del cable negro (COM): desde escobilla negativa (-0.07, tableH + 0.21, 0) a la bombilla
         const wireNegCurve = new THREE.CatmullRomCurve3([
-            new THREE.Vector3(0.18, tableH + 0.16, 0),
-            new THREE.Vector3(0.28, tableH + 0.02, -0.2),
-            new THREE.Vector3(0.45, tableH + 0.02, -0.25),
+            new THREE.Vector3(-0.07, tableH + 0.21, 0),
+            new THREE.Vector3(0.28, tableH + 0.05, -0.2),
+            new THREE.Vector3(0.45, tableH + 0.05, -0.25),
             new THREE.Vector3(0.48, tableH + 0.08, -0.15)
         ]);
         const wireNeg = new THREE.Mesh(new THREE.TubeGeometry(wireNegCurve, 24, 0.008, 8, false), wireMatBlack);
@@ -640,10 +643,10 @@ export class DynamoExhibit {
         // Sondas al multímetro
         const blackCurve = new THREE.CatmullRomCurve3([
             new THREE.Vector3(0.44, tableH + 0.08, 0.32),
-            new THREE.Vector3(0.42, tableH + 0.015, 0.30),
-            new THREE.Vector3(0.35, tableH + 0.015, -0.1),
+            new THREE.Vector3(0.42, tableH + 0.03, 0.30),
+            new THREE.Vector3(0.35, tableH + 0.03, -0.1),
             new THREE.Vector3(0.25, tableH + 0.05, -0.15),
-            new THREE.Vector3(0.18, tableH + 0.16, 0)
+            new THREE.Vector3(-0.07, tableH + 0.21, 0)
         ]);
         const blackGeom = new THREE.TubeGeometry(blackCurve, 32, 0.006, 8, false);
         const blackProbeWire = new THREE.Mesh(blackGeom, new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.6 }));
@@ -651,10 +654,10 @@ export class DynamoExhibit {
 
         const redCurve = new THREE.CatmullRomCurve3([
             new THREE.Vector3(0.52, tableH + 0.08, 0.32),
-            new THREE.Vector3(0.50, tableH + 0.015, 0.28),
-            new THREE.Vector3(0.45, tableH + 0.015, 0.1),
+            new THREE.Vector3(0.50, tableH + 0.03, 0.28),
+            new THREE.Vector3(0.45, tableH + 0.03, 0.1),
             new THREE.Vector3(0.3, tableH + 0.05, 0.1),
-            new THREE.Vector3(0.18, tableH + 0.24, 0)
+            new THREE.Vector3(-0.07, tableH + 0.29, 0)
         ]);
         const redGeom = new THREE.TubeGeometry(redCurve, 32, 0.006, 8, false);
         const redProbeWire = new THREE.Mesh(redGeom, new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.6 }));
@@ -727,9 +730,19 @@ export class DynamoExhibit {
         const deltaRotorAngle = deltaCrankAngle * this.gearRatio;
         this.rotorAngle += deltaRotorAngle;
         this.pinionGearMesh.rotation.z = this.rotorAngle;
-        this.rotorArmatureGroup.rotation.x = this.rotorAngle;
-
+        this.rotorArmatureGroup.rotation.z = this.rotorAngle;
         
+        // Sincronización de bobinas (Glow al pasar por imanes N/S)
+        const voltageNorm = Math.min(1.0, this.currentVoltage / 24.0);
+        this.rotorCoils.forEach((coil, i) => {
+            const angle = (i / 5) * Math.PI * 2 + this.rotorAngle;
+            // Alineación máxima cuando el polo está en Y (ángulo 0 o PI, ya que poleGroup tiene offset en Y)
+            const alignment = Math.pow(Math.abs(Math.cos(angle)), 4);
+            const mat = coil.material as THREE.MeshStandardMaterial;
+            mat.emissive.setHex(0xffaa00);
+            mat.emissiveIntensity = alignment * voltageNorm * 2.5;
+        });
+
         // Pulse field lines
         const pulse = 0.4 + Math.sin(_time * 10.0 + this.currentRpm) * 0.2 * (this.currentRpm / 300);
         this.fieldLines.forEach(line => {

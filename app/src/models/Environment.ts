@@ -462,18 +462,20 @@ export class MuseumRoom {
         createWall(4.85, 5.15, -25, -11.6);
         
         // Muro Norte del Pasillo (Galeria) (Z = -25)
-        createWall(-4.85, -1.6, -25.15, -24.85);
+        createWall(-36, -1.6, -25.15, -24.85);
         createDoorLintel(-1.6, 1.6, -25.15, -24.85); // Sala 8 (Galeria)
-        createWall(1.6, 4.85, -25.15, -24.85);
+        createWall(1.6, 36, -25.15, -24.85);
 
-        // Paredes separadoras de salas (Lado Izquierdo, X: -25 a -5.15)
-        createWall(-25, -5.15, 4.85, 5.15); // Entre Sala 1 y 2
-        createWall(-25, -5.15, -5.15, -4.85); // Entre Sala 2 y 3
-        createWall(-25, -5.15, -15.15, -14.85); // Entre Sala 3 y 4
+        // Paredes separadoras de salas (Lado Izquierdo, X: -36 a -5.15)
+        createWall(-36, -5.15, 24.85, 25.15); // Pared frontal de Sala 1
+        createWall(-36, -5.15, 4.85, 5.15); // Entre Sala 1 y 2
+        createWall(-36, -5.15, -5.15, -4.85); // Entre Sala 2 y 3
+        createWall(-36, -5.15, -15.15, -14.85); // Entre Sala 3 y 4
         
-        // Paredes separadoras de salas (Lado Derecho, X: 5.15 a 25)
-        createWall(5.15, 25, 4.85, 5.15); // Entre Sala 5 y 6
-        createWall(5.15, 25, -5.15, -4.85); // Entre Sala 6 y 7
+        // Paredes separadoras de salas (Lado Derecho, X: 5.15 a 36)
+        createWall(5.15, 36, 24.85, 25.15); // Pared frontal de Sala 5
+        createWall(5.15, 36, 4.85, 5.15); // Entre Sala 5 y 6
+        createWall(5.15, 36, -5.15, -4.85); // Entre Sala 6 y 7
 
         const roomConfigs = [
             { x: -15, z: 10, color: 0x4ade80, name: "Sala 1: Papa" },
@@ -673,7 +675,7 @@ export class MuseumRoom {
 
     private createFloatingHaloLight(x: number, z: number, phase: number) {
         const haloGroup = new THREE.Group();
-        const baseY = 4.0;
+        const baseY = 6.5; // Raised slightly to avoid intersecting tall experiments
         haloGroup.position.set(x, baseY, z);
 
         // Anillo con acabado en latón y luz suave
@@ -693,12 +695,25 @@ export class MuseumRoom {
         const isActive = this.floatingHalos.length === 0;
         const spot = new THREE.SpotLight(0xfff5eb, 12, 12, Math.PI / 4, 0.5, 1.5);
         spot.position.set(0, 0, 0);
-        spot.target.position.set(0, -3.0, 0);
+        spot.target.position.set(0, -5.0, 0); // Extended target downwards
         spot.visible = isActive;
         haloGroup.add(spot);
         haloGroup.add(spot.target);
 
         this.group.add(haloGroup);
+
+        // Mount extending from the ceiling (Y=14) to the light (baseY = 6.5)
+        const mountLength = 14.0 - baseY;
+        const mountGeom = new THREE.CylinderGeometry(0.05, 0.05, mountLength, 8);
+        const mountMat = new THREE.MeshStandardMaterial({
+            color: 0x1d2535,
+            roughness: 0.8,
+            metalness: 0.2
+        });
+        const mountMesh = new THREE.Mesh(mountGeom, mountMat);
+        // Position it exactly between the ceiling and the halo
+        mountMesh.position.set(x, baseY + mountLength / 2, z);
+        this.group.add(mountMesh);
 
         this.floatingHalos.push({
             group: haloGroup,
@@ -729,10 +744,8 @@ export class MuseumRoom {
     public update(time: number): void {
         for (let i = 0; i < this.floatingHalos.length; i++) {
             const halo = this.floatingHalos[i];
-            const t = time * 1.2 + halo.phase;
             
-            // Levitación suave del halo
-            halo.group.position.y = halo.baseY + Math.sin(t) * 0.08;
+            // Rotación suave del halo
             halo.group.rotation.y = time * 0.08 + halo.phase;
         }
 

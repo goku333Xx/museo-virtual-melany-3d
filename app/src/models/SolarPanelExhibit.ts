@@ -21,11 +21,7 @@ export class SolarPanelExhibit {
     private targetPropellerRpm: number = 2400;
     private interactableMeshes: THREE.Object3D[] = [];
 
-    // Animación cinemática suave del foco solar
-    private targetLampPos = new THREE.Vector3(-0.35, 1.05, 0);
-    private currentLampPos = new THREE.Vector3(-0.35, 1.05, 0);
-    private targetLampRotZ: number = 0;
-    private currentLampRotZ: number = 0;
+    // Animación suave del foco solar
     private targetLightIntensity: number = 4.2;
     private currentLightIntensity: number = 4.2;
     private targetBulbColor = new THREE.Color(0xfef08a);
@@ -46,30 +42,30 @@ export class SolarPanelExhibit {
     private readonly modes: SolarPanelModeInfo[] = [
         {
             id: 0,
-            name: "Luz Cenital Directa (Incidencia 90° · Potencia 100% · Carga Rápida)",
+            name: "Luz Fuerte (Sol de Mediodía · Potencia 100% · Carga Rápida)",
             efficiency: 1.0,
             rpm: 2400,
             voltage: "18.4 V",
             lux: "1000 W/m²",
-            desc: "Los rayos del potente foco de estudio caen de lleno a 90°. Los fotones impactan el silicio a toda velocidad y generan un flujo eléctrico intenso que carga las baterías de litio al máximo nivel."
+            desc: "El foco ilumina con toda su fuerza, simulando el sol directo del mediodía. Los fotones impactan el silicio y generan un flujo eléctrico intenso que carga las baterías de litio al máximo nivel."
         },
         {
             id: 1,
-            name: "Luz Inclinada (Incidencia 45° · Potencia 50% · Carga Lenta)",
+            name: "Luz Suave (Sol de Atardecer · Potencia 50% · Carga Lenta)",
             efficiency: 0.5,
             rpm: 1200,
             voltage: "9.2 V",
             lux: "500 W/m²",
-            desc: "Al inclinar el foco a 45° (como a la tarde cuando baja el sol), los rayos se desparraman. Menos fotones golpean cada centímetro del panel, por lo que las baterías se cargan a la mitad de velocidad."
+            desc: "El foco reduce su intensidad, simulando el sol cayendo en el horizonte o un día algo nublado. Menos fotones golpean el panel, por lo que las baterías se cargan a la mitad de velocidad."
         },
         {
             id: 2,
-            name: "Sombra / Nube Tapada (Incidencia 0° · Potencia 0% · Sin Carga)",
+            name: "Apagado (Noche / Nubes Densas · Sin Carga)",
             efficiency: 0.0,
             rpm: 0,
             voltage: "0.2 V",
             lux: "25 W/m²",
-            desc: "Al apagar o tapar el foco, la producción eléctrica cae al instante. Las baterías dejan de recibir energía. ¡Esto demuestra que los paneles solares necesitan luz directa y constante para funcionar bien!"
+            desc: "Al apagar el foco, la producción eléctrica cae al instante. Las baterías dejan de recibir energía. ¡Esto demuestra que los paneles solares necesitan luz directa y constante para funcionar!"
         }
     ];
 
@@ -202,20 +198,40 @@ export class SolarPanelExhibit {
         this.group.add(panelGroup);
 
         // =========================================================================
-        // 3. FOCO DE ESTUDIO CINEMÁTICO (SOL ARTIFICIAL)
+        // 3. FOCO DE ESTUDIO ESTATICO (SOL ARTIFICIAL)
         // =========================================================================
-        // Brazo telescópico y arco pórtico
-        const arch = new THREE.Mesh(
-            new THREE.TorusGeometry(0.72, 0.024, 16, 32, Math.PI * 0.75),
-            mountMat
-        );
-        arch.rotation.z = Math.PI * 0.25;
-        arch.position.set(-0.35, tableH + 0.44, -0.36);
-        this.group.add(arch);
+        // Trípode de iluminación
+        const tripodGroup = new THREE.Group();
+        tripodGroup.position.set(-0.75, tableH, 0.45);
+        
+        const legGeom = new THREE.CylinderGeometry(0.015, 0.025, 1.3, 8);
+        const tripodMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8, roughness: 0.3 });
+        
+        const leg1 = new THREE.Mesh(legGeom, tripodMat);
+        leg1.position.set(0, 0.65, 0.2);
+        leg1.rotation.x = -Math.PI / 8;
+        
+        const leg2 = new THREE.Mesh(legGeom, tripodMat);
+        leg2.position.set(-0.17, 0.65, -0.1);
+        leg2.rotation.x = Math.PI / 8;
+        leg2.rotation.z = -Math.PI / 8;
+
+        const leg3 = new THREE.Mesh(legGeom, tripodMat);
+        leg3.position.set(0.17, 0.65, -0.1);
+        leg3.rotation.x = Math.PI / 8;
+        leg3.rotation.z = Math.PI / 8;
+        
+        const centerPole = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.8, 8), tripodMat);
+        centerPole.position.set(0, 1.2, 0);
+
+        tripodGroup.add(leg1, leg2, leg3, centerPole);
+        this.group.add(tripodGroup);
 
         this.sunLampPivot = new THREE.Group();
-        this.sunLampPivot.position.copy(this.currentLampPos);
-
+        this.sunLampPivot.position.set(-0.75, tableH + 1.5, 0.45);
+        
+        // Apuntar directamente al panel solar
+        this.sunLampPivot.lookAt(-0.35, tableH + 0.22, 0);
         // Carcasa de foco de estudio profesional tipo ARRI / Fresnel
         const housingMat = new THREE.MeshStandardMaterial({
             color: 0x0f172a,
@@ -466,13 +482,7 @@ export class SolarPanelExhibit {
     public update(_time: number, delta: number = 0.016): void {
         if (this.isSleeping) return;
 
-        // 1. Interpolación cinemática suave del foco solar (movimiento y rotación)
         const lerpFactor = Math.min(1.0, delta * 3.5);
-        this.currentLampPos.lerp(this.targetLampPos, lerpFactor);
-        this.sunLampPivot.position.copy(this.currentLampPos);
-
-        this.currentLampRotZ += (this.targetLampRotZ - this.currentLampRotZ) * lerpFactor;
-        this.sunLampPivot.rotation.z = this.currentLampRotZ;
 
         // 2. Interpolación de intensidad lumínica y color de bombilla
         this.currentLightIntensity += (this.targetLightIntensity - this.currentLightIntensity) * lerpFactor;
@@ -507,25 +517,19 @@ export class SolarPanelExhibit {
 
         this.targetPropellerRpm = info.rpm;
 
-        // Configurar los objetivos cinemáticos suaves
+        // Configurar los objetivos lumínicos
         if (info.id === 0) {
-            // Cenital directo (90°)
-            this.targetLampPos.set(-0.35, 1.05, 0);
-            this.targetLampRotZ = 0;
+            // Fuerte
             this.targetLightIntensity = 4.2;
             this.targetBulbColor.setHex(0xfef08a);
             this.angleNeedle.rotation.x = Math.PI / 2 - Math.PI / 10;
         } else if (info.id === 1) {
-            // Inclinado (45°)
-            this.targetLampPos.set(-0.72, 0.88, 0);
-            this.targetLampRotZ = -Math.PI / 4;
+            // Medio
             this.targetLightIntensity = 2.2;
             this.targetBulbColor.setHex(0xfb923c);
             this.angleNeedle.rotation.x = Math.PI / 4;
         } else {
-            // Sombra / Tapado
-            this.targetLampPos.set(-0.35, 1.05, 0);
-            this.targetLampRotZ = 0;
+            // Apagado
             this.targetLightIntensity = 0.05;
             this.targetBulbColor.setHex(0x334155);
             this.angleNeedle.rotation.x = 0;

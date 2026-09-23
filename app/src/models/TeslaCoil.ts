@@ -14,11 +14,10 @@ export class TeslaCoil {
     // Componentes visuales
     private toroidMesh: THREE.Mesh;
     private isSleeping: boolean = false;
-    private arcCurves: THREE.CatmullRomCurve3[] = [];
-    private arcGeometries: THREE.TubeGeometry[] = [];
-    private arcMeshes: THREE.Mesh[] = [];
+    private arcLines: THREE.Line[] = [];
+    private arcPositions: Float32Array[] = [];
     private sparkSprites: THREE.Sprite[] = [];
-    private fieldRings: THREE.Mesh[] = [];
+    private lastArcUpdate: number = 0;
 
     // Tubo fluorescente inalámbrico
     private tubeCore: THREE.Mesh;
@@ -206,22 +205,24 @@ export class TeslaCoil {
         this.group.add(tubeStand);
         this.interactableMeshes.push(tubeShell);
         
-        // 7. ARCOS DE RAYOS (CatmullRomCurve3)
-        const arcMat = new THREE.MeshBasicMaterial({
-            color: 0x67e8f9,
+        // 7. ARCOS DE RAYOS (THREE.Line)
+        const arcMat = new THREE.LineBasicMaterial({
+            color: 0xccffff,
             transparent: true,
             opacity: 0.95,
             blending: THREE.AdditiveBlending
         });
         
+        const MAX_POINTS = 16;
         for (let i = 0; i < 5; i++) {
-            const curve = new THREE.CatmullRomCurve3(Array(10).fill(new THREE.Vector3()));
-            this.arcCurves.push(curve);
-            const geom = new THREE.TubeGeometry(curve, 32, 0.01, 8, false);
-            this.arcGeometries.push(geom);
-            const mesh = new THREE.Mesh(geom, arcMat);
-            this.arcMeshes.push(mesh);
-            this.group.add(mesh);
+            const geom = new THREE.BufferGeometry();
+            const positions = new Float32Array(MAX_POINTS * 3);
+            geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            
+            const line = new THREE.Line(geom, arcMat);
+            this.arcLines.push(line);
+            this.arcPositions.push(positions);
+            this.group.add(line);
             
             const spriteCanvas = document.createElement('canvas');
             spriteCanvas.width = 32; spriteCanvas.height = 32;
@@ -245,22 +246,7 @@ export class TeslaCoil {
             this.group.add(sprite);
         }
 
-        // 8. ANILLOS DE CAMPO
-        const ringMat = new THREE.MeshBasicMaterial({
-            color: 0x00f0ff,
-            transparent: true,
-            opacity: 0.15,
-            blending: THREE.AdditiveBlending,
-            side: THREE.DoubleSide
-        });
-        [0.6, 0.9, 1.2].forEach(r => {
-            const ring = new THREE.Mesh(new THREE.TorusGeometry(r, 0.008, 8, 32), ringMat);
-            ring.rotation.x = Math.PI / 2;
-            ring.position.y = 0.12 + 0.8 + 0.1;
-            this.fieldRings.push(ring);
-            this.group.add(ring);
-        });
-
+        // Eliminados los anillos de campo a favor de rayos más realistas
     }
 
     public cycleMode(): TeslaModeInfo {
@@ -292,39 +278,43 @@ export class TeslaCoil {
             }
         }
 
-        this.arcMeshes.forEach(m => m.visible = false);
-        this.sparkSprites.forEach(s => s.visible = false);
-        this.fieldRings.forEach(r => r.visible = false);
+        const updateArcs = (time - this.lastArcUpdate > 0.05); // Actualizar rayos cada 50ms (0.05s)
+        if (updateArcs) {
+            this.lastArcUpdate = time;
+        }
 
-        const updateTube = (index: number, pts: THREE.Vector3[]) => {
-            this.arcCurves[index].points = pts;
-            this.arcMeshes[index].geometry.dispose();
-            this.arcMeshes[index].geometry = new THREE.TubeGeometry(this.arcCurves[index], 32, 0.01 + Math.random()*0.005, 8, false);
-            this.arcMeshes[index].visible = true;
+        this.arcLines.forEach(l => l.visible = false);
+        this.sparkSprites.forEach(s => s.visible = false);
+
+        const updateLine = (index: number, start: THREE.Vector3, end: THREE.Vector3, jitter: number) => {
+            if (updateArcs) {
+                const positions = this.arcPositions[index];
+                const steps = 15; // 16 puntos
+                for (let s = 0; s <= steps; s++) {
+                    const t = s / steps;
+                    let x = start.x + (end.x - start.x) * t;
+                    let y = start.y + (end.y - start.y) * t;
+                    let z = start.z + (end.z - start.z) * t;
+                    
+                    if (s > 0 && s < steps) {
+                        x += (Math.random() - 0.5) * jitter;
+                        y += (Math.random() - 0.5) * jitter;
+                        z += (Math.random() - 0.5) * jitter;
+                    }
+                    
+                    positions[s * 3] = x;
+                    positions[s * 3 + 1] = y;
+                    positions[s * 3 + 2] = z;
+                }
+                const attr = this.arcLines[index].geometry.getAttribute('position') as THREE.BufferAttribute;
+                attr.needsUpdate = true;
+            }
+            this.arcLines[index].visible = true;
         };
 
         if (this.currentMode === 0) { // Transmisión Inalámbrica
-            this.fieldRings.forEach((r, i) => {
-                r.visible = true;
-                const s = 1.0 + Math.sin(time * 3 + i * 2) * 0.5 + 0.5;
-                r.scale.set(s, s, s);
-                (r.material as THREE.MeshBasicMaterial).opacity = 0.15 * (1 - (s - 1.0));
-            });
-
             const targetPos = new THREE.Vector3(0.6, 0.4, 0.4);
-            let pts = [];
-            const steps = 9;
-            for (let s = 0; s <= steps; s++) {
-                const t = s / steps;
-                const next = new THREE.Vector3().lerpVectors(startPos, targetPos, t);
-                if (s > 0 && s < steps) {
-                    next.x += (Math.random() - 0.5) * 0.15;
-                    next.y += (Math.random() - 0.5) * 0.15;
-                    next.z += (Math.random() - 0.5) * 0.15;
-                }
-                pts.push(next);
-            }
-            updateTube(0, pts);
+            updateLine(0, startPos, targetPos, 0.2);
             this.sparkSprites[0].position.copy(targetPos);
             this.sparkSprites[0].visible = true;
 
@@ -347,19 +337,7 @@ export class TeslaCoil {
                     Math.sin(angle) * endRadius
                 );
 
-                let pts = [];
-                const steps = 9;
-                for (let s = 0; s <= steps; s++) {
-                    const t = s / steps;
-                    const next = new THREE.Vector3().lerpVectors(startPos, endPos, t);
-                    if (s > 0 && s < steps) {
-                        next.x += (Math.random() - 0.5) * 0.25;
-                        next.y += (Math.random() - 0.5) * 0.25;
-                        next.z += (Math.random() - 0.5) * 0.25;
-                    }
-                    pts.push(next);
-                }
-                updateTube(a, pts);
+                updateLine(a, startPos, endPos, 0.3);
                 this.sparkSprites[a].position.copy(endPos);
                 this.sparkSprites[a].visible = true;
             }
@@ -374,19 +352,7 @@ export class TeslaCoil {
 
         } else { // Descarga Focalizada
             const groundPos = new THREE.Vector3(-0.6, 0.8, -0.4);
-            let pts = [];
-            const steps = 12; // Más detalle en el arco
-            for (let s = 0; s <= steps; s++) {
-                const t = s / steps;
-                const next = new THREE.Vector3().lerpVectors(startPos, groundPos, t);
-                if (s > 0 && s < steps) {
-                    next.x += (Math.random() - 0.5) * 0.2;
-                    next.y += (Math.random() - 0.5) * 0.2;
-                    next.z += (Math.random() - 0.5) * 0.2;
-                }
-                pts.push(next);
-            }
-            updateTube(0, pts);
+            updateLine(0, startPos, groundPos, 0.25);
             this.sparkSprites[0].position.copy(groundPos);
             this.sparkSprites[0].visible = true;
 

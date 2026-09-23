@@ -491,14 +491,77 @@ export class WindTurbineExhibit {
 
         this.group.add(meterGroup);
 
-        // 7. CABLE CONDUCTOR SUBTERRÁNEO DE LA TORRE A LA SUBESTACIÓN
-        const wireCurve = new THREE.CatmullRomCurve3([
-            new THREE.Vector3(turbineBaseX + 0.06, tableH + 0.02, 0),
-            new THREE.Vector3(-0.20, tableH + 0.01, 0.05),
-            new THREE.Vector3(0.08, tableH + 0.02, 0.25)
-        ]);
-        const wire = new THREE.Mesh(new THREE.TubeGeometry(wireCurve, 20, 0.007, 8, false), new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5 }));
-        this.group.add(wire);
+        // 7. POSTES ELÉCTRICOS EN MINIATURA Y CABLES AÉREOS
+        const polesGroup = new THREE.Group();
+        
+        // Postes de madera tratada en miniatura
+        const poleGeom = new THREE.CylinderGeometry(0.004, 0.006, 0.22, 8);
+        const crossbarGeom = new THREE.BoxGeometry(0.06, 0.005, 0.005);
+        const woodPoleMat = new THREE.MeshStandardMaterial({ color: 0x3e2723, roughness: 0.95 }); 
+        const crossbarMat = new THREE.MeshStandardMaterial({ color: 0x374151, roughness: 0.8 });
+
+        const polePositions = [
+            new THREE.Vector3(-0.35, tableH, 0.02),
+            new THREE.Vector3(-0.05, tableH, 0.02)
+        ];
+
+        const poleCrossbars: THREE.Vector3[] = [];
+
+        polePositions.forEach((pos) => {
+            const pole = new THREE.Mesh(poleGeom, woodPoleMat);
+            pole.position.set(pos.x, pos.y + 0.11, pos.z);
+            
+            const crossbar = new THREE.Mesh(crossbarGeom, crossbarMat);
+            crossbar.position.set(0, 0.09, 0); // Casi arriba del poste
+            
+            // Orientar la cruceta para que quede perpendicular a la dirección del cable
+            crossbar.rotation.y = Math.PI / 2;
+            pole.add(crossbar);
+            polesGroup.add(pole);
+
+            // Posición global de la cruceta para colgar los cables
+            poleCrossbars.push(new THREE.Vector3(pos.x, pos.y + 0.20, pos.z));
+        });
+
+        this.group.add(polesGroup);
+
+        // Catenarias (cables con hundimiento natural)
+        const createCatenaryWire = (start: THREE.Vector3, end: THREE.Vector3, sag: number) => {
+            const mid = start.clone().lerp(end, 0.5);
+            mid.y -= sag;
+            const curve = new THREE.CatmullRomCurve3([start, mid, end]);
+            const tube = new THREE.TubeGeometry(curve, 16, 0.0012, 4, false);
+            return new THREE.Mesh(tube, new THREE.MeshBasicMaterial({ color: 0x1c1917 }));
+        };
+
+        // Origen en la base de la torre eólica
+        const towerBaseL = new THREE.Vector3(turbineBaseX + 0.05, tableH + 0.05, -0.015);
+        const towerBaseR = new THREE.Vector3(turbineBaseX + 0.05, tableH + 0.05, 0.015);
+
+        // Destino en la subestación de la ciudad
+        // La ciudad está en x=0.38, tableH, z=0. Subestación en x=-0.25 (local) => 0.13 global
+        const subStationL = new THREE.Vector3(0.13, tableH + 0.08, 0.005);
+        const subStationR = new THREE.Vector3(0.13, tableH + 0.08, 0.035);
+
+        // Poste 1 (izq / der)
+        const p0_L = new THREE.Vector3(poleCrossbars[0].x, poleCrossbars[0].y, poleCrossbars[0].z - 0.025);
+        const p0_R = new THREE.Vector3(poleCrossbars[0].x, poleCrossbars[0].y, poleCrossbars[0].z + 0.025);
+
+        // Poste 2 (izq / der)
+        const p1_L = new THREE.Vector3(poleCrossbars[1].x, poleCrossbars[1].y, poleCrossbars[1].z - 0.025);
+        const p1_R = new THREE.Vector3(poleCrossbars[1].x, poleCrossbars[1].y, poleCrossbars[1].z + 0.025);
+
+        // Tramo 1: Torre -> Poste 1
+        this.group.add(createCatenaryWire(towerBaseL, p0_L, 0.03));
+        this.group.add(createCatenaryWire(towerBaseR, p0_R, 0.03));
+
+        // Tramo 2: Poste 1 -> Poste 2
+        this.group.add(createCatenaryWire(p0_L, p1_L, 0.035));
+        this.group.add(createCatenaryWire(p0_R, p1_R, 0.035));
+
+        // Tramo 3: Poste 2 -> Subestación
+        this.group.add(createCatenaryWire(p1_L, subStationL, 0.025));
+        this.group.add(createCatenaryWire(p1_R, subStationR, 0.025));
     }
 
     public setSleep(sleep: boolean): void {

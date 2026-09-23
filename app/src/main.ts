@@ -28,6 +28,10 @@ scene.background = new THREE.Color(0x87CEEB); // Celeste cielo de mediodía
 scene.fog = new THREE.FogExp2(0xd0e8f8, 0.003); // Soft atmospheric depth
 
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+if (isTouchDevice) {
+    camera.fov = 90;
+    camera.updateProjectionMatrix();
+}
 // Spawn del jugador a escala humana (1.68m de altura)
 camera.position.set(0, 1.68, 4.5);
 camera.rotation.order = 'YXZ';
@@ -46,6 +50,7 @@ renderer.shadowMap.type = THREE.PCFShadowMap;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.15;
+renderer.domElement.id = 'game-canvas';
 document.getElementById('app')!.appendChild(renderer.domElement);
 
 const hud = new HUD();
@@ -107,6 +112,13 @@ controls.addEventListener('unlock', () => {
     }
 });
 
+document.addEventListener('pointerlockchange', () => {
+    if (document.pointerLockElement === document.body) {
+        startScreen.classList.add('hidden');
+        hud.hidePauseModal();
+    }
+});
+
 // Manejo de rechazo de PointerLock (cooldown del navegador tras presionar Esc)
 document.addEventListener('pointerlockerror', () => {
     if (gameStarted && !hud.isModalOpen && !isTouchDevice) {
@@ -118,14 +130,14 @@ document.addEventListener('pointerlockerror', () => {
 
 // Permitir reanudar haciendo clic en el canvas 3D si el mouse quedó liberado
 renderer.domElement.addEventListener('click', () => {
-    if (gameStarted && !controls.isLocked && !hud.isModalOpen && !isTouchDevice) {
+    if (gameStarted && !document.pointerLockElement && !hud.isModalOpen && !isTouchDevice) {
         controls.lock();
     }
 });
 
 // Permitir reanudar presionando Barra Espaciadora o Enter en la pantalla de pausa
 window.addEventListener('keydown', (e) => {
-    if (gameStarted && !controls.isLocked && !hud.isModalOpen && !isTouchDevice) {
+    if (gameStarted && !document.pointerLockElement && !hud.isModalOpen && !isTouchDevice) {
         if (e.code === 'Space' || e.code === 'Enter') {
             e.preventDefault();
             controls.lock();
@@ -135,7 +147,7 @@ window.addEventListener('keydown', (e) => {
 
 // Sincronización automática de modales con pointer lock
 hud.onOpenModal = () => {
-    if (controls.isLocked) {
+    if (document.pointerLockElement === document.body) {
         controls.unlock();
     }
 };
@@ -504,7 +516,7 @@ function animate() {
             inputZ /= inputLen;
         }
 
-        const speed = isSprinting ? 70.0 : 36.0; // Velocidades ergonómicas
+        const speed = isSprinting ? 84.0 : 43.0; // Velocidades ergonómicas
         
         if (Math.abs(inputZ) > 0.01) velocity.z -= inputZ * speed * delta;
         if (Math.abs(inputX) > 0.01) velocity.x -= inputX * speed * delta;

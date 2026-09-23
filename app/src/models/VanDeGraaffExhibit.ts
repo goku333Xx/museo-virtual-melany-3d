@@ -11,7 +11,9 @@ export interface VanDeGraaffModeInfo {
 export class VanDeGraaffExhibit {
     private group: THREE.Group;
     private beltMesh: THREE.Mesh;
-    private ribbons: THREE.Mesh[] = [];
+    private hairsData: {mesh: THREE.Mesh, qCharged: THREE.Quaternion, qDischarged: THREE.Quaternion}[] = [];
+    private coronaMesh!: THREE.Mesh;
+    private innerCoronaMesh!: THREE.Mesh;
     private sparkLine: THREE.Line;
     private sparkPositions = new Float32Array(9 * 3);
     private sparkPosAttr: THREE.BufferAttribute;
@@ -19,14 +21,11 @@ export class VanDeGraaffExhibit {
     private interactableMeshes: THREE.Object3D[] = [];
     
     private isSleeping = false;
-    private headGroup: THREE.Group;
-    private hairCylinders: THREE.Mesh[] = [];
     private hairLift: number = 0;
 
     private currentMode: number = 0;
     private beltOffset: number = 0;
-    private ribbonLift: number = 1.0;
-    private targetRibbonLift: number = 1.0;
+    private targetHairLift: number = 1.0;
 
     private readonly modes: VanDeGraaffModeInfo[] = [
         {
@@ -205,33 +204,83 @@ export class VanDeGraaffExhibit {
         this.group.add(dome);
         this.interactableMeshes.push(dome);
 
-        // 6. CINTAS CONDUCTORAS LEVITANTES (REPULSIÓN ELECTRÓNICA)
-        const ribbonMat = new THREE.MeshStandardMaterial({
-            color: 0x93c5fd,
-            metalness: 0.8,
-            roughness: 0.3,
-            side: THREE.DoubleSide
+        // 6. INTENSE VIOLET CORONA DISCHARGE
+        const coronaGeom = new THREE.SphereGeometry(domeRadius * 1.15, 32, 32);
+        const coronaMat = new THREE.MeshBasicMaterial({
+            color: 0x9333ea,
+            transparent: true,
+            opacity: 0.0, // Will be animated based on charge
+            blending: THREE.AdditiveBlending,
+            side: THREE.BackSide,
+            depthWrite: false
         });
+        this.coronaMesh = new THREE.Mesh(coronaGeom, coronaMat);
+        this.coronaMesh.position.set(genX, domeY, 0);
+        this.group.add(this.coronaMesh);
+        
+        const innerCoronaGeom = new THREE.SphereGeometry(domeRadius * 1.05, 32, 32);
+        const innerCoronaMat = new THREE.MeshBasicMaterial({
+            color: 0xd8b4fe,
+            transparent: true,
+            opacity: 0.0,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+        this.innerCoronaMesh = new THREE.Mesh(innerCoronaGeom, innerCoronaMat);
+        this.innerCoronaMesh.position.set(genX, domeY, 0);
+        this.group.add(this.innerCoronaMesh);
 
-        const numRibbons = 8;
-        for (let i = 0; i < numRibbons; i++) {
-            const angle = (i * Math.PI * 2) / numRibbons;
-            const rGeom = new THREE.PlaneGeometry(0.025, 0.35, 1, 8);
-            rGeom.translate(0, 0.175, 0); // Pivote en la base de la cinta
+        // 7. ELECTROSTATIC HAIRS (INTENSE & REALISTIC)
+        const hairMat = new THREE.MeshStandardMaterial({
+            color: 0xf8fafc,
+            emissive: 0x8b5cf6,
+            emissiveIntensity: 0.0, // Glow when charged
+            roughness: 0.3,
+            metalness: 0.2
+        });
+        const numHairs = 150;
+        
+        // Use a golden spiral distribution for even placement on the upper hemisphere
+        const phiStep = Math.PI * (3 - Math.sqrt(5)); // golden angle
+        
+        for (let i = 0; i < numHairs; i++) {
+            // y goes from 1 to 0 (top half of sphere)
+            const y = 1 - (i / (numHairs - 1)); 
+            const radiusAtY = Math.sqrt(1 - y * y);
+            const theta = phiStep * i;
 
-            const ribbon = new THREE.Mesh(rGeom, ribbonMat);
-            // Anclada en el polo superior de la cúpula
-            ribbon.position.set(
-                genX + Math.cos(angle) * 0.08,
-                domeY + domeRadius * 0.95,
-                Math.sin(angle) * 0.08
+            const surfaceX = Math.cos(theta) * radiusAtY;
+            const surfaceY = y;
+            const surfaceZ = Math.sin(theta) * radiusAtY;
+            
+            const normal = new THREE.Vector3(surfaceX, surfaceY, surfaceZ);
+
+            // Tapered hair strand
+            const hairGeo = new THREE.CylinderGeometry(0.001, 0.003, 0.35, 4);
+            hairGeo.translate(0, 0.175, 0); // Pivot at base
+            const hair = new THREE.Mesh(hairGeo, hairMat);
+            
+            hair.position.set(
+                genX + normal.x * domeRadius,
+                domeY + normal.y * domeRadius,
+                normal.z * domeRadius
             );
-            ribbon.rotation.y = angle;
-            this.ribbons.push(ribbon);
-            this.group.add(ribbon);
+
+            // Charged orientation (pointing outwards along normal)
+            const up = new THREE.Vector3(0, 1, 0);
+            const qCharged = new THREE.Quaternion().setFromUnitVectors(up, normal);
+
+            // Discharged orientation (hanging down with slight outward angle)
+            const downAndOut = new THREE.Vector3(normal.x * 0.1, -1, normal.z * 0.1).normalize();
+            const qDischarged = new THREE.Quaternion().setFromUnitVectors(up, downAndOut);
+
+            hair.quaternion.copy(qDischarged); // Start uncharged
+
+            this.group.add(hair);
+            this.hairsData.push({ mesh: hair, qCharged, qDischarged });
         }
 
-        // 7. ESFERA DE DESCARGA SECUNDARIA A TIERRA (X = +0.35)
+        // 8. ESFERA DE DESCARGA SECUNDARIA A TIERRA (X = +0.35)
         const wandX = 0.35;
         const wandY = domeY;
 
@@ -261,64 +310,7 @@ export class VanDeGraaffExhibit {
         const groundWire = new THREE.Mesh(new THREE.TubeGeometry(groundWireCurve, 20, 0.008, 8, false), groundWireMat);
         this.group.add(groundWire);
 
-        
-        // 7.5 KAWAII ROBOT WITH STANDING HAIR
-        this.headGroup = new THREE.Group();
-        this.headGroup.position.set(genX - 0.45, domeY - 0.1, 0);
-        
-        const stick = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.015, 0.015, 0.6, 8),
-            new THREE.MeshStandardMaterial({ color: 0x475569 })
-        );
-        stick.position.set(0, -0.3, 0);
-        this.headGroup.add(stick);
-
-        const robotHead = new THREE.Mesh(
-            new THREE.SphereGeometry(0.13, 32, 32),
-            new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.9, roughness: 0.2 })
-        );
-        this.headGroup.add(robotHead);
-        
-        const visor = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.12, 0.12, 0.08, 32, 1, false, Math.PI/2 - 0.5, 1.0),
-            new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.8, roughness: 0.2 })
-        );
-        visor.rotation.y = Math.PI / 2;
-        this.headGroup.add(visor);
-
-        const eyeGeom = new THREE.CircleGeometry(0.02, 16);
-        const eyeMat = new THREE.MeshBasicMaterial({ color: 0x0ea5e9 });
-        const eyeL = new THREE.Mesh(eyeGeom, eyeMat);
-        eyeL.position.set(-0.04, 0, 0.118);
-        eyeL.rotation.y = -0.2;
-        const eyeR = new THREE.Mesh(eyeGeom, eyeMat);
-        eyeR.position.set(0.04, 0, 0.118);
-        eyeR.rotation.y = 0.2;
-        this.headGroup.add(eyeL, eyeR);
-
-        const hairMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 1.0, roughness: 0.1 });
-        const numHairs = 50;
-        for(let i=0; i<numHairs; i++) {
-            const hairGeo = new THREE.CylinderGeometry(0.0015, 0.0015, 0.1, 4);
-            hairGeo.translate(0, 0.05, 0);
-            const hair = new THREE.Mesh(hairGeo, hairMat);
-            
-            const pivot = new THREE.Group();
-            const phi = Math.random() * (Math.PI / 2.5); // Top half
-            const theta = Math.random() * Math.PI * 2;
-            
-            pivot.rotation.set(phi, theta, 0);
-            pivot.position.setFromSphericalCoords(0.13, phi, theta);
-            
-            hair.rotation.x = Math.PI / 2; // Hanging down initially
-            
-            pivot.add(hair);
-            this.hairCylinders.push(hair);
-            this.headGroup.add(pivot);
-        }
-        this.group.add(this.headGroup);
-
-        // 8. ARCOS DE CHISPAS PROCEDURALES (DESCARGA ENTRE ESFERAS)
+        // 9. ARCOS DE CHISPAS PROCEDURALES (DESCARGA ENTRE ESFERAS)
         const sparkGeom = new THREE.BufferGeometry();
         this.sparkPosAttr = new THREE.BufferAttribute(this.sparkPositions, 3);
         sparkGeom.setAttribute('position', this.sparkPosAttr);
@@ -347,25 +339,28 @@ export class VanDeGraaffExhibit {
             }
         }
 
-        // Interpolación de levitación de las cintas
-        this.ribbonLift += (this.targetRibbonLift - this.ribbonLift) * Math.min(1.0, delta * 3.0);
+        // Interpolación de levitación de pelos y brillo de corona
+        this.hairLift += (this.targetHairLift - this.hairLift) * Math.min(1.0, delta * 3.0);
 
-        this.ribbons.forEach((ribbon, idx) => {
-            const angle = (idx * Math.PI * 2) / this.ribbons.length;
-            const flutter = Math.sin(time * 8.0 + idx) * 0.06 * this.ribbonLift;
+        // Actualizar intensidad de la corona violeta
+        (this.coronaMesh.material as THREE.MeshBasicMaterial).opacity = this.hairLift * 0.4 + (Math.random() * 0.1 * this.hairLift);
+        (this.innerCoronaMesh.material as THREE.MeshBasicMaterial).opacity = this.hairLift * 0.7 + (Math.random() * 0.15 * this.hairLift);
 
-            // Cuando está cargada, la cinta se inclina hacia afuera desafiando la gravedad
-            const liftAngle = (Math.PI / 2.3) * this.ribbonLift + flutter;
-            ribbon.rotation.z = Math.cos(angle) * liftAngle;
-            ribbon.rotation.x = -Math.sin(angle) * liftAngle;
-        });
-
-        
-        // Interpolación de pelo
-        const targetHairRot = (this.currentMode === 0 || this.currentMode === 1) ? 1.0 : 0.0;
-        this.hairLift += (targetHairRot - this.hairLift) * Math.min(1.0, delta * 3.0);
-        this.hairCylinders.forEach(hair => {
-            hair.rotation.x = THREE.MathUtils.lerp(Math.PI/2, 0, this.hairLift);
+        // Animar pelos electrizados
+        this.hairsData.forEach((hairData, idx) => {
+            // Interpolar desde estado caído a erizado usando slerp
+            hairData.mesh.quaternion.copy(hairData.qDischarged).slerp(hairData.qCharged, this.hairLift);
+            
+            // Si hay carga, los pelos vibran y brillan
+            if (this.hairLift > 0.01) {
+                const flutter = Math.sin(time * 20.0 + idx * 3.14) * 0.08 * this.hairLift;
+                hairData.mesh.rotateX(flutter);
+                hairData.mesh.rotateZ(flutter * 0.7);
+                
+                (hairData.mesh.material as THREE.MeshStandardMaterial).emissiveIntensity = this.hairLift * 2.5;
+            } else {
+                (hairData.mesh.material as THREE.MeshStandardMaterial).emissiveIntensity = 0;
+            }
         });
 
         // Simulación de chispas en modo de descarga
@@ -411,11 +406,11 @@ export class VanDeGraaffExhibit {
         const info = this.modes[this.currentMode];
 
         if (info.id === 0) {
-            this.targetRibbonLift = 1.0;
+            this.targetHairLift = 1.0;
         } else if (info.id === 1) {
-            this.targetRibbonLift = 0.85;
+            this.targetHairLift = 0.85;
         } else {
-            this.targetRibbonLift = 0.05; // Cintas caen por gravedad
+            this.targetHairLift = 0.0; // Pelos caen por gravedad
         }
 
         return info;

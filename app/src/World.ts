@@ -61,7 +61,6 @@ export class World {
     private doorBarriers: THREE.Mesh[] = [];
     private lastDoorWarningIdx?: number;
     private currentRoomIdx: number | null = null;
-    private roomEntryTime: number = 0;
 
     constructor(scene: THREE.Scene, hud: HUD) {
         this.scene = scene;
@@ -670,13 +669,13 @@ export class World {
                 const currentRoom = getCurrentPlayerRoom(this.lastPlayerPos);
                 const nextRoom = getNextIncompleteRoom(currentRoom ? currentRoom.id : undefined);
                 const isAllCompleted = this.hud.getCompletedCount() >= 7;
-                const timeInRoom = (performance.now() * 0.001) - this.roomEntryTime;
 
                 let speech: string;
                 let btn1Label = '¡Sí, vamos!';
                 let btn2Label = 'Ver Mapa';
                 let btn1Action = () => {
-                    this.robotGuide.startGuiding(nextRoom.id, nextRoom.name, nextRoom.pedestalPos);
+                    const isNextCompleted = this.hud.isMissionCompleted(nextRoom.id);
+                    this.robotGuide.startGuiding(nextRoom.id, nextRoom.name, nextRoom.pedestalPos, isNextCompleted);
                     this.hud.showAchievementToast('¡Mel-Bot te Guía! 🚀', `Seguí a Mel-Bot volando hacia la ${nextRoom.name}`, '🤖');
                 };
 
@@ -684,34 +683,38 @@ export class World {
                     speech = `🎉 ¡FELICITACIONES, <b>${this.hud.getStudentName()}</b>! 🏆<br><br>¡Ya completaste las 7 salas temáticas y sos un <b>Gran Maestro de la Energía Universal</b>!<br><br>¿Querés que volemos juntos a la <b>Galería Óptica</b> a ver el prisma de Newton o preferís ver tu diploma en el Diario? 🌈`;
                     btn1Label = 'Ir a Óptica';
                 } else if (currentRoom && !this.hud.isMissionCompleted(currentRoom.id)) {
-                    if (timeInRoom > 60) {
-                        speech = `¿Necesitás una pista, <b>${this.hud.getStudentName()}</b>? 🤔 ¡Probá interactuar con [E] y después hacé el desafío con [R]! ¡Falta re poco!`;
-                    } else {
-                        speech = `¡Ya estamos acá en la <b>${currentRoom.name}</b>, <b>${this.hud.getStudentName()}</b>! 🔬<br><br>Tu misión en esta sala es interactuar con el experimento (tecla [E]) y luego presionar el botón 🏆 <b>[DESAFÍO CIENTÍFICO]</b> (tecla [R]) para responder la pregunta y ganar tu medalla. ¡No te vayas sin completarla!`;
-                    }
+                    speech = `¡Todavía no completaste esta sala, <b>${this.hud.getStudentName()}</b>! 🔬<br><br>Tu misión es interactuar con el experimento (tecla [E]) y luego presionar el botón 🏆 <b>[DESAFÍO CIENTÍFICO]</b> (tecla [R]) para responder la pregunta y ganar tu medalla. ¡Terminá para avanzar!`;
                     btn1Label = '¡Quiero investigar!';
                     btn1Action = () => {
                         // solo cierra el diálogo
                     };
                 } else if (currentRoom && this.hud.isMissionCompleted(currentRoom.id)) {
-                    speech = `¡Genial, <b>${this.hud.getStudentName()}</b>! 🌟 Ya ganaste la medalla de la <b>${currentRoom.name}</b>.<br><br>¿Volamos juntos a tu próxima misión en la <b>${nextRoom.name}</b>? ¡Seguime de cerca mientras te abro paso! 🚀`;
+                    speech = `¡Ya completaste esta sala! Vamos a la siguiente.`;
+                    btn1Label = `Guíame a la ${nextRoom.name}`;
                 } else {
-                    speech = `¡Hola, <b>${this.hud.getStudentName()}</b>! 🤖 Soy Mel-Bot, tu asistente científico de expedición.<br><br>¿Querés que te guíe volando a la <b>${nextRoom.name}</b> para continuar investigando? ¡Seguime volando! 🚀`;
+                    speech = `Soy Mel-BOT, tu asistente científico de expedición. 🤖<br><br>¿Querés que te guíe volando a la <b>${nextRoom.name}</b> para continuar investigando? ¡Seguime volando! 🚀`;
+                    btn1Label = `Guíame a la ${nextRoom.name}`;
                 }
 
                 this.hud.openMelDialog(
                     speech,
                     btn1Action,
                     () => {
-                        this.hud.openJournal();
+                        this.hud.openMapModal();
                     },
                     [btn1Label, btn2Label]
                 );
             },
             onChallenge: () => {
                 const currentRoom = getCurrentPlayerRoom(this.lastPlayerPos);
+                // Si la sala actual no está completada, no permitir usar onChallenge para guiar a la siguiente
+                if (currentRoom && !this.hud.isMissionCompleted(currentRoom.id)) {
+                    this.hud.showAchievementToast('¡Atención! 🛑', `Primero debés completar la ${currentRoom.name}.`);
+                    return;
+                }
                 const nextRoom = getNextIncompleteRoom(currentRoom ? currentRoom.id : undefined);
-                this.robotGuide.startGuiding(nextRoom.id, nextRoom.name, nextRoom.pedestalPos);
+                const isNextCompleted = this.hud.isMissionCompleted(nextRoom.id);
+                this.robotGuide.startGuiding(nextRoom.id, nextRoom.name, nextRoom.pedestalPos, isNextCompleted);
                 this.hud.showAchievementToast('¡SÍGUEME! 🚀', `¡Mel-Bot vuela guiándote a la ${nextRoom.name}!`, '🚀');
             }
         };
@@ -762,7 +765,6 @@ export class World {
 
             if (activeRoomIdx !== this.currentRoomIdx) {
                 this.currentRoomIdx = activeRoomIdx;
-                this.roomEntryTime = time;
             }
 
             // Check if player is near a locked door

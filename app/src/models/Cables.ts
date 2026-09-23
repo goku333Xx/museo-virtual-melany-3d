@@ -4,18 +4,20 @@ export class EnergyCables {
     private group: THREE.Group;
     private curve: THREE.CatmullRomCurve3;
     private electrons: { mesh: THREE.Mesh, offset: number }[] = [];
-    private speed: number = 0.2; // Adjust speed of electrons here
+    private speed: number = 0.4; // Faster educational speed
     private isSleeping = false;
 
     constructor(points: THREE.Vector3[], color: number = 0x18181b) {
         this.group = new THREE.Group();
 
-        // Create the CatmullRomCurve3 for the hanging cables
-        this.curve = new THREE.CatmullRomCurve3(points, false, 'chordal', 0.5);
+        // Prevent clipping through the table (Y minimum ~0.08)
+        const adjustedPoints = points.map(p => new THREE.Vector3(p.x, Math.max(p.y, 0.08), p.z));
 
-        // Create the cable tube with realistic shiny plastic insulation
-        // Increased radius for heavy-duty jumper cable look
-        const tubeGeometry = new THREE.TubeGeometry(this.curve, 64, 0.02, 12, false);
+        // Create the CatmullRomCurve3 for the hanging cables
+        this.curve = new THREE.CatmullRomCurve3(adjustedPoints, false, 'chordal', 0.5);
+
+        // Make them realistically thin: radius 0.004 instead of 0.02
+        const tubeGeometry = new THREE.TubeGeometry(this.curve, 64, 0.004, 8, false);
         const tubeMaterial = new THREE.MeshStandardMaterial({
             color: color,
             metalness: 0.3,
@@ -27,22 +29,23 @@ export class EnergyCables {
         const cableMesh = new THREE.Mesh(tubeGeometry, tubeMaterial);
         this.group.add(cableMesh);
 
-        // Setup the glowing spheres (electrons) - puro brillo emissivo sin 5 PointLights pesadas
-        
-        const numElectrons = 6;
+        // Setup the glowing spheres (electrons)
+        const numElectrons = 12;
         
         for (let i = 0; i < numElectrons; i++) {
             const eGroup = new THREE.Group();
             
-            const sizes = [0.016, 0.012, 0.008];
-            const opacities = [1.0, 0.6, 0.3];
-            const offsets = [0, -0.02, -0.04];
+            const sizes = [0.010, 0.007, 0.004];
+            const opacities = [1.0, 0.8, 0.4];
+            const offsets = [0, -0.015, -0.03];
             
             sizes.forEach((size, idx) => {
                 const mat = new THREE.MeshBasicMaterial({ 
-                    color: 0x67e8f9, 
+                    color: 0xffffff, 
                     transparent: true, 
-                    opacity: opacities[idx] 
+                    opacity: opacities[idx],
+                    blending: THREE.AdditiveBlending,
+                    depthWrite: false
                 });
                 const mesh = new THREE.Mesh(new THREE.SphereGeometry(size, 8, 8), mat);
                 mesh.userData.curveOffset = offsets[idx];
@@ -57,18 +60,10 @@ export class EnergyCables {
         }
     }
 
-    /**
-     * Returns the THREE.Group containing the cable and electrons.
-     */
     public getMesh(): THREE.Group {
         return this.group;
     }
 
-    /**
-     * Updates the position of the electrons along the cable.
-     * @param time The elapsed time (can be from requestAnimationFrame or a clock in seconds).
-     * @param isOn Whether the energy flow is active.
-     */
     public setSleep(sleep: boolean): void {
         this.isSleeping = sleep;
     }
@@ -76,15 +71,11 @@ export class EnergyCables {
     public update(time: number, isOn: boolean): void {
         if (this.isSleeping) return;
         this.electrons.forEach((electron) => {
-            // Hide the electrons if the machine is off
             electron.mesh.visible = isOn;
-
             if (isOn) {
-                // Calculate position along the curve based on time and the electron's offset
                 let progress = (time * this.speed + electron.offset) % 1;
-                if (progress < 0) progress += 1; // Ensure progress stays positive if time happens to be negative
+                if (progress < 0) progress += 1;
 
-                // Update position
                 electron.mesh.children.forEach(child => {
                     let o = child.userData.curveOffset || 0;
                     let p = progress + o;

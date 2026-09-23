@@ -39,6 +39,10 @@ html, body {
   display: block;
 }
 
+#game-canvas {
+  touch-action: none;
+}
+
 /* Base Glassmorphism Panel */
 .panel {
   background: var(--card-bg);

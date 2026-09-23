@@ -16,6 +16,8 @@ export class RobotGuide {
     private eyeCanvas: HTMLCanvasElement;
     private eyeCtx: CanvasRenderingContext2D;
     private eyeTexture: THREE.CanvasTexture;
+    private leftEyebrow: THREE.Mesh;
+    private rightEyebrow: THREE.Mesh;
 
     private leftArmGroup: THREE.Group;
     private rightArmGroup: THREE.Group;
@@ -40,7 +42,7 @@ export class RobotGuide {
     private targetDestination: THREE.Vector3 = new THREE.Vector3();
     private waypoints: THREE.Vector3[] = [];
     private currentWaypointIdx: number = 0;
-    private flightSpeed: number = 4.8; // Metros por segundo
+    private flightSpeed: number = 3.8; // Metros por segundo
 
     // Emociones y parpadeo optimizado
     private currentEmotion: RobotEmotion = 'neutral';
@@ -73,32 +75,29 @@ export class RobotGuide {
         ring.rotation.x = Math.PI / 2;
         this.group.add(ring);
 
-        // 2. Visor / Pantalla digital curva con ojos animados
-        const visorGeo = new THREE.SphereGeometry(0.21, 24, 16, 0, Math.PI, 0, Math.PI / 2);
-        visorGeo.rotateX(Math.PI / 2);
-        const visorMat = new THREE.MeshStandardMaterial({
-            color: 0x07111e,
-            roughness: 0.2,
-            metalness: 0.85
-        });
-        const visor = new THREE.Mesh(visorGeo, visorMat);
-        visor.position.set(0, 0.04, 0.09);
-        visor.scale.set(1.02, 0.65, 1.02);
-        this.group.add(visor);
-
         // Canvas dinámico para ojos LED de Mel-Bot (256x128 para alta definición)
         this.eyeCanvas = document.createElement('canvas');
         this.eyeCanvas.width = 256;
         this.eyeCanvas.height = 128;
         this.eyeCtx = this.eyeCanvas.getContext('2d')!;
         this.eyeTexture = new THREE.CanvasTexture(this.eyeCanvas);
+
+        const eyebrowGeo = new THREE.CapsuleGeometry(0.008, 0.04, 4, 8);
+        eyebrowGeo.rotateZ(Math.PI / 2); // horizontal
+        const eyebrowMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4 });
+        this.leftEyebrow = new THREE.Mesh(eyebrowGeo, eyebrowMat);
+        this.rightEyebrow = new THREE.Mesh(eyebrowGeo, eyebrowMat);
+        this.leftEyebrow.position.set(-0.06, 0.14, 0.25);
+        this.rightEyebrow.position.set(0.06, 0.14, 0.25);
+        this.group.add(this.leftEyebrow);
+        this.group.add(this.rightEyebrow);
+
         this.renderEyes('neutral');
 
         const eyeGeo = new THREE.PlaneGeometry(0.26, 0.13);
         const eyeMat = new THREE.MeshBasicMaterial({
             map: this.eyeTexture,
-            transparent: true,
-            blending: THREE.AdditiveBlending
+            transparent: true
         });
         this.eyeMesh = new THREE.Mesh(eyeGeo, eyeMat);
         this.eyeMesh.position.set(0, 0.04, 0.270);
@@ -124,31 +123,66 @@ export class RobotGuide {
         this.group.add(this.antennaBeacon);
 
         // 4. Brazos flotantes magnéticos articulados (Saludan y Señalan)
-        const armGeo = new THREE.CylinderGeometry(0.032, 0.024, 0.14, 16);
+        const upperArmGeo = new THREE.CylinderGeometry(0.026, 0.022, 0.11, 16);
+        const lowerArmGeo = new THREE.CylinderGeometry(0.022, 0.018, 0.11, 16);
         const armMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.2, metalness: 0.3 });
+        const jointGeo = new THREE.SphereGeometry(0.028, 16, 16);
+        const jointMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.4, metalness: 0.6 });
         const handGeo = new THREE.SphereGeometry(0.032, 16, 16);
         const handMat = new THREE.MeshStandardMaterial({ color: 0x00f0ff, roughness: 0.1, metalness: 0.8 });
 
         // Brazo izquierdo
         this.leftArmGroup = new THREE.Group();
         this.leftArmGroup.position.set(-0.32, 0.02, 0);
-        const leftArm = new THREE.Mesh(armGeo, armMat);
-        leftArm.position.y = -0.06;
-        this.leftArmGroup.add(leftArm);
-        const leftHand = new THREE.Mesh(handGeo, handMat);
-        leftHand.position.y = -0.13;
-        this.leftArmGroup.add(leftHand);
+        
+        const lShoulder = new THREE.Mesh(jointGeo, jointMat);
+        this.leftArmGroup.add(lShoulder);
+        const lUpper = new THREE.Mesh(upperArmGeo, armMat);
+        lUpper.position.y = -0.055;
+        this.leftArmGroup.add(lUpper);
+        const lElbow = new THREE.Mesh(jointGeo, jointMat);
+        lElbow.position.y = -0.11;
+        this.leftArmGroup.add(lElbow);
+        
+        const lLowerGroup = new THREE.Group();
+        lLowerGroup.position.y = -0.11;
+        lLowerGroup.rotation.z = -0.15;
+        lLowerGroup.rotation.x = -0.1;
+        this.leftArmGroup.add(lLowerGroup);
+        const lLower = new THREE.Mesh(lowerArmGeo, armMat);
+        lLower.position.y = -0.055;
+        lLowerGroup.add(lLower);
+        const lHand = new THREE.Mesh(handGeo, handMat);
+        lHand.position.y = -0.11;
+        lLowerGroup.add(lHand);
+        
         this.group.add(this.leftArmGroup);
 
         // Brazo derecho
         this.rightArmGroup = new THREE.Group();
         this.rightArmGroup.position.set(0.32, 0.02, 0);
-        const rightArm = new THREE.Mesh(armGeo, armMat);
-        rightArm.position.y = -0.06;
-        this.rightArmGroup.add(rightArm);
-        const rightHand = new THREE.Mesh(handGeo, handMat);
-        rightHand.position.y = -0.13;
-        this.rightArmGroup.add(rightHand);
+        
+        const rShoulder = new THREE.Mesh(jointGeo, jointMat);
+        this.rightArmGroup.add(rShoulder);
+        const rUpper = new THREE.Mesh(upperArmGeo, armMat);
+        rUpper.position.y = -0.055;
+        this.rightArmGroup.add(rUpper);
+        const rElbow = new THREE.Mesh(jointGeo, jointMat);
+        rElbow.position.y = -0.11;
+        this.rightArmGroup.add(rElbow);
+        
+        const rLowerGroup = new THREE.Group();
+        rLowerGroup.position.y = -0.11;
+        rLowerGroup.rotation.z = 0.15;
+        rLowerGroup.rotation.x = -0.1;
+        this.rightArmGroup.add(rLowerGroup);
+        const rLower = new THREE.Mesh(lowerArmGeo, armMat);
+        rLower.position.y = -0.055;
+        rLowerGroup.add(rLower);
+        const rHand = new THREE.Mesh(handGeo, handMat);
+        rHand.position.y = -0.11;
+        rLowerGroup.add(rHand);
+        
         this.group.add(this.rightArmGroup);
 
         // 5. Tobera de propulsión inferior iónica con resplandor
@@ -175,8 +209,8 @@ export class RobotGuide {
 
         // 6. Bocadillo de diálogo 3D flotante estilo Comic / Chibi (Sprite Billboard)
         this.speechCanvas = document.createElement('canvas');
-        this.speechCanvas.width = 512;
-        this.speechCanvas.height = 140;
+        this.speechCanvas.width = 1024;
+        this.speechCanvas.height = 280;
         this.speechCtx = this.speechCanvas.getContext('2d')!;
         this.speechTexture = new THREE.CanvasTexture(this.speechCanvas);
 
@@ -190,7 +224,7 @@ export class RobotGuide {
         this.speechBubbleSprite.scale.set(1.4, 0.38, 1.0);
         this.group.add(this.speechBubbleSprite);
 
-        this.updateSpeechBubble('💬 ¡Hola! Tócame para ayudarte', '#00f0ff');
+        this.updateSpeechBubble('¡Hola! Tócame para ayudarte', '#00f0ff');
         this.refreshTips();
     }
 
@@ -205,6 +239,31 @@ export class RobotGuide {
         const eyeLX = 76;
         const eyeRX = 180;
         const eyeY = 64;
+
+        if (this.leftEyebrow && this.rightEyebrow) {
+            this.leftEyebrow.position.y = 0.14;
+            this.rightEyebrow.position.y = 0.14;
+            this.leftEyebrow.rotation.z = 0;
+            this.rightEyebrow.rotation.z = 0;
+
+            if (emotion === 'happy') {
+                this.leftEyebrow.position.y = 0.16;
+                this.rightEyebrow.position.y = 0.16;
+                this.leftEyebrow.rotation.z = 0.2;
+                this.rightEyebrow.rotation.z = -0.2;
+            } else if (emotion === 'pointing' || emotion === 'guiding') {
+                this.leftEyebrow.rotation.z = -0.3;
+                this.rightEyebrow.rotation.z = 0.3;
+                this.leftEyebrow.position.y = 0.12;
+                this.rightEyebrow.position.y = 0.12;
+            } else if (emotion === 'celebrate') {
+                this.leftEyebrow.position.y = 0.17;
+                this.rightEyebrow.position.y = 0.17;
+            } else if (emotion === 'wink') {
+                this.leftEyebrow.position.y = 0.16;
+                this.rightEyebrow.position.y = 0.12;
+            }
+        }
 
         // Mejillas sonrosadas Kawaii (Blush) que brillan suavemente
         const drawBlush = () => {
@@ -339,7 +398,7 @@ export class RobotGuide {
             ctx.arc(eyeRX + 12, eyeY - 4, 8, 0, Math.PI * 2);
             ctx.fill();
 
-            // Cejas en ángulo
+            // Cejas en ángulo dibujadas (estas son extras a las meshes, se pueden dejar o quitar. Las dejo)
             ctx.strokeStyle = '#e0f2fe';
             ctx.lineWidth = 4;
             ctx.beginPath();
@@ -402,11 +461,11 @@ export class RobotGuide {
         ctx.strokeStyle = accentColor;
         ctx.lineWidth = 5;
 
-        const r = 24;
-        const padX = 16;
-        const padY = 12;
+        const r = 48;
+        const padX = 32;
+        const padY = 24;
         const boxW = w - padX * 2;
-        const boxH = h - padY * 2 - 20;
+        const boxH = h - padY * 2 - 40;
 
         ctx.beginPath();
         ctx.roundRect(padX, padY, boxW, boxH, r);
@@ -415,22 +474,22 @@ export class RobotGuide {
 
         // Pico del globo apuntando hacia Mel-Bot
         ctx.beginPath();
-        ctx.moveTo(w / 2 - 14, padY + boxH);
-        ctx.lineTo(w / 2, h - 8);
-        ctx.lineTo(w / 2 + 14, padY + boxH);
+        ctx.moveTo(w / 2 - 28, padY + boxH);
+        ctx.lineTo(w / 2, h - 16);
+        ctx.lineTo(w / 2 + 28, padY + boxH);
         ctx.closePath();
         ctx.fillStyle = 'rgba(8, 16, 32, 0.95)';
         ctx.fill();
         ctx.stroke();
 
-        // Texto en negrita y legible, reducido a 24px para mejor wrapping
-        ctx.font = 'bold 24px "Inter", system-ui, sans-serif';
+        // Texto en negrita y legible, escalado
+        ctx.font = 'bold 48px "Inter", system-ui, sans-serif';
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        const maxWidth = 460;
-        const lineHeight = 28;
+        const maxWidth = 920;
+        const lineHeight = 56;
         const paragraphs = text.split(/<br\s*\/?>/i);
         const lines: string[] = [];
 
@@ -463,11 +522,14 @@ export class RobotGuide {
     }
 
     public showDoorBlockedMessage(currentRoomName: string, requiredRoomName: string): void {
-        this.updateSpeechBubble(`💬 🔒 ¡${requiredRoomName} está bloqueada! Primero completá ${currentRoomName} 🏆`, '#f87171');
+        this.updateSpeechBubble(`¡${requiredRoomName} está bloqueada! Primero completá ${currentRoomName}`, '#f87171');
         this.renderEyes('happy');
     }
 
-    public startGuiding(roomId: number, roomName: string, destination: THREE.Vector3) {
+    private isTargetCompleted: boolean = false;
+
+    public startGuiding(roomId: number, roomName: string, destination: THREE.Vector3, isCompleted: boolean = false) {
+        this.isTargetCompleted = isCompleted;
         SoundSynthesizer.getInstance().playSuccess();
         this.state = RobotState.GUIDING;
         this.targetRoomId = roomId;
@@ -476,7 +538,7 @@ export class RobotGuide {
         this.targetDestination.y = 1.75;
 
         this.renderEyes('guiding');
-        this.updateSpeechBubble(`💬 ¡Seguime! 🚀 Vamos a ${roomName}`, '#fde047');
+        this.updateSpeechBubble(`¡Seguime! Vamos a ${roomName}`, '#fde047');
 
         // Construir waypoints de vuelo cinemático inteligente:
         this.waypoints = [];
@@ -495,7 +557,7 @@ export class RobotGuide {
     public stopGuiding() {
         this.state = RobotState.IDLE;
         this.renderEyes('neutral');
-        this.updateSpeechBubble('💬 ¡Hola Científico/a! 🤖', '#00f0ff');
+        this.updateSpeechBubble('¡Hola Científico/a!', '#00f0ff');
     }
 
     public isGuiding(): boolean {
@@ -605,14 +667,20 @@ export class RobotGuide {
 
                 // Movimiento hacia el waypoint
                 const step = this.flightSpeed * delta;
-                if (distToWp < step || distToWp < 0.35) {
+                if (distToWp < step || distToWp < 0.05) {
                     this.currentWaypointIdx++;
                     if (this.currentWaypointIdx >= this.waypoints.length) {
                         // Llegada al destino final de la sala
                         this.state = RobotState.ARRIVED;
                         this.arrivedTimer = 7.0; // 7 segundos de celebración y aviso
                         this.renderEyes('celebrate');
-                        this.updateSpeechBubble(`💬 ¡Llegamos a ${this.targetRoomName}! 🔬 ¡Hacé el experimento!`, '#4ade80');
+                        
+                        if (this.isTargetCompleted) {
+                            this.updateSpeechBubble(`¡Ya completaste esta sala! Vamos a la siguiente.`, '#4ade80');
+                        } else {
+                            this.updateSpeechBubble(`¡Llegamos a ${this.targetRoomName}! ¡Hacé el experimento!`, '#4ade80');
+                        }
+                        
                         SoundSynthesizer.getInstance().playSuccess();
                     }
                 } else {
@@ -641,7 +709,7 @@ export class RobotGuide {
 
                 if (elapsed < delta * 2) {
                     this.renderEyes('pointing');
-                    this.updateSpeechBubble('💬 ¡Mirá! 👉 ¡Probá el experimento con [E]!', '#4ade80');
+                    this.updateSpeechBubble('¡Mirá! ¡Probá el experimento con [E]!', '#4ade80');
                 }
             } else if (elapsed < 7.0) {
                 // Phase 2 (4-7s): Mirar al jugador y bajar los brazos
@@ -657,14 +725,18 @@ export class RobotGuide {
 
                 if (elapsed - 4.0 < delta * 2) {
                     this.renderEyes('happy');
-                    this.updateSpeechBubble('💬 ¿Necesitás ayuda? ¡Tocame!', '#fde047');
+                    this.updateSpeechBubble('¿Necesitás ayuda? ¡Tocame!', '#fde047');
                 }
             }
 
             if (this.arrivedTimer <= 0) {
                 this.state = RobotState.IDLE;
                 this.renderEyes('neutral');
-                this.updateSpeechBubble('💬 ¡Hacé el experimento y tocá Desafío! 🏆', '#fde047');
+                if (this.isTargetCompleted) {
+                    this.updateSpeechBubble('¡Ya completaste esta sala! Vamos a la siguiente.', '#fde047');
+                } else {
+                    this.updateSpeechBubble('¡Hacé el experimento y tocá Desafío!', '#fde047');
+                }
             }
 
         } else {

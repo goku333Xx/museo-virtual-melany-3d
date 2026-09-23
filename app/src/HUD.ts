@@ -86,6 +86,10 @@ export class HUD {
     private melGuideCallback: (() => void) | null = null;
     private melMapCallback: (() => void) | null = null;
 
+    // Fullscreen Map Modal
+    private mapModal: HTMLElement | null;
+    private mapCloseBtn: HTMLButtonElement | null;
+
     // Minimap Performance Cache
     private lastMinimapX: number = -9999;
     private lastMinimapZ: number = -9999;
@@ -172,6 +176,9 @@ export class HUD {
         this.melMapBtn = document.getElementById('mel-map-btn') as HTMLButtonElement | null;
         this.melCloseBtn = document.getElementById('mel-close-btn') as HTMLButtonElement | null;
 
+        this.mapModal = document.getElementById('fullscreen-map-modal');
+        this.mapCloseBtn = document.getElementById('map-close-btn') as HTMLButtonElement | null;
+
         this.setupEventListeners();
         this.updateMissionPanel();
     }
@@ -189,13 +196,23 @@ export class HUD {
                 if (this.melMapCallback) {
                     this.melMapCallback();
                 } else {
-                    this.openJournal();
+                    this.openMapModal();
                 }
             };
         }
         if (this.melCloseBtn) {
             this.melCloseBtn.onclick = () => {
                 this.closeMelDialog();
+            };
+        }
+
+        if (this.mapCloseBtn) {
+            this.mapCloseBtn.onclick = () => {
+                if (this.mapModal) {
+                    this.mapModal.classList.add('hidden');
+                    this.isModalOpen = false;
+                    this.onCloseModal?.();
+                }
             };
         }
 
@@ -914,7 +931,7 @@ export class HUD {
         }
 
         if (this.melDialogTitle) {
-            this.melDialogTitle.innerText = `¡Hola, ${this.studentName}!`;
+            this.melDialogTitle.innerText = `Mel - BOT GUÍA DEL MUSEO`;
         }
         if (this.melDialogText) {
             this.melDialogText.innerHTML = speechText;
@@ -934,6 +951,23 @@ export class HUD {
     public closeMelDialog() {
         if (!this.melDialogModal) return;
         this.melDialogModal.classList.add('hidden');
+        this.isModalOpen = false;
+        this.onCloseModal?.();
+    }
+
+    public openMapModal() {
+        if (!this.mapModal) return;
+        this.isModalOpen = true;
+        this.onOpenModal?.();
+        if (document.exitPointerLock) {
+            document.exitPointerLock();
+        }
+        this.mapModal.classList.remove('hidden');
+    }
+
+    public closeMapModal() {
+        if (!this.mapModal) return;
+        this.mapModal.classList.add('hidden');
         this.isModalOpen = false;
         this.onCloseModal?.();
     }
