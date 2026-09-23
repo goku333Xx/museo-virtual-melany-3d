@@ -8,10 +8,20 @@ export const RobotState = {
 } as const;
 export type RobotState = (typeof RobotState)[keyof typeof RobotState];
 
+// Utilidad para interpolar ángulos sin snaps de 360 grados
+export const lerpAngle = (start: number, end: number, amt: number): number => {
+    let delta = end - start;
+    while (delta > Math.PI) delta -= Math.PI * 2;
+    while (delta < -Math.PI) delta += Math.PI * 2;
+    return start + delta * amt;
+};
+
 export type RobotEmotion = 'neutral' | 'happy' | 'wink' | 'guiding' | 'celebrate' | 'blink' | 'pointing';
 
 export class RobotGuide {
     private group: THREE.Group;
+    // @ts-ignore
+    private _dirVec = new THREE.Vector3();
     private eyeMesh: THREE.Mesh;
     private eyeCanvas: HTMLCanvasElement;
     private eyeCtx: CanvasRenderingContext2D;
@@ -655,7 +665,7 @@ export class RobotGuide {
 
                 // Rotación hacia donde vuela
                 const targetAngle = Math.atan2(dirX, dirZ);
-                this.group.rotation.y = THREE.MathUtils.lerp(this.group.rotation.y, targetAngle, 0.14);
+                this.group.rotation.y = lerpAngle(this.group.rotation.y, targetAngle, 0.14);
 
                 // Inclinación aerodinámica cinemática
                 this.group.rotation.z = THREE.MathUtils.lerp(this.group.rotation.z, -Math.sin(dirX * 0.1) * 0.25, 0.1);
@@ -697,9 +707,9 @@ export class RobotGuide {
 
             if (elapsed < 4.0) {
                 // Phase 1 (0-4s): Mirar al pedestal y señalar
-                const dirToTarget = new THREE.Vector3().subVectors(this.targetDestination, this.group.position);
-                const targetRot = Math.atan2(dirToTarget.x, dirToTarget.z);
-                this.group.rotation.y = THREE.MathUtils.lerp(this.group.rotation.y, targetRot, 0.1);
+                this._dirVec.subVectors(this.targetDestination, this.group.position);
+                const targetRot = Math.atan2(this._dirVec.x, this._dirVec.z);
+                this.group.rotation.y = lerpAngle(this.group.rotation.y, targetRot, 0.1);
                 this.group.rotation.z = THREE.MathUtils.lerp(this.group.rotation.z, 0, 0.1);
 
                 this.rightArmGroup.rotation.x = -Math.PI / 2.2;
@@ -713,9 +723,9 @@ export class RobotGuide {
                 }
             } else if (elapsed < 7.0) {
                 // Phase 2 (4-7s): Mirar al jugador y bajar los brazos
-                const dirToPlayer = new THREE.Vector3().subVectors(playerPos, this.group.position);
-                const targetRot = Math.atan2(dirToPlayer.x, dirToPlayer.z);
-                this.group.rotation.y = THREE.MathUtils.lerp(this.group.rotation.y, targetRot, 0.08);
+                this._dirVec.subVectors(playerPos, this.group.position);
+                const targetRot = Math.atan2(this._dirVec.x, this._dirVec.z);
+                this.group.rotation.y = lerpAngle(this.group.rotation.y, targetRot, 0.08);
                 this.group.rotation.z = THREE.MathUtils.lerp(this.group.rotation.z, 0, 0.1);
 
                 this.rightArmGroup.rotation.x = THREE.MathUtils.lerp(this.rightArmGroup.rotation.x, Math.sin(time * 2.0) * 0.08, 0.1);
@@ -744,11 +754,22 @@ export class RobotGuide {
             this.group.position.y = 1.6 + hoverY;
 
             const distToPlayer = this.group.position.distanceTo(playerPos);
+            
+            // Si el jugador se aleja demasiado, Mel-Bot lo sigue automáticamente (loophole fix)
+            if (distToPlayer > 12.0) {
+                this._dirVec.subVectors(playerPos, this.group.position);
+                this._dirVec.y = 0;
+                this._dirVec.normalize();
+                this.group.position.add(this._dirVec.multiplyScalar(this.flightSpeed * 1.5 * delta));
+                const targetRot = Math.atan2(this._dirVec.x, this._dirVec.z);
+                this.group.rotation.y = lerpAngle(this.group.rotation.y, targetRot, 0.08);
+            }
+
             if (distToPlayer < 7.0) {
                 // Mirar suavemente al jugador
-                const dirToPlayer = new THREE.Vector3().subVectors(playerPos, this.group.position);
-                const targetRot = Math.atan2(dirToPlayer.x, dirToPlayer.z);
-                this.group.rotation.y = THREE.MathUtils.lerp(this.group.rotation.y, targetRot, 0.06);
+                this._dirVec.subVectors(playerPos, this.group.position);
+                const targetRot = Math.atan2(this._dirVec.x, this._dirVec.z);
+                this.group.rotation.y = lerpAngle(this.group.rotation.y, targetRot, 0.06);
 
                 // Saludo con la mano derecha si el jugador está a menos de 4 metros
                 if (distToPlayer < 4.0) {

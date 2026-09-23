@@ -186,6 +186,12 @@ function getGroundHeight(x: number, z: number, currentCamY: number): number {
 
 function isInsidePedestalObstacle(x: number, z: number, camY: number): boolean {
     const bodyMargin = 0.22;
+    
+    // RED TEAM FIX: Paredes perimetrales inflexibles del museo
+    if (x < -35.0 + bodyMargin || x > 35.0 - bodyMargin || z < -35.0 + bodyMargin || z > 35.0 - bodyMargin) {
+        return true;
+    }
+
     // Pedestales (bloquean si el jugador no saltó por encima)
     if (camY < 2.75) {
         for (let i = 0; i < pedestals.length; i++) {
@@ -243,6 +249,8 @@ let targetRotationX = camera.rotation.x;
 
 let prevTime = performance.now();
 const velocity = new THREE.Vector3();
+const _rightVec = new THREE.Vector3();
+const _forwardVec = new THREE.Vector3();
 let stepTimer = 0;
 let lastOnGroundTime = performance.now();
 
@@ -525,23 +533,37 @@ function animate() {
         const origX = camera.position.x;
         const origZ = camera.position.z;
 
+        // Extraer vectores de movimiento en el plano XZ usando la matriz de la cámara
+        _rightVec.setFromMatrixColumn(camera.matrix, 0);
+        _rightVec.y = 0;
+        _rightVec.normalize();
+        
+        _forwardVec.crossVectors(camera.up, _rightVec);
+        _forwardVec.normalize();
+
+        const distRight = -velocity.x * delta;
+        const distForward = -velocity.z * delta;
+
+        const deltaX = _rightVec.x * distRight + _forwardVec.x * distForward;
+        const deltaZ = _rightVec.z * distRight + _forwardVec.z * distForward;
+
         // Movimiento tentativo en X
-        controls.moveRight(-velocity.x * delta);
+        camera.position.x += deltaX;
         if (isInsidePedestalObstacle(camera.position.x, origZ, camera.position.y)) {
-            camera.position.x = origX; // Deslizarse a lo largo del pedestal sin frenarse en seco
+            camera.position.x = origX; // Deslizarse bloqueando solo X
             velocity.x = 0;
         }
 
         // Movimiento tentativo en Z
-        controls.moveForward(-velocity.z * delta);
+        camera.position.z += deltaZ;
         if (isInsidePedestalObstacle(camera.position.x, camera.position.z, camera.position.y)) {
-            camera.position.z = origZ; // Deslizarse a lo largo del pedestal sin frenarse en seco
+            camera.position.z = origZ; // Deslizarse bloqueando solo Z
             velocity.z = 0;
         }
 
-        // Límites de las paredes perimetrales del museo (72x72)
-        camera.position.x = Math.max(-34.2, Math.min(34.2, camera.position.x));
-        camera.position.z = Math.max(-34.2, Math.min(34.2, camera.position.z));
+        // Límites estrictos redundantes del museo (72x72 con paredes gruesas)
+        camera.position.x = Math.max(-34.8, Math.min(34.8, camera.position.x));
+        camera.position.z = Math.max(-34.8, Math.min(34.8, camera.position.z));
 
         camera.position.y += velocity.y * delta;
 

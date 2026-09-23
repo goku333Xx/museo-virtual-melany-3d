@@ -109,10 +109,11 @@ export class VanDeGraaffExhibit {
 
         // Placa técnica de peligro: Alto Voltaje
         const plaque = new THREE.Mesh(
-            new THREE.PlaneGeometry(0.16, 0.08),
+            new THREE.BoxGeometry(0.16, 0.08, 0.005),
             new THREE.MeshBasicMaterial({ color: 0xfacc15 })
         );
-        plaque.position.set(genX, tableH + baseH * 0.6, 0.26);
+        plaque.position.set(genX, tableH + baseH * 0.6, 0.265);
+        plaque.rotation.x = -Math.atan2(0.04, baseH);
         this.group.add(plaque);
 
         // 3. COLUMNA AISLANTE DE METACRILATO TRANSPARENTE
@@ -231,19 +232,20 @@ export class VanDeGraaffExhibit {
         this.group.add(this.innerCoronaMesh);
 
         // 7. ELECTROSTATIC HAIRS (INTENSE & REALISTIC)
-        const hairMat = new THREE.MeshStandardMaterial({
-            color: 0xf8fafc,
-            emissive: 0x8b5cf6,
-            emissiveIntensity: 0.0, // Glow when charged
-            roughness: 0.3,
-            metalness: 0.2
-        });
         const numHairs = 150;
         
         // Use a golden spiral distribution for even placement on the upper hemisphere
         const phiStep = Math.PI * (3 - Math.sqrt(5)); // golden angle
         
         for (let i = 0; i < numHairs; i++) {
+            const hairMat = new THREE.MeshStandardMaterial({
+                color: 0xf8fafc,
+                emissive: 0x8b5cf6,
+                emissiveIntensity: 0.0, // Glow when charged
+                roughness: 0.3,
+                metalness: 0.2
+            });
+
             // y goes from 1 to 0 (top half of sphere)
             const y = 1 - (i / (numHairs - 1)); 
             const radiusAtY = Math.sqrt(1 - y * y);
@@ -255,8 +257,8 @@ export class VanDeGraaffExhibit {
             
             const normal = new THREE.Vector3(surfaceX, surfaceY, surfaceZ);
 
-            // Tapered hair strand
-            const hairGeo = new THREE.CylinderGeometry(0.001, 0.003, 0.35, 4);
+            // Tapered hair strand (8 segments for better visual quality)
+            const hairGeo = new THREE.CylinderGeometry(0.001, 0.003, 0.35, 8);
             hairGeo.translate(0, 0.175, 0); // Pivot at base
             const hair = new THREE.Mesh(hairGeo, hairMat);
             

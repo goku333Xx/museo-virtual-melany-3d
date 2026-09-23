@@ -1610,3 +1610,112 @@ html, body {
     transform: translate(-50%, -50%) scale(1);
 }
 
+/* ==========================================================================
+   RED TEAM AUDIT: MOBILE UX & ACCESSIBILITY FIXES
+   ========================================================================== */
+@media (max-width: 768px) {
+  /* 1. Touch Target Minimum Size (44px) */
+  button, input, select, .touch-action-btn, .journal-tab, .mel-guide-btn, .action-btn, .mission-counter-pill {
+    min-height: 44px !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* Increase touch padding for clickable pills */
+  .glass-pill[role="button"], .glass-pill[id$="-btn"] {
+    min-height: 44px !important;
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
+  }
+
+  /* 2. Fullscreen Map Modal mobile perfection */
+  .map-modal-card {
+    width: 95vw !important;
+    height: 95vh !important;
+    max-height: 100% !important;
+    padding: 16px 12px !important;
+  }
+  
+  .map-modal-card h2 {
+    font-size: 18px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .map-node {
+    font-size: 14px !important;
+    padding: 12px !important;
+    min-height: 44px !important;
+  }
+
+  /* 3. Font legibility upgrades */
+  .task-title { font-size: 13px !important; }
+  .task-status { font-size: 11px !important; }
+  .start-desc { font-size: 14px !important; line-height: 1.6; }
+  .pill-concept-box p { font-size: 14px !important; line-height: 1.6; }
+  
+  /* Flexbox fixes */
+  .features-row {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  
+  .mission-panel {
+    max-height: 45vh;
+    overflow-y: auto;
+  }
+  
+  .quiz-options {
+    overflow-y: auto;
+    max-height: 40vh;
+  }
+}
+
+/* 4. Tiny Screen (< 400px) Overlap Fixes */
+@media (max-width: 400px) {
+  .mission-panel {
+    max-width: 210px !important;
+    top: 55px !important;
+    padding: 10px !important;
+  }
+  
+  /* Prevent Exhibit Card from overlapping joystick */
+  .exhibit-card {
+    bottom: 210px !important; 
+    padding: 10px 12px !important;
+    width: 95% !important;
+  }
+  
+  /* Scale down joystick slightly to fit screen */
+  .touch-zone-left {
+    width: 110px !important;
+    height: 110px !important;
+  }
+  
+  .joystick-base {
+    width: 110px !important;
+    height: 110px !important;
+  }
+  
+  .joystick-thumb {
+    width: 44px !important;
+    height: 44px !important;
+  }
+  
+  .touch-action-btn {
+    padding: 10px 14px !important;
+    font-size: 12px !important;
+  }
+  
+  .brand-panel strong {
+    font-size: 10px !important;
+  }
+  
+  .achievement-toast {
+    padding: 10px 12px !important;
+  }
+  
+  .achievement-toast #ach-title {
+    font-size: 14px !important;
+  }
+}

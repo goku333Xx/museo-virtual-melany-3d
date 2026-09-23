@@ -359,6 +359,14 @@ export class WindTurbineExhibit {
             { x: 0.35,  z: 0.30, rot: 2.9, color: 0xbfdbfe, roof: 0x3b82f6 }
         ];
 
+        // Ventanas brillantes (emissive)
+        const winMat = new THREE.MeshStandardMaterial({
+            color: 0x000000,
+            emissive: 0xfef08a,
+            emissiveIntensity: 0.4
+        });
+        this.cityWindows.push(winMat);
+
         townData.forEach((b) => {
             const houseGroup = new THREE.Group();
             houseGroup.position.set(b.x, 0.05, b.z);
@@ -379,14 +387,6 @@ export class WindTurbineExhibit {
             const chimney = new THREE.Mesh(chimneyGeom, new THREE.MeshStandardMaterial({ color: 0x78716c }));
             chimney.position.set(0.04, 0.09, -0.03);
             houseGroup.add(chimney);
-
-            // Ventanas brillantes (emissive)
-            const winMat = new THREE.MeshStandardMaterial({
-                color: 0x000000,
-                emissive: 0xfef08a,
-                emissiveIntensity: 0.4
-            });
-            this.cityWindows.push(winMat);
 
             const winGeom = new THREE.BoxGeometry(0.03, 0.03, 0.01);
             // Ventana frontal
@@ -417,13 +417,13 @@ export class WindTurbineExhibit {
 
         // Farolas de iluminación pública con cabezal LED
         const poleMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.9 });
+        const lightBulbMat = new THREE.MeshBasicMaterial({ color: 0xffedd5 });
+        this.streetLights.push(lightBulbMat);
+        
         for (let lx = -0.45; lx <= 0.45; lx += 0.30) {
             const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.004, 0.14, 8), poleMat);
             pole.position.set(lx, 0.07, 0.22);
             cityGroup.add(pole);
-
-            const lightBulbMat = new THREE.MeshBasicMaterial({ color: 0xffedd5 });
-            this.streetLights.push(lightBulbMat);
 
             const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.010, 8, 8), lightBulbMat);
             bulb.position.set(lx, 0.14, 0.22);

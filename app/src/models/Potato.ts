@@ -4,7 +4,7 @@ export class PotatoBattery {
     private group: THREE.Group;
     private isSleeping = false;
     private bubbles: { mesh: THREE.Mesh, basePos: THREE.Vector3, speed: number, offset: number }[] = [];
-    private sparks: { mesh: THREE.Mesh, basePos: THREE.Vector3, speed: number, offset: number, radius: number }[] = [];
+    private sparks: { mesh: THREE.Sprite, basePos: THREE.Vector3, speed: number, offset: number, radius: number }[] = [];
 
     constructor() {
         this.group = new THREE.Group();
@@ -25,13 +25,13 @@ export class PotatoBattery {
         
         const potatoMesh1 = new THREE.Mesh(geometry, material);
         potatoMesh1.scale.set(1, 0.8, 1.2);
-        potatoMesh1.position.set(-0.15, -0.05, 0);
+        potatoMesh1.position.set(-0.12, -0.05, 0);
         potatoMesh1.castShadow = true;
         potatoMesh1.receiveShadow = true;
 
         const potatoMesh2 = new THREE.Mesh(geometry, material);
         potatoMesh2.scale.set(1.1, 0.7, 1.1);
-        potatoMesh2.position.set(0.15, -0.05, 0);
+        potatoMesh2.position.set(0.12, -0.05, 0);
         potatoMesh2.rotation.y = Math.PI / 4;
         potatoMesh2.castShadow = true;
         potatoMesh2.receiveShadow = true;
@@ -58,10 +58,10 @@ export class PotatoBattery {
         const copperMat = new THREE.MeshStandardMaterial({
             color: 0xb87333,
             roughness: 0.2,
-            metalness: 0.95
+            metalness: 1.0
         });
         const copperElectrode = new THREE.Mesh(copperGeo, copperMat);
-        copperElectrode.position.set(0.1, 0.08, 0);
+        copperElectrode.position.set(0.12, 0.08, 0);
         copperElectrode.rotation.z = Math.PI / 8;
         copperElectrode.castShadow = true;
 
@@ -79,7 +79,7 @@ export class PotatoBattery {
             metalness: 0.85
         });
         const zincElectrode = new THREE.Mesh(zincGeo, zincMat);
-        zincElectrode.position.set(-0.1, 0.08, 0);
+        zincElectrode.position.set(-0.12, 0.08, 0);
         zincElectrode.rotation.z = -Math.PI / 8;
         zincElectrode.castShadow = true;
         
@@ -110,7 +110,7 @@ export class PotatoBattery {
         createLabel('- Zn', '#a9a9a9', new THREE.Vector3(-0.12, 0.22, 0));
 
         const bubbleGeo = new THREE.SphereGeometry(0.005, 8, 8);
-        const bubbleMat = new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.8 });
+        const bubbleMat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, transmission: 0.9, roughness: 0.1, transparent: true });
         const addBubbles = (basePos: THREE.Vector3) => {
             for(let i=0; i<3; i++) {
                 const b = new THREE.Mesh(bubbleGeo, bubbleMat);
@@ -119,21 +119,35 @@ export class PotatoBattery {
                 this.bubbles.push({ mesh: b, basePos: basePos.clone(), speed: 0.5 + Math.random()*0.5, offset: Math.random() });
             }
         };
-        addBubbles(new THREE.Vector3(0.1, 0.08, 0));
-        addBubbles(new THREE.Vector3(-0.1, 0.08, 0));
+        addBubbles(new THREE.Vector3(0.12, 0.08, 0));
+        addBubbles(new THREE.Vector3(-0.12, 0.08, 0));
 
         // Tiny glowing sparks / floating energy motes
-        const sparkGeo = new THREE.SphereGeometry(0.0015, 4, 4);
+        const sparkCanvas = document.createElement('canvas');
+        sparkCanvas.width = 16; sparkCanvas.height = 16;
+        const sCtx = sparkCanvas.getContext('2d');
+        if (sCtx) {
+            const grad = sCtx.createRadialGradient(8, 8, 0, 8, 8, 8);
+            grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+            grad.addColorStop(0.3, 'rgba(255, 255, 255, 0.8)');
+            grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            sCtx.fillStyle = grad;
+            sCtx.fillRect(0, 0, 16, 16);
+        }
+        const sparkTex = new THREE.CanvasTexture(sparkCanvas);
+        
         const addSparks = (basePos: THREE.Vector3, isZinc: boolean) => {
             const color = isZinc ? 0x88ccff : 0xffaa00;
-            const mat = new THREE.MeshBasicMaterial({ 
+            const mat = new THREE.SpriteMaterial({ 
+                map: sparkTex,
                 color: color, 
                 transparent: true, 
                 opacity: 0.8,
                 blending: THREE.AdditiveBlending 
             });
             for(let i = 0; i < 6; i++) {
-                const s = new THREE.Mesh(sparkGeo, mat);
+                const s = new THREE.Sprite(mat);
+                s.scale.set(0.03, 0.03, 1);
                 s.visible = false;
                 this.group.add(s);
                 this.sparks.push({ 
@@ -145,8 +159,8 @@ export class PotatoBattery {
                 });
             }
         };
-        addSparks(new THREE.Vector3(0.1, 0.08, 0), false); // Copper
-        addSparks(new THREE.Vector3(-0.1, 0.08, 0), true);  // Zinc
+        addSparks(new THREE.Vector3(0.12, 0.08, 0), false); // Copper
+        addSparks(new THREE.Vector3(-0.12, 0.08, 0), true);  // Zinc
     }
 
     public setSleep(sleep: boolean): void {
@@ -175,7 +189,7 @@ export class PotatoBattery {
                 s.mesh.position.z += Math.sin(angle) * s.radius;
                 s.mesh.position.y += vertPos;
                 
-                const mat = s.mesh.material as THREE.MeshBasicMaterial;
+                const mat = s.mesh.material as THREE.Material;
                 mat.opacity = 0.8 * (1.0 - Math.abs(vertPos) / 0.06);
             }
         });

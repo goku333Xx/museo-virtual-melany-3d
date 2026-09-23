@@ -115,7 +115,7 @@ export class MuseumRoom {
             metalness: 0.8
         });
 
-        const trimThickness = 0.2;
+        const trimThickness = 0.22;
         const trimGeomX = new THREE.BoxGeometry(width, trimThickness, 0.45);
         const trimGeomZ = new THREE.BoxGeometry(0.45, trimThickness, depth);
 
@@ -265,16 +265,16 @@ export class MuseumRoom {
         // 1. Hallway Eje Norte-Sur (De Z = -40 a Z = 25, longitud 65m)
         const nsRunway = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 65), runwayMat);
         nsRunway.rotation.x = -Math.PI / 2;
-        nsRunway.position.set(0, 0.005, -7.5);
+        nsRunway.position.set(0, 0.01, -7.5);
         nsRunway.receiveShadow = true;
         this.group.add(nsRunway);
 
         // Guías de latón
-        const nsGuideGeom = new THREE.BoxGeometry(0.04, 0.01, 65);
+        const nsGuideGeom = new THREE.BoxGeometry(0.04, 0.02, 65);
         const nsLeftGuide = new THREE.Mesh(nsGuideGeom, brassMat);
-        nsLeftGuide.position.set(-1.8, 0.008, -7.5);
+        nsLeftGuide.position.set(-1.8, 0.015, -7.5);
         const nsRightGuide = new THREE.Mesh(nsGuideGeom, brassMat);
-        nsRightGuide.position.set(1.8, 0.008, -7.5);
+        nsRightGuide.position.set(1.8, 0.015, -7.5);
         this.group.add(nsLeftGuide, nsRightGuide);
 
         // 4. Círculos de demarcación bajo los 8 pedestales
@@ -299,7 +299,7 @@ export class MuseumRoom {
             });
             const circle = new THREE.Mesh(ringGeom, ringMat);
             circle.rotation.x = -Math.PI / 2;
-            circle.position.set(zx, 0.012, zz);
+            circle.position.set(zx, 0.02, zz);
             this.group.add(circle);
         });
     }
@@ -310,7 +310,7 @@ export class MuseumRoom {
         beaconGroup.position.set(0, 0, 15);
 
         // Base rectangular de madera
-        const baseGeom = new THREE.BoxGeometry(2.4, 0.45, 2.4);
+        const baseGeom = new THREE.BoxGeometry(2.4, 0.47, 2.4);
         const baseMat = new THREE.MeshStandardMaterial({
             color: 0x5c4033,
             roughness: 0.8,
@@ -411,7 +411,7 @@ export class MuseumRoom {
             this.group.add(wallMesh);
             this.collidables.push(wallMesh);
 
-            const baseMesh = new THREE.Mesh(new THREE.BoxGeometry(w + 0.04, 0.22, d + 0.04), trimMat);
+            const baseMesh = new THREE.Mesh(new THREE.BoxGeometry(w + 0.04, 0.24, d + 0.04), trimMat);
             baseMesh.position.set(posX, 0.11, posZ);
             this.group.add(baseMesh);
 
@@ -649,23 +649,23 @@ export class MuseumRoom {
             pedestal.receiveShadow = true;
             pedestalGroup.add(pedestal);
 
-            const edgeH = 0.02;
+            const edgeH = 0.03;
             const edgeW = 0.035;
 
             const edgeBack = new THREE.Mesh(new THREE.BoxGeometry(pedestalWidth, edgeH, edgeW), borderMat);
-            edgeBack.position.set(0, pedestalHeight + edgeH / 2, -pedestalDepth / 2 + edgeW / 2);
+            edgeBack.position.set(0, pedestalHeight + edgeH / 2 - 0.01, -pedestalDepth / 2 + edgeW / 2);
             const edgeFront = new THREE.Mesh(new THREE.BoxGeometry(pedestalWidth, edgeH, edgeW), borderMat);
-            edgeFront.position.set(0, pedestalHeight + edgeH / 2, pedestalDepth / 2 - edgeW / 2);
+            edgeFront.position.set(0, pedestalHeight + edgeH / 2 - 0.01, pedestalDepth / 2 - edgeW / 2);
             const edgeLeft = new THREE.Mesh(new THREE.BoxGeometry(edgeW, edgeH, pedestalDepth), borderMat);
-            edgeLeft.position.set(-pedestalWidth / 2 + edgeW / 2, pedestalHeight + edgeH / 2, 0);
+            edgeLeft.position.set(-pedestalWidth / 2 + edgeW / 2, pedestalHeight + edgeH / 2 - 0.01, 0);
             const edgeRight = new THREE.Mesh(new THREE.BoxGeometry(edgeW, edgeH, pedestalDepth), borderMat);
-            edgeRight.position.set(pedestalWidth / 2 - edgeW / 2, pedestalHeight + edgeH / 2, 0);
+            edgeRight.position.set(pedestalWidth / 2 - edgeW / 2, pedestalHeight + edgeH / 2 - 0.01, 0);
 
             pedestalGroup.add(edgeBack, edgeFront, edgeLeft, edgeRight);
 
             // Fake Ambient Occlusion Shadow
             const dropShadow = this.createDropShadow(2.2, 0.65);
-            dropShadow.position.set(0, 0.01, 0);
+            dropShadow.position.set(0, 0.025, 0);
             pedestalGroup.add(dropShadow);
 
             pedestalGroup.position.set(pos[0], 0, pos[1]);
@@ -1036,7 +1036,7 @@ export class MuseumRoom {
             arrow.rotation.x = -Math.PI / 2;
             arrow.position.set(
                 room.pos[0] + room.viewDir[0] * 2.5,
-                0.02,
+                0.03,
                 room.pos[1] + room.viewDir[1] * 2.5
             );
             arrow.rotation.z = Math.atan2(-room.viewDir[0], room.viewDir[1]);
@@ -1133,11 +1133,11 @@ export class MuseumRoom {
                 new THREE.PlaneGeometry(1.4, 0.7),
                 new THREE.MeshBasicMaterial({ map: signTex, transparent: true, depthWrite: false })
             );
-            sign.position.set(0, 0.3, 0.08);
+            sign.position.set(0, 0.3, 0.09);
             door.add(sign);
             const signBack = sign.clone();
             signBack.rotation.y = Math.PI;
-            signBack.position.z = -0.08;
+            signBack.position.z = -0.09;
             door.add(signBack);
         }
     }

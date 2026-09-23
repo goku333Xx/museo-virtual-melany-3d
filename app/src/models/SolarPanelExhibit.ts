@@ -507,6 +507,8 @@ export class SolarPanelExhibit {
         this.isSleeping = sleep;
     }
 
+    private lastChargePercentage: number = -1;
+
     public update(_time: number, delta: number = 0.016): void {
         if (this.isSleeping) return;
 
@@ -533,8 +535,10 @@ export class SolarPanelExhibit {
             core.position.y = -0.075 + (0.15 * chargeLevel) / 2;
         });
         
-        // Actualizar UI con el nivel intermedio
-        if (Math.abs(this.targetPropellerRpm - this.currentPropellerRpm) > 10) {
+        // Actualizar UI con el nivel intermedio, pero sólo si el % cambió
+        let currentPercentage = Math.round((this.currentPropellerRpm / 2400) * 100);
+        if (currentPercentage !== this.lastChargePercentage) {
+            this.lastChargePercentage = currentPercentage;
             this.updateDigitalDisplay();
         }
 

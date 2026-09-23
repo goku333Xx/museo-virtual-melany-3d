@@ -68,11 +68,12 @@ export class OpticsExhibit {
         const rulerGeom = new THREE.PlaneGeometry(railLength - 0.1, 0.03);
         const rulerMat = new THREE.MeshBasicMaterial({
             map: this.generateRulerTexture(),
-            transparent: true
+            transparent: true,
+            depthWrite: false
         });
         const ruler = new THREE.Mesh(rulerGeom, rulerMat);
         ruler.rotation.x = -Math.PI / 2;
-        ruler.position.set(0, railHeight + 0.001, 0.09);
+        ruler.position.set(0, railHeight + 0.002, 0.09);
         this.group.add(ruler);
 
         // Patas niveladoras de bronce en los extremos del riel

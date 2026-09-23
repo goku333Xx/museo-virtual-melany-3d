@@ -248,7 +248,7 @@ export class World {
                 "Tienen minipilas escondidas adentro, ¡re obvio!"
             ],
             correctIndex: 1,
-            explanation: "¡Zarpado! El juguito de la papa funciona como una autopista para que los electrones corran de un clavo al otro, armando una corriente eléctrica re posta."
+            explanation: "¡Zarpado! El jugo ácido de la papa hace de puente para que los electrones corran de un clavo al otro, armando un circuito eléctrico re posta."
         };
 
         const papaInteractable: Omit<Interactable, 'object'> = {
@@ -305,7 +305,7 @@ export class World {
                 "El ruido de los rayos asusta a la luz y la hace salir."
             ],
             correctIndex: 0,
-            explanation: "¡Tremendo! Como dijo Tesla, la energía viaja sin cables. La bobina manda ondas invisibles que 'despiertan' a los electrones del gas para que hagan alto show de luz."
+            explanation: "¡Tremendo! La bobina dispara ondas invisibles de alta frecuencia que viajan por el aire y 'despiertan' a los electrones del gas adentro del tubo para armar alto show de luces. ¡Pura magia electromagnética!"
         };
 
         const teslaInteractable: Omit<Interactable, 'object'> = {
@@ -352,7 +352,7 @@ export class World {
                 "El viento empuja la luz del sol por los cables."
             ],
             correctIndex: 0,
-            explanation: "¡Excelente! Al girar por el viento, unos imanes enormes empujan a los electrones por los cables, ¡como si los estuvieran bombeando para llevar luz a toda la mini ciudad!"
+            explanation: "¡Excelente! Al girar por el viento, adentro se mueven unos imanes enormes que empujan a los electrones por los cables, ¡como si fuera una bomba de agua pero llevando electricidad a toda la mini ciudad!"
         };
 
         const windInteractable: Omit<Interactable, 'object'> = {
@@ -399,7 +399,7 @@ export class World {
                 "La luz empuja el viento hacia el panel solar."
             ],
             correctIndex: 1,
-            explanation: "¡Genial! Los fotones de la luz bombardean la placa azul y le dan un empujón a los electrones para que salgan corriendo y hagan girar el motor."
+            explanation: "¡Genial! La luz está hecha de paquetitos de energía llamados fotones. Al chocar contra la placa de silicio, patean a los electrones y los ponen a correr por los cables para hacer girar el motor."
         };
 
         const solarInteractable: Omit<Interactable, 'object'> = {
@@ -446,7 +446,7 @@ export class World {
                 "El aluminio es un material que odia la gravedad."
             ],
             correctIndex: 1,
-            explanation: "¡Perfecto! Como la bocha y las tiras se llenan de la misma carga, no se pueden ni ver y se empujan entre sí. ¡Por eso levitan flotando en el aire!"
+            explanation: "¡Perfecto! Al juntar tantas cargas eléctricas iguales, las tiritas se repelen (o sea, ¡se rechazan fuerte entre ellas!) y terminan flotando por los aires. ¡Pura estática!"
         };
 
         const vanDeGraaffInteractable: Omit<Interactable, 'object'> = {
@@ -497,7 +497,7 @@ export class World {
                 "Porque el acero solo rebota en números pares."
             ],
             correctIndex: 1,
-            explanation: "¡Muuuy bien! La física es justa: la misma cantidad de 'empuje' que entra de un lado tiene que salir del otro sin perderse. ¡Es la regla de oro del universo!"
+            explanation: "¡Muuuy bien! La energía no se pierde, se transforma y se pasa. El golpe viaja como un fantasma por adentro de las bolas del medio y sale justo con la misma fuerza del otro lado."
         };
 
         const newtonInteractable: Omit<Interactable, 'object'> = {
@@ -544,7 +544,7 @@ export class World {
                 "La manivela sopla viento adentro del vidrio de la lámpara."
             ],
             correctIndex: 1,
-            explanation: "¡Re groso! Tu fuerza gira unas bobinas adentro de imanes, y ese baile bombea electrones que calientan el alambrecito de la bombilla hasta que da luz."
+            explanation: "¡Re groso! Cuando girás la manivela, movés unas bobinas de cobre entre imanes gigantes. Ese baile bombea electrones sin parar, que calientan el alambrecito de la bombilla hasta que da luz."
         };
 
         const dynamoInteractable: Omit<Interactable, 'object'> = {
@@ -691,10 +691,10 @@ export class World {
                         // solo cierra el diálogo
                     };
                 } else if (currentRoom && this.hud.isMissionCompleted(currentRoom.id)) {
-                    speech = `¡Esa sala ya la tenés cocinada! ¡Genial! Vamos para la próxima.`;
+                    speech = `¡Esa sala ya la tenés re cocinada! ¡Genial! Vamos para la próxima.`;
                     btn1Label = `Guíame a la ${nextRoom.name}`;
                 } else {
-                    speech = `¡Holaaa! Soy Mel-BOT, tu compa robot en esta expedición. 🤖<br><br>¿Querés que vayamos volando a la <b>${nextRoom.name}</b> para seguir con la aventura? ¡Seguime el ritmo! 🚀`;
+                    speech = `¡Holaaa! Soy Mel-BOT, tu compa robot en esta expedición. 🤖<br><br>¿Querés que vayamos volando a la <b>${nextRoom.name}</b> para seguir con la aventura? ¡Seguime el ritmo y no te me pierdas! 🚀`;
                     btn1Label = `Guíame a la ${nextRoom.name}`;
                 }
 

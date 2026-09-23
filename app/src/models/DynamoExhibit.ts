@@ -39,6 +39,7 @@ export class DynamoExhibit {
     // Partículas de electrones y chispas
     private electronParticles: THREE.Mesh[] = [];
     private electronCurve: THREE.CatmullRomCurve3;
+    private electronPathPoints: THREE.Vector3[] = [];
     private brushSparks: THREE.Points;
     private sparkPositions: Float32Array;
 
@@ -130,7 +131,7 @@ export class DynamoExhibit {
             new THREE.BoxGeometry(0.55, 0.005, 0.22),
             new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.9, roughness: 0.2 })
         );
-        plaque.position.set(0, tableH + 0.012, 0.48);
+        plaque.position.set(0, tableH + 0.0025, 0.48);
         this.group.add(plaque);
 
         // =========================================================================
@@ -307,10 +308,32 @@ export class DynamoExhibit {
         this.rotorArmatureGroup.position.set(-0.02, 0, 0);
 
         const ironCoreMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.8, roughness: 0.5 });
+        
+        // Custom coil texture for visual perfection
+        const coilCanvas = document.createElement('canvas');
+        coilCanvas.width = 128;
+        coilCanvas.height = 128;
+        const cCtx = coilCanvas.getContext('2d')!;
+        cCtx.fillStyle = '#b87333';
+        cCtx.fillRect(0, 0, 128, 128);
+        cCtx.strokeStyle = '#8b4513';
+        cCtx.lineWidth = 4;
+        for (let y = 0; y < 128; y += 8) {
+            cCtx.beginPath();
+            cCtx.moveTo(0, y);
+            cCtx.lineTo(128, y);
+            cCtx.stroke();
+        }
+        const coilTex = new THREE.CanvasTexture(coilCanvas);
+        coilTex.wrapS = THREE.RepeatWrapping;
+        coilTex.wrapT = THREE.RepeatWrapping;
+        coilTex.repeat.set(1, 4);
+
         const copperCoilMat = new THREE.MeshStandardMaterial({
+            map: coilTex,
             color: 0xb87333,
             metalness: 0.9,
-            roughness: 0.25
+            roughness: 0.35
         });
 
         // Eje central de acero
@@ -547,6 +570,9 @@ export class DynamoExhibit {
             this.electronParticles.push(eMesh);
             this.group.add(eMesh);
         }
+
+        // Performance: Precalcular puntos de la curva para no evaluar CatmullRom en el render loop
+        this.electronPathPoints = this.electronCurve.getSpacedPoints(100);
     }
 
     private buildDigitalMultimeter(tableH: number) {
@@ -758,8 +784,8 @@ export class DynamoExhibit {
         const voltageNorm = Math.min(1.0, this.currentVoltage / 24.0);
         this.rotorCoils.forEach((coil, i) => {
             const angle = (i / 5) * Math.PI * 2 + this.rotorAngle;
-            // Alineación máxima cuando el polo está en Y (ángulo 0 o PI, ya que poleGroup tiene offset en Y)
-            const alignment = Math.pow(Math.abs(Math.cos(angle)), 4);
+            // Potencia de glow proporcional al cuadrado del voltaje inducido (V ~ cos(angle), P ~ cos²(angle))
+            const alignment = Math.cos(angle) * Math.cos(angle);
             const mat = coil.material as THREE.MeshStandardMaterial;
             mat.emissive.setHex(0xffaa00);
             mat.emissiveIntensity = alignment * voltageNorm * 2.5;
@@ -824,12 +850,17 @@ export class DynamoExhibit {
         // Flujo de electrones animados a lo largo de los cables
         const isFlowing = this.currentVoltage > 1.0;
         const eSpeed = (this.currentVoltage / 24.0) * 1.2;
+        const maxIdx = this.electronPathPoints.length - 1;
         this.electronParticles.forEach((eMesh, idx) => {
             eMesh.visible = isFlowing;
             if (isFlowing) {
                 const u = ((_time * eSpeed + idx / this.electronParticles.length) % 1.0);
-                const pos = this.electronCurve.getPointAt(u);
-                eMesh.position.copy(pos);
+                const fIdx = u * maxIdx;
+                const iIdx = Math.floor(fIdx);
+                const t = fIdx - iIdx;
+                const p1 = this.electronPathPoints[iIdx];
+                const p2 = this.electronPathPoints[Math.min(iIdx + 1, maxIdx)];
+                eMesh.position.lerpVectors(p1, p2, t);
             }
         });
 

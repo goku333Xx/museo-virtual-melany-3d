@@ -90,7 +90,7 @@ export class NewtonsCradle {
 
         // Corner caps
         const capMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.9, roughness: 0.2 });
-        const capGeom = new THREE.BoxGeometry(0.1, 0.26, 0.1);
+        const capGeom = new THREE.BoxGeometry(0.104, 0.26, 0.104);
         [[-1.7, -1.05], [1.7, -1.05], [-1.7, 1.05], [1.7, 1.05]].forEach(([x, z]) => {
             const cap = new THREE.Mesh(capGeom, capMat);
             cap.position.set(x, 0.3, z);
@@ -102,7 +102,7 @@ export class NewtonsCradle {
             new THREE.BoxGeometry(0.8, 0.1, 0.02),
             new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.9, roughness: 0.2 })
         );
-        plaque.position.set(0, 0.3, 1.11);
+        plaque.position.set(0, 0.3, 1.105);
         this.group.add(plaque);
 
         this.interactableMeshes.push(base);

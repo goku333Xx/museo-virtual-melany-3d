@@ -17,6 +17,7 @@ export class TeslaCoil {
     private isSleeping: boolean = false;
     private arcLines: THREE.Line[] = [];
     private arcPositions: Float32Array[] = [];
+    private arcTargets: THREE.Vector3[] = [];
     private sparkSprites: THREE.Sprite[] = [];
 
     // Tubo fluorescente inalámbrico
@@ -33,7 +34,6 @@ export class TeslaCoil {
     // Performance: Variables pre-alocadas para evitar Garbage Collection
     private startPos = new THREE.Vector3();
     private targetPos = new THREE.Vector3(0.6, 0.4, 0.4);
-    private endPos = new THREE.Vector3();
     private groundPos = new THREE.Vector3(-0.6, 0.8, -0.4);
 
     private readonly modes: TeslaModeInfo[] = [
@@ -234,6 +234,24 @@ export class TeslaCoil {
             blending: THREE.AdditiveBlending
         });
         
+        const spriteCanvas = document.createElement('canvas');
+        spriteCanvas.width = 32; spriteCanvas.height = 32;
+        const spriteCtx = spriteCanvas.getContext('2d');
+        if (spriteCtx) {
+            const grad = spriteCtx.createRadialGradient(16, 16, 0, 16, 16, 16);
+            grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+            grad.addColorStop(0.2, 'rgba(103, 232, 249, 1)');
+            grad.addColorStop(1, 'rgba(103, 232, 249, 0)');
+            spriteCtx.fillStyle = grad;
+            spriteCtx.fillRect(0, 0, 32, 32);
+        }
+        
+        const sparkMat = new THREE.SpriteMaterial({ 
+            map: new THREE.CanvasTexture(spriteCanvas),
+            blending: THREE.AdditiveBlending,
+            transparent: true
+        });
+
         const MAX_POINTS = 16;
         for (let i = 0; i < 5; i++) {
             const geom = new THREE.BufferGeometry();
@@ -243,25 +261,10 @@ export class TeslaCoil {
             const line = new THREE.Line(geom, arcMat);
             this.arcLines.push(line);
             this.arcPositions.push(positions);
+            this.arcTargets.push(new THREE.Vector3());
             this.group.add(line);
             
-            const spriteCanvas = document.createElement('canvas');
-            spriteCanvas.width = 32; spriteCanvas.height = 32;
-            const spriteCtx = spriteCanvas.getContext('2d');
-            if (spriteCtx) {
-                const grad = spriteCtx.createRadialGradient(16, 16, 0, 16, 16, 16);
-                grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
-                grad.addColorStop(0.2, 'rgba(103, 232, 249, 1)');
-                grad.addColorStop(1, 'rgba(103, 232, 249, 0)');
-                spriteCtx.fillStyle = grad;
-                spriteCtx.fillRect(0, 0, 32, 32);
-            }
-            
-            const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ 
-                map: new THREE.CanvasTexture(spriteCanvas),
-                blending: THREE.AdditiveBlending,
-                transparent: true
-            }));
+            const sprite = new THREE.Sprite(sparkMat);
             sprite.scale.set(0.2, 0.2, 1);
             this.sparkSprites.push(sprite);
             this.group.add(sprite);
@@ -318,9 +321,10 @@ export class TeslaCoil {
                     let z = start.z + (end.z - start.z) * t;
                     
                     if (s > 0 && s < steps) {
-                        x += (Math.random() - 0.5) * jitter;
-                        y += (Math.random() - 0.5) * jitter;
-                        z += (Math.random() - 0.5) * jitter;
+                        const env = Math.sin(t * Math.PI);
+                        x += (Math.random() - 0.5) * jitter * env;
+                        y += (Math.random() - 0.5) * jitter * env;
+                        z += (Math.random() - 0.5) * jitter * env;
                     }
                     
                     positions[s * 3] = x;
@@ -353,16 +357,18 @@ export class TeslaCoil {
         } else if (this.currentMode === 1) { // Tormenta de Plasma
             const arcCount = 5;
             for (let a = 0; a < arcCount; a++) {
-                const angle = (a / arcCount) * Math.PI * 2 + Math.sin(time * 10 + a) * 0.5;
-                const endRadius = 0.4 + Math.random() * 0.3;
-                this.endPos.set(
-                    Math.cos(angle) * endRadius,
-                    toroidY + (Math.random() - 0.5) * 0.5,
-                    Math.sin(angle) * endRadius
-                );
+                if (updateArcs) {
+                    const angle = (a / arcCount) * Math.PI * 2 + Math.sin(time * 10 + a) * 0.5;
+                    const endRadius = 0.4 + Math.random() * 0.3;
+                    this.arcTargets[a].set(
+                        Math.cos(angle) * endRadius,
+                        toroidY + (Math.random() - 0.5) * 0.5,
+                        Math.sin(angle) * endRadius
+                    );
+                }
 
-                updateLine(a, this.startPos, this.endPos, 0.3);
-                this.sparkSprites[a].position.copy(this.endPos);
+                updateLine(a, this.startPos, this.arcTargets[a], 0.3);
+                this.sparkSprites[a].position.copy(this.arcTargets[a]);
                 this.sparkSprites[a].visible = true;
             }
 
