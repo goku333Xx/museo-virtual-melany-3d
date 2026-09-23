@@ -423,12 +423,41 @@ export class RobotGuide {
         ctx.fill();
         ctx.stroke();
 
-        // Texto en negrita y legible
-        ctx.font = 'bold 30px "Inter", system-ui, sans-serif';
+        // Texto en negrita y legible, reducido a 24px para mejor wrapping
+        ctx.font = 'bold 24px "Inter", system-ui, sans-serif';
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(text, w / 2, padY + boxH / 2);
+
+        const maxWidth = 460;
+        const lineHeight = 28;
+        const paragraphs = text.split(/<br\s*\/?>/i);
+        const lines: string[] = [];
+
+        for (const paragraph of paragraphs) {
+            const words = paragraph.split(' ');
+            let currentLine = '';
+
+            for (let i = 0; i < words.length; i++) {
+                const testLine = currentLine + words[i] + ' ';
+                const metrics = ctx.measureText(testLine);
+
+                if (metrics.width > maxWidth && i > 0) {
+                    lines.push(currentLine.trim());
+                    currentLine = words[i] + ' ';
+                } else {
+                    currentLine = testLine;
+                }
+            }
+            lines.push(currentLine.trim());
+        }
+
+        const totalTextHeight = lines.length * lineHeight;
+        let startY = padY + (boxH / 2) - (totalTextHeight / 2) + (lineHeight / 2);
+
+        for (let i = 0; i < lines.length; i++) {
+            ctx.fillText(lines[i], w / 2, startY + (i * lineHeight));
+        }
 
         this.speechTexture.needsUpdate = true;
     }

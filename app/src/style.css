@@ -1299,14 +1299,19 @@ html, body {
     display: none !important;
   }
 
-  /* Panel de Misiones compacto con contador 0/3 */
+  /* Panel de Misiones compacto con glassmorphism que no bloquea el centro */
   .mission-panel {
-    top: 50px;
-    left: 8px;
+    top: 60px;
+    left: 10px;
     width: auto;
     max-width: 280px;
-    padding: 8px 10px;
-    border-radius: 12px;
+    padding: 12px 14px;
+    border-radius: 16px;
+    background: rgba(15, 23, 42, 0.4) !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(0, 240, 255, 0.25) !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35) !important;
   }
 
   .mission-title-group h2,

@@ -194,6 +194,16 @@ function isInsidePedestalObstacle(x: number, z: number, camY: number): boolean {
                 return true;
             }
         }
+        
+        const doors = world.getDoorBarriers();
+        for (let i = 0; i < doors.length; i++) {
+            const door = doors[i];
+            if (door.visible) {
+                if (Math.hypot(x - door.position.x, z - door.position.z) < 2.0) {
+                    return true;
+                }
+            }
+        }
     }
     return false;
 }

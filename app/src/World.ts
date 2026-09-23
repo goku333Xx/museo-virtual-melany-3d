@@ -84,6 +84,10 @@ export class World {
         }
     }
 
+    public getDoorBarriers(): THREE.Mesh[] {
+        return this.doorBarriers;
+    }
+
     private unlockNextRoom(completedMissionId: number): void {
         const completedIdx = completedMissionId - 1;
         if (completedIdx + 1 < 8) {
@@ -235,14 +239,14 @@ export class World {
         const quizPapa: QuizData = {
             id: 1,
             title: "Sala 01: Pila de Papa",
-            question: "¿Cómo logran dos simples papas encender la lamparita del circuito?",
+            question: "¿Cómo hacen dos papas comunes para encender la lamparita?",
             options: [
-                "Porque las papas absorben calor del aire y sacan vapor.",
-                "Porque el jugo ácido hace correr a los electrones entre el zinc y el cobre por el cable.",
-                "Porque las papas tienen pilitas de litio escondidas adentro."
+                "Absorben calor del aire y sacan un vapor mágico.",
+                "El juguito ácido de la papa hace que los electrones corran por el cable como locos.",
+                "Tienen pilitas escondidas adentro, ¡obvio!"
             ],
             correctIndex: 1,
-            explanation: "¡Exacto! El jugo natural de la papa ayuda a que los electrones salten de un metal al otro a través del cable, creando una corriente eléctrica de verdad."
+            explanation: "¡Re bien! El jugo de la papa hace de puente para que los electrones corran de un clavo al otro, armando una corriente eléctrica de verdad."
         };
 
         const papaInteractable: Omit<Interactable, 'object'> = {
@@ -292,14 +296,14 @@ export class World {
         const quizTesla: QuizData = {
             id: 2,
             title: "Sala 02: Bobina de Tesla",
-            question: "¿Por qué el tubo fluorescente se enciende flotando en el aire cerca de la Bobina sin cables ni pilas?",
+            question: "¿Por qué el tubo se prende flotando cerca de la Bobina sin usar cables ni pilas?",
             options: [
-                "Porque la bobina envía ondas invisibles de energía que hacen brillar al gas del tubo.",
-                "Porque el vidrio tiene pequeñas baterías invisibles que se calientan.",
-                "Porque el sonido del trueno empuja luz adentro del tubo."
+                "Porque la bobina manda ondas invisibles por el aire que hacen brillar al gas del tubo.",
+                "Porque el vidrio tiene mini baterías que se re calientan.",
+                "Porque el ruido del rayo empuja la luz adentro del tubo."
             ],
             correctIndex: 0,
-            explanation: "¡Fabuloso! Nikola Tesla demostró la transmisión inalámbrica: ondas invisibles viajan por el aire y despiertan el gas dentro del tubo para que brille."
+            explanation: "¡Fabuloso! Nikola Tesla inventó la energía inalámbrica: unas ondas invisibles viajan por el aire y 'despiertan' al gas de adentro para que brille."
         };
 
         const teslaInteractable: Omit<Interactable, 'object'> = {
@@ -339,14 +343,14 @@ export class World {
         const quizWind: QuizData = {
             id: 3,
             title: "Sala 03: Aerogenerador Faraday",
-            question: "¿Cómo transforma el molino la fuerza del viento en luz para iluminar la ciudad?",
+            question: "¿Cómo hace el molino gigante para convertir el viento en luz para las casitas?",
             options: [
-                "El viento hace girar imanes dentro de bobinas de cobre, empujando electricidad limpia a las casas.",
-                "Las aspas atrapan nubes de tormenta y las exprimen sobre los edificios.",
-                "El viento enfría los cables y el frío se convierte en luz líquida."
+                "El viento hace girar imanes gigantes que empujan electricidad limpia a las casas.",
+                "Las aspas atrapan nubes de tormenta y las exprimen como esponjas.",
+                "El viento enfría los cables y se arma una luz líquida."
             ],
             correctIndex: 0,
-            explanation: "¡Brillante! El movimiento del viento hace rotar imanes de fuerza, y esos imanes empujan a los electrones por los cables para iluminar las casitas."
+            explanation: "¡Brillante! Al girar por el viento, unos imanes enormes empujan a los electrones por los cables para llevar luz a toda la ciudad."
         };
 
         const windInteractable: Omit<Interactable, 'object'> = {
@@ -668,15 +672,26 @@ export class World {
                 const timeInRoom = (performance.now() * 0.001) - this.roomEntryTime;
 
                 let speech: string;
+                let btn1Label = '¡Sí, vamos!';
+                let btn2Label = 'Ver Mapa';
+                let btn1Action = () => {
+                    this.robotGuide.startGuiding(nextRoom.id, nextRoom.name, nextRoom.pedestalPos, true);
+                    this.hud.showAchievementToast('¡Mel-Bot te Guía! 🚀', `Seguí a Mel-Bot volando hacia la ${nextRoom.name}`, '🤖');
+                };
 
                 if (isAllCompleted) {
                     speech = `🎉 ¡FELICITACIONES, <b>${this.hud.getStudentName()}</b>! 🏆<br><br>¡Ya completaste las 7 salas temáticas y sos un <b>Gran Maestro de la Energía Universal</b>!<br><br>¿Querés que volemos juntos a la <b>Galería Óptica</b> a ver el prisma de Newton o preferís ver tu diploma en el Diario? 🌈`;
+                    btn1Label = 'Ir a Óptica';
                 } else if (currentRoom && !this.hud.isMissionCompleted(currentRoom.id)) {
                     if (timeInRoom > 60) {
-                        speech = `¿Necesitás una pista? 🤔 ¡Probá interactuar con [E] y después hacé el desafío con [R]!`;
+                        speech = `¿Necesitás una pista, <b>${this.hud.getStudentName()}</b>? 🤔 ¡Probá interactuar con [E] y después hacé el desafío con [R]! ¡Falta re poco!`;
                     } else {
-                        speech = `¡Ya estamos acá en la <b>${currentRoom.name}</b>, <b>${this.hud.getStudentName()}</b>! 🔬<br><br>Tu misión en esta sala es interactuar con el experimento y luego presionar el botón 🏆 <b>[DESAFÍO CIENTÍFICO]</b> para responder la pregunta y ganar tu medalla.<br><br>¿Querés que te lleve directamente a la siguiente sala (<b>${nextRoom.name}</b>) o preferís resolver esta primero? 🚀`;
+                        speech = `¡Ya estamos acá en la <b>${currentRoom.name}</b>, <b>${this.hud.getStudentName()}</b>! 🔬<br><br>Tu misión en esta sala es interactuar con el experimento (tecla [E]) y luego presionar el botón 🏆 <b>[DESAFÍO CIENTÍFICO]</b> (tecla [R]) para responder la pregunta y ganar tu medalla. ¡No te vayas sin completarla!`;
                     }
+                    btn1Label = '¡Quiero investigar!';
+                    btn1Action = () => {
+                        // solo cierra el diálogo
+                    };
                 } else if (currentRoom && this.hud.isMissionCompleted(currentRoom.id)) {
                     speech = `¡Genial, <b>${this.hud.getStudentName()}</b>! 🌟 Ya ganaste la medalla de la <b>${currentRoom.name}</b>.<br><br>¿Volamos juntos a tu próxima misión en la <b>${nextRoom.name}</b>? ¡Seguime de cerca mientras te abro paso! 🚀`;
                 } else {
@@ -685,13 +700,11 @@ export class World {
 
                 this.hud.openMelDialog(
                     speech,
-                    () => {
-                        this.robotGuide.startGuiding(nextRoom.id, nextRoom.name, nextRoom.pedestalPos, true);
-                        this.hud.showAchievementToast('¡Mel-Bot te Guía! 🚀', `Seguí a Mel-Bot volando hacia la ${nextRoom.name}`, '🤖');
-                    },
+                    btn1Action,
                     () => {
                         this.hud.openJournal();
-                    }
+                    },
+                    [btn1Label, btn2Label]
                 );
             },
             onChallenge: () => {
@@ -793,10 +806,16 @@ export class World {
             this.room.update(time);
         }
 
-        // SIMULACIÓN SELECTIVA (Active Room LOD): Solo 1 experimento se simula a la vez
         // Sala 0: Pila de Papa y Cables
         if (this.switchExhibit) {
-            // Asumiendo que SwitchExhibit y Cables podrían tener setSleep en el futuro
+            if (this.switchExhibit.setSleep) this.switchExhibit.setSleep(activeRoomIdx !== 0);
+            if (this.cables && (this.cables as any).setSleep) (this.cables as any).setSleep(activeRoomIdx !== 0);
+            if (this.potato1 && (this.potato1 as any).setSleep) {
+                (this.potato1 as any).setSleep(activeRoomIdx !== 0);
+                (this.potato2 as any).setSleep(activeRoomIdx !== 0);
+                (this.potato3 as any).setSleep(activeRoomIdx !== 0);
+                (this.potato4 as any).setSleep(activeRoomIdx !== 0);
+            }
             if (activeRoomIdx === 0) {
                 this.switchExhibit.update(delta, this.isPlugged);
                 const circuitActive = this.switchExhibit.getState() && this.isPlugged;

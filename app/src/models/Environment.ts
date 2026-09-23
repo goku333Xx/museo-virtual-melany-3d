@@ -378,17 +378,53 @@ export class MuseumRoom {
             beaconGroup.add(starPoint);
         }
 
-        // Anillos giroscópicos holográficos flotando en el centro
-        const gyroGeo = new THREE.TorusGeometry(0.85, 0.015, 12, 36);
-        const gyro1 = new THREE.Mesh(gyroGeo, new THREE.MeshBasicMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.75 }));
-        gyro1.position.y = 1.8;
-        gyro1.rotation.x = Math.PI / 4;
-        beaconGroup.add(gyro1);
+        // Base monumental de bronce y mármol (reemplaza los anillos sci-fi)
+        const directoryBaseGeo = new THREE.CylinderGeometry(0.7, 0.9, 1.2, 32);
+        const directoryBaseMat = new THREE.MeshStandardMaterial({
+            color: 0x1e293b,
+            roughness: 0.3,
+            metalness: 0.2
+        });
+        const directoryBase = new THREE.Mesh(directoryBaseGeo, directoryBaseMat);
+        directoryBase.position.y = 0.6;
+        beaconGroup.add(directoryBase);
+        this.collidables.push(directoryBase);
 
-        const gyro2 = new THREE.Mesh(gyroGeo, new THREE.MeshBasicMaterial({ color: 0xfde047, transparent: true, opacity: 0.6 }));
-        gyro2.position.y = 1.8;
-        gyro2.rotation.y = Math.PI / 3;
-        beaconGroup.add(gyro2);
+        const topCapGeo = new THREE.CylinderGeometry(0.75, 0.75, 0.05, 32);
+        const topCapMat = new THREE.MeshStandardMaterial({
+            color: 0xd4af37,
+            roughness: 0.2,
+            metalness: 0.9
+        });
+        const topCap = new THREE.Mesh(topCapGeo, topCapMat);
+        topCap.position.y = 1.2 + 0.025;
+        beaconGroup.add(topCap);
+
+        // 4 Bancos de madera rectangulares en formación cuadrada
+        const benchGeom = new THREE.BoxGeometry(2.4, 0.45, 0.6);
+        const benchMat = new THREE.MeshStandardMaterial({
+            color: 0x5c4033, // Madera clásica
+            roughness: 0.8,
+            metalness: 0.05
+        });
+
+        const benchDist = 3.2;
+        const benchConfigs = [
+            { x: 0, z: -benchDist, rotY: 0 },
+            { x: 0, z: benchDist, rotY: 0 },
+            { x: -benchDist, z: 0, rotY: Math.PI / 2 },
+            { x: benchDist, z: 0, rotY: Math.PI / 2 }
+        ];
+
+        benchConfigs.forEach(bc => {
+            const bench = new THREE.Mesh(benchGeom, benchMat);
+            bench.position.set(bc.x, 0.225, bc.z);
+            bench.rotation.y = bc.rotY;
+            bench.castShadow = true;
+            bench.receiveShadow = true;
+            beaconGroup.add(bench);
+            this.collidables.push(bench);
+        });
 
         this.group.add(beaconGroup);
     }
@@ -593,13 +629,15 @@ export class MuseumRoom {
         roomConfigs.forEach((rc, idx) => {
             const isActive = idx === 0;
             // Luz cenital cálida de galería (3200K) que inunda la sala
-            const roomLight = new THREE.PointLight(0xfff7ed, isActive ? 1.4 : 0.25, 18.0, 1.2);
+            const roomLight = new THREE.PointLight(0xfff7ed, 1.4, 18.0, 1.2);
             roomLight.position.set(rc.x, 4.2, rc.z);
+            roomLight.visible = isActive;
             this.group.add(roomLight);
 
             // Foco de acento con el color de la temática reflejado en el techo/pared
-            const accentLight = new THREE.PointLight(rc.color, isActive ? 0.8 : 0.1, 8.0, 2.0);
+            const accentLight = new THREE.PointLight(rc.color, 0.8, 8.0, 2.0);
             accentLight.position.set(rc.x, 3.8, rc.z);
+            accentLight.visible = isActive;
             this.group.add(accentLight);
 
             this.roomLights.push({ roomLight, accentLight });
@@ -609,10 +647,18 @@ export class MuseumRoom {
             this.createWallSconce(rc.x + 3.5, 2.4, rc.z + 3.5, rc.color);
         });
 
-        // Iluminación adicional del Atrio Central para que resplandezca cálido y acogedor
-        const atriumLight1 = new THREE.PointLight(0xfffbeb, 2.6, 18.0, 1.3);
-        atriumLight1.position.set(0, 4.4, 0);
-        this.group.add(atriumLight1);
+        // Iluminación adicional del Atrio Central para que resplandezca cálido y acogedor (4 luces)
+        const atriumPos = [
+            [-4, 4.4, -4],
+            [4, 4.4, -4],
+            [-4, 4.4, 4],
+            [4, 4.4, 4]
+        ];
+        atriumPos.forEach(pos => {
+            const atriumLight = new THREE.PointLight(0xfffbeb, 0.8, 15.0, 1.3);
+            atriumLight.position.set(pos[0], pos[1], pos[2]);
+            this.group.add(atriumLight);
+        });
     }
 
     private createWallSconce(x: number, y: number, z: number, colorHex: number) {
@@ -835,9 +881,10 @@ export class MuseumRoom {
 
         // Foco de museo descendente sobre el experimento (activo solo en la sala actual)
         const isActive = this.floatingHalos.length === 0;
-        const spot = new THREE.SpotLight(0xfff5eb, isActive ? 12 : 1.5, 12, Math.PI / 4, 0.5, 1.5);
+        const spot = new THREE.SpotLight(0xfff5eb, 12, 12, Math.PI / 4, 0.5, 1.5);
         spot.position.set(0, 0, 0);
         spot.target.position.set(0, -3.0, 0);
+        spot.visible = isActive;
         haloGroup.add(spot);
         haloGroup.add(spot.target);
 
@@ -860,11 +907,11 @@ export class MuseumRoom {
         for (let i = 0; i < this.roomLights.length; i++) {
             const rl = this.roomLights[i];
             const isActive = i === targetIdx;
-            // Active room: full brightness. Inactive: gentle fill (NOT pitch black)
-            rl.roomLight.intensity = isActive ? 1.4 : 0.25;
-            rl.accentLight.intensity = isActive ? 0.8 : 0.1;
+            
+            rl.roomLight.visible = isActive;
+            rl.accentLight.visible = isActive;
             if (this.floatingHalos[i] && this.floatingHalos[i].spotLight) {
-                this.floatingHalos[i].spotLight.intensity = isActive ? 12 : 1.5;
+                this.floatingHalos[i].spotLight.visible = isActive;
             }
         }
     }

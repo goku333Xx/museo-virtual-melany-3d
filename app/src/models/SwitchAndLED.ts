@@ -35,109 +35,109 @@ export class SwitchExhibit {
     private lastMeterUpdateTime: number = 0;
 
     // Terminales para conexión de cables
-    public readonly terminalInPos = new THREE.Vector3(-0.24, 0.05, 0.10);   // Entrada desde papas izquierdas
-    public readonly terminalBridgePos = new THREE.Vector3(0.0, 0.05, 0.10);  // Puente Switch -> LED
-    public readonly terminalOutPos = new THREE.Vector3(0.24, 0.05, 0.10);    // Salida hacia papas derechas
+    public readonly terminalInPos = new THREE.Vector3(-0.9, 0.05, 0.8);   // Entrada desde papas izquierdas
+    public readonly terminalBridgePos = new THREE.Vector3(0.0, 0.05, 0.8);  // Puente Switch -> LED
+    public readonly terminalOutPos = new THREE.Vector3(0.9, 0.05, 0.8);    // Salida hacia papas derechas
 
     constructor() {
         this.group = new THREE.Group();
 
-        // 1. PLACA BASE DE LABORATORIO CENTRAL (0.68m x 0.42m)
-        const boardGeom = new THREE.BoxGeometry(0.68, 0.035, 0.42);
+        // 1. PLACA BASE DE LABORATORIO CENTRAL (2.2m x 2.2m)
+        const boardGeom = new THREE.BoxGeometry(2.2, 0.05, 2.2);
         const boardMat = new THREE.MeshStandardMaterial({
             color: 0x18202f,
             roughness: 0.5,
             metalness: 0.3
         });
         this.board = new THREE.Mesh(boardGeom, boardMat);
-        this.board.position.set(0, 0.018, 0.05);
+        this.board.position.set(0, 0.025, 0);
         this.board.castShadow = true;
         this.board.receiveShadow = true;
         this.group.add(this.board);
         this.interactableMeshes.push(this.board);
 
         // Bisel de latón en la base
-        const boardRimGeom = new THREE.BoxGeometry(0.70, 0.015, 0.44);
+        const boardRimGeom = new THREE.BoxGeometry(2.25, 0.025, 2.25);
         const boardRimMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, roughness: 0.3, metalness: 0.8 });
         const boardRim = new THREE.Mesh(boardRimGeom, boardRimMat);
-        boardRim.position.set(0, 0.007, 0.05);
+        boardRim.position.set(0, 0.0125, 0);
         this.group.add(boardRim);
 
-        // 2. MÓDULO DEL INTERRUPTOR INDUSTRIAL (+15% tamaño: radio 0.069)
-        const swBaseGeom = new THREE.BoxGeometry(0.20, 0.04, 0.20);
+        // 2. MÓDULO DEL INTERRUPTOR INDUSTRIAL GIGANTE
+        const swBaseGeom = new THREE.BoxGeometry(0.8, 0.1, 0.8);
         const swBaseMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.3, metalness: 0.8 });
         const swBase = new THREE.Mesh(swBaseGeom, swBaseMat);
-        swBase.position.set(0.18, 0.05, 0.05);
+        swBase.position.set(0.5, 0.1, 0.5);
         this.group.add(swBase);
         this.interactableMeshes.push(swBase);
 
-        // Botón pulsador rojo aumentado un 15%
-        const btnRadius = 0.069; // +15% de 0.06
-        const btnGeom = new THREE.CylinderGeometry(btnRadius, btnRadius, 0.045, 24);
+        // Botón pulsador rojo GIGANTE
+        const btnRadius = 0.32;
+        const btnGeom = new THREE.CylinderGeometry(btnRadius, btnRadius, 0.15, 32);
         const btnMat = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.3, metalness: 0.2 });
         this.button = new THREE.Mesh(btnGeom, btnMat);
-        this.button.position.set(0.18, 0.08, 0.05);
+        this.button.position.set(0.5, 0.2, 0.5);
         this.group.add(this.button);
         this.interactableMeshes.push(this.button);
 
         // Anillo de latón alrededor del pulsador
         const btnRing = new THREE.Mesh(
-            new THREE.TorusGeometry(btnRadius + 0.01, 0.009, 12, 24),
+            new THREE.TorusGeometry(btnRadius + 0.03, 0.02, 16, 32),
             new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.85, roughness: 0.2 })
         );
         btnRing.rotation.x = Math.PI / 2;
-        btnRing.position.set(0.18, 0.075, 0.05);
+        btnRing.position.set(0.5, 0.16, 0.5);
         this.group.add(btnRing);
 
         this.hintRing = new THREE.Mesh(
-            new THREE.TorusGeometry(0.075, 0.005, 8, 24),
+            new THREE.TorusGeometry(btnRadius + 0.05, 0.01, 16, 32),
             new THREE.MeshStandardMaterial({ color: 0xfde047, emissive: 0xfde047, metalness: 0.85, roughness: 0.2 })
         );
         this.hintRing.rotation.x = Math.PI / 2;
-        this.hintRing.position.set(0.18, 0.075, 0.05);
+        this.hintRing.position.set(0.5, 0.16, 0.5);
         this.group.add(this.hintRing);
 
-        // 3. MÓDULO DEL DIODO LED DE POTENCIA (+15% tamaño: radio 0.055)
-        const socketGeom = new THREE.CylinderGeometry(0.08, 0.085, 0.045, 24);
+        // 3. MÓDULO DEL DIODO LED DE POTENCIA (CONTENEDOR SCI-FI GIGANTE)
+        const socketGeom = new THREE.CylinderGeometry(0.5, 0.55, 0.12, 32);
         const socketMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.2, metalness: 0.9 });
         const socket = new THREE.Mesh(socketGeom, socketMat);
-        socket.position.set(-0.18, 0.05, 0.05);
+        socket.position.set(-0.5, 0.11, -0.2);
         this.group.add(socket);
         this.interactableMeshes.push(socket);
 
         // Patas metálicas ánodo y cátodo
-        const pinGeom = new THREE.CylinderGeometry(0.004, 0.004, 0.09, 12);
+        const pinGeom = new THREE.CylinderGeometry(0.02, 0.02, 0.3, 16);
         const pinMat = new THREE.MeshStandardMaterial({ color: 0xd1d5db, metalness: 0.95, roughness: 0.1 });
         const pin1 = new THREE.Mesh(pinGeom, pinMat);
-        pin1.position.set(-0.205, 0.085, 0.05);
+        pin1.position.set(-0.65, 0.2, -0.2);
         const pin2 = new THREE.Mesh(pinGeom, pinMat);
-        pin2.position.set(-0.155, 0.085, 0.05);
+        pin2.position.set(-0.35, 0.2, -0.2);
         this.group.add(pin1, pin2);
 
-        // Cúpula translúcida esmeralda del LED aumentada un 15%
-        const domeRadius = 0.055; // +15% de 0.048
-        const ledDomeGeom = new THREE.CapsuleGeometry(domeRadius, 0.09, 16, 24);
+        // Cúpula translúcida esmeralda GIGANTE
+        const domeRadius = 0.4;
+        const ledDomeGeom = new THREE.CapsuleGeometry(domeRadius, 0.6, 32, 32);
         const ledDomeMat = new THREE.MeshStandardMaterial({
             color: 0x86efac,
-            roughness: 0.08,
-            metalness: 0.1,
+            roughness: 0.05,
+            metalness: 0.2,
             transparent: true,
-            opacity: 0.88
+            opacity: 0.85
         });
         this.ledOuterDome = new THREE.Mesh(ledDomeGeom, ledDomeMat);
-        this.ledOuterDome.position.set(-0.18, 0.18, 0.05);
+        this.ledOuterDome.position.set(-0.5, 0.6, -0.2);
         this.group.add(this.ledOuterDome);
         this.interactableMeshes.push(this.ledOuterDome);
 
-        // Chip emisor nuclear interno
-        const coreGeom = new THREE.SphereGeometry(0.028, 16, 16);
+        // Chip emisor nuclear interno GIGANTE
+        const coreGeom = new THREE.SphereGeometry(0.2, 32, 32);
         const coreMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
         this.ledInnerCore = new THREE.Mesh(coreGeom, coreMat);
-        this.ledInnerCore.position.set(-0.18, 0.18, 0.05);
+        this.ledInnerCore.position.set(-0.5, 0.6, -0.2);
         this.group.add(this.ledInnerCore);
 
-        // Corona / Halo difuso
-        const coronaGeom = new THREE.SphereGeometry(0.14, 16, 16);
+        // Corona / Halo difuso GIGANTE
+        const coronaGeom = new THREE.SphereGeometry(0.7, 32, 32);
         const coronaMat = new THREE.MeshBasicMaterial({
             color: 0x22c55e,
             transparent: true,
@@ -146,19 +146,19 @@ export class SwitchExhibit {
             depthWrite: false
         });
         this.ledCoronaGlow = new THREE.Mesh(coronaGeom, coronaMat);
-        this.ledCoronaGlow.position.set(-0.18, 0.18, 0.05);
+        this.ledCoronaGlow.position.set(-0.5, 0.6, -0.2);
         this.group.add(this.ledCoronaGlow);
 
-        // Luz suave
-        this.ledLight = new THREE.PointLight(0x22c55e, 0, 1.8, 2.0);
-        this.ledLight.position.set(-0.18, 0.22, 0.05);
+        // Luz suave GIGANTE
+        this.ledLight = new THREE.PointLight(0x22c55e, 0, 8.0, 2.0);
+        this.ledLight.position.set(-0.5, 0.8, -0.2);
         this.group.add(this.ledLight);
 
         // 4. MULTÍMETRO DIGITAL UBICADO A LA DERECHA EN FRENTE DE LAS PAPAS (SIN TAPARLAS)
         this.buildDigitalMultimeter();
 
-        // 5. Bornes de tornillo
-        const termGeom = new THREE.CylinderGeometry(0.012, 0.014, 0.03, 16);
+        // 5. Bornes de tornillo GIGANTES
+        const termGeom = new THREE.CylinderGeometry(0.04, 0.05, 0.1, 16);
         const copperTerm = new THREE.Mesh(termGeom, new THREE.MeshStandardMaterial({ color: 0xb87333, metalness: 0.9 }));
         copperTerm.position.copy(this.terminalInPos);
 
@@ -178,7 +178,7 @@ export class SwitchExhibit {
     private buildDigitalMultimeter() {
         this.meterGroup = new THREE.Group();
         // Ubicado firmemente sobre la mesa (Y = 0) al frente derecho del circuito
-        this.meterGroup.position.set(0.48, 0.0, 0.30);
+        this.meterGroup.position.set(0.8, 0.0, 0.5);
         this.meterGroup.rotation.y = -Math.PI / 5.2; // Orientado ergonómicamente hacia el centro de la mirada
 
         // 1. Alfombrilla antiestática de laboratorio (0.36m x 0.32m) asentada sobre la mesa
@@ -309,43 +309,43 @@ export class SwitchExhibit {
     }
 
     private buildProbeCables() {
-        // Cable Negro (COM): Sale del jack negro, cae suavemente a la mesa y se conecta al borne de entrada (-0.24, 0.05, 0.10)
+        // Cable Negro (COM): Sale del jack negro, cae suavemente a la mesa y se conecta al borne de entrada
         const blackCurve = new THREE.CatmullRomCurve3([
-            new THREE.Vector3(0.44, 0.08, 0.37),
-            new THREE.Vector3(0.42, 0.015, 0.35),
-            new THREE.Vector3(0.28, 0.015, 0.28),
-            new THREE.Vector3(0.05, 0.015, 0.20),
-            new THREE.Vector3(-0.20, 0.05, 0.12)
+            new THREE.Vector3(0.76, 0.08, 0.57),
+            new THREE.Vector3(0.74, 0.015, 0.55),
+            new THREE.Vector3(0.4, 0.015, 0.4),
+            new THREE.Vector3(0.0, 0.015, 0.5),
+            new THREE.Vector3(-0.85, 0.05, 0.8)
         ]);
-        const blackGeom = new THREE.TubeGeometry(blackCurve, 24, 0.007, 8, false);
+        const blackGeom = new THREE.TubeGeometry(blackCurve, 32, 0.015, 8, false);
         const blackMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.6, metalness: 0.2 });
         const blackProbeWire = new THREE.Mesh(blackGeom, blackMat);
         blackProbeWire.castShadow = true;
         this.group.add(blackProbeWire);
 
-        // Cable Rojo (V): Sale del jack rojo, cae a la mesa y se conecta al borne de salida (0.24, 0.05, 0.10)
+        // Cable Rojo (V): Sale del jack rojo, cae a la mesa y se conecta al borne de salida
         const redCurve = new THREE.CatmullRomCurve3([
-            new THREE.Vector3(0.52, 0.08, 0.37),
-            new THREE.Vector3(0.50, 0.015, 0.33),
-            new THREE.Vector3(0.42, 0.015, 0.24),
-            new THREE.Vector3(0.30, 0.02, 0.16),
-            new THREE.Vector3(0.24, 0.05, 0.12)
+            new THREE.Vector3(0.84, 0.08, 0.57),
+            new THREE.Vector3(0.82, 0.015, 0.53),
+            new THREE.Vector3(0.6, 0.015, 0.6),
+            new THREE.Vector3(0.8, 0.02, 0.7),
+            new THREE.Vector3(0.95, 0.05, 0.8)
         ]);
-        const redGeom = new THREE.TubeGeometry(redCurve, 24, 0.007, 8, false);
+        const redGeom = new THREE.TubeGeometry(redCurve, 32, 0.015, 8, false);
         const redMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.6, metalness: 0.2 });
         const redProbeWire = new THREE.Mesh(redGeom, redMat);
         redProbeWire.castShadow = true;
         this.group.add(redProbeWire);
 
         // Pinzas cocodrilo doradas en los bornes
-        const clipGeom = new THREE.CylinderGeometry(0.008, 0.008, 0.04, 12);
+        const clipGeom = new THREE.CylinderGeometry(0.015, 0.015, 0.08, 12);
         clipGeom.rotateX(Math.PI / 2);
         const clipMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.95, roughness: 0.15 });
 
         const blackClip = new THREE.Mesh(clipGeom, clipMat);
-        blackClip.position.set(-0.21, 0.05, 0.11);
+        blackClip.position.set(-0.87, 0.05, 0.82);
         const redClip = new THREE.Mesh(clipGeom, clipMat);
-        redClip.position.set(0.25, 0.05, 0.11);
+        redClip.position.set(0.93, 0.05, 0.82);
         this.group.add(blackClip, redClip);
     }
 
@@ -434,7 +434,7 @@ export class SwitchExhibit {
         });
 
         this.sparkPoints = new THREE.Points(this.sparkGeometry, sparkMaterial);
-        this.sparkPoints.position.set(0.18, 0.08, 0.05); // En el interruptor
+        this.sparkPoints.position.set(0.5, 0.17, 0.5); // En el interruptor
         this.sparkPoints.visible = false;
         this.group.add(this.sparkPoints);
     }
@@ -465,10 +465,10 @@ export class SwitchExhibit {
         this.isOn = !this.isOn;
 
         if (this.isOn) {
-            this.button.position.y = 0.065;
+            this.button.position.y = 0.17; // Pressed down
             this.triggerSparks();
         } else {
-            this.button.position.y = 0.08;
+            this.button.position.y = 0.20; // Released up
         }
 
         return this.isOn;
@@ -476,6 +476,11 @@ export class SwitchExhibit {
 
     public setSleep(sleep: boolean): void {
         this.isSleeping = sleep;
+        if (this.isSleeping) {
+            this.ledLight.visible = false;
+        } else {
+            this.ledLight.visible = true;
+        }
     }
 
     public update(delta: number, isPlugged: boolean) {

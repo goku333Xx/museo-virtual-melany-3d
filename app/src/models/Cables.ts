@@ -14,11 +14,14 @@ export class EnergyCables {
         this.curve = new THREE.CatmullRomCurve3(points, false, 'chordal', 0.5);
 
         // Create the cable tube with realistic shiny plastic insulation
-        const tubeGeometry = new THREE.TubeGeometry(this.curve, 64, 0.008, 16, false);
+        // Increased radius for heavy-duty jumper cable look
+        const tubeGeometry = new THREE.TubeGeometry(this.curve, 64, 0.02, 12, false);
         const tubeMaterial = new THREE.MeshStandardMaterial({
             color: color,
-            metalness: 0.2,
-            roughness: 0.3
+            metalness: 0.3,
+            roughness: 0.2,
+            emissive: color,
+            emissiveIntensity: 0.1
         });
 
         const cableMesh = new THREE.Mesh(tubeGeometry, tubeMaterial);

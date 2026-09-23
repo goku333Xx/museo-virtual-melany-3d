@@ -173,6 +173,7 @@ export class HUD {
         this.melCloseBtn = document.getElementById('mel-close-btn') as HTMLButtonElement | null;
 
         this.setupEventListeners();
+        this.updateMissionPanel();
     }
 
     private setupEventListeners() {
@@ -598,18 +599,105 @@ export class HUD {
         }, 4500);
     }
 
+    private readonly missionsData = [
+        { title: "Pila de Papa", desc: "Cerrá el circuito electroquímico (~1.94V)" },
+        { title: "Bobina de Tesla", desc: "Transmití energía inalámbrica y encendé el tubo" },
+        { title: "Aerogenerador Faraday", desc: "Generá energía eólica e iluminá la ciudad" },
+        { title: "Panel Solar Fotovoltaico", desc: "Activá fotones y hacé girar la hélice" },
+        { title: "Generador Van de Graaff", desc: "Acumulá 150.000V y hacé levitar las cintas" },
+        { title: "Cuna de Newton", desc: "Probá la conservación de momento y choques" },
+        { title: "Dínamo Manual con Manivela", desc: "Girá la manivela y encendé la lámpara Edison" }
+    ];
+
+    public updateMissionPanel() {
+        if (!this.missionBody) return;
+
+        let currentMission = 1;
+        while (this.completedMissions.has(currentMission) && currentMission <= 7) {
+            currentMission++;
+        }
+
+        const headerTitle = document.querySelector('.mission-main-title') as HTMLElement;
+        if (headerTitle) {
+            headerTitle.innerText = `MISIONES: ${this.completedMissions.size} / 7 COMPLETADAS`;
+        }
+
+        // Hide eyebrow if needed to save space
+        const eyebrow = document.querySelector('.mission-title-group .eyebrow') as HTMLElement;
+        if (eyebrow) {
+             eyebrow.style.display = 'none';
+        }
+
+        this.missionBody.innerHTML = '';
+        const listContainer = document.createElement('div');
+        listContainer.className = 'mission-list';
+
+        if (currentMission <= 7) {
+            // Current active mission
+            const currData = this.missionsData[currentMission - 1];
+            const currEl = document.createElement('div');
+            currEl.className = 'task pending current-discovery';
+            currEl.style.padding = '8px 10px';
+            currEl.style.background = 'rgba(0, 240, 255, 0.1)';
+            currEl.style.border = '1px solid rgba(0, 240, 255, 0.3)';
+            currEl.style.borderRadius = '8px';
+            currEl.style.marginBottom = '8px';
+            currEl.innerHTML = `
+              <div class="dot" style="background: var(--cyan); color: #000; box-shadow: 0 0 10px var(--cyan);">${currentMission}</div>
+              <div class="task-info">
+                <span class="task-title" style="color: #fff; font-size: 14px; font-weight: 800;">${currData.title}</span>
+                <span class="task-status" style="color: #67e8f9; font-size: 11px;">${currData.desc}</span>
+              </div>
+            `;
+            listContainer.appendChild(currEl);
+
+            // Next mission (greyed out)
+            if (currentMission < 7) {
+                const nextData = this.missionsData[currentMission];
+                const nextEl = document.createElement('div');
+                nextEl.className = 'task locked-discovery';
+                nextEl.style.opacity = '0.6';
+                nextEl.style.padding = '8px 10px';
+                nextEl.style.background = 'rgba(15, 23, 42, 0.5)';
+                nextEl.style.border = '1px dashed rgba(148, 163, 184, 0.3)';
+                nextEl.style.borderRadius = '8px';
+                
+                nextEl.innerHTML = `
+                  <div class="dot" style="background: #334155; color: #94a3b8; font-size: 10px; display: flex; align-items: center; justify-content: center;">🔒</div>
+                  <div class="task-info">
+                    <span class="task-title" style="color: #94a3b8; font-size: 13px;">${nextData.title}</span>
+                    <span class="task-status" style="color: #64748b; font-size: 11px;">Completá la anterior para desbloquear</span>
+                  </div>
+                `;
+                listContainer.appendChild(nextEl);
+            }
+        } else {
+             // All done
+             const doneEl = document.createElement('div');
+             doneEl.className = 'task done current-discovery';
+             doneEl.style.padding = '8px 10px';
+             doneEl.style.background = 'rgba(74, 222, 128, 0.1)';
+             doneEl.style.border = '1px solid rgba(74, 222, 128, 0.3)';
+             doneEl.style.borderRadius = '8px';
+             doneEl.innerHTML = `
+               <div class="dot" style="background: #4ade80; color: #000; font-size: 12px; display: flex; align-items: center; justify-content: center;">⭐</div>
+               <div class="task-info">
+                 <span class="task-title" style="color: #4ade80; font-size: 14px; font-weight: 800;">¡Expedición Completada!</span>
+                 <span class="task-status" style="color: #bbf7d0; font-size: 11px;">Has dominado todas las fuentes de energía.</span>
+               </div>
+             `;
+             listContainer.appendChild(doneEl);
+        }
+
+        this.missionBody.appendChild(listContainer);
+    }
+
     // --- MISIONES & XP ---
     public completeMission(missionId: number) {
         if (this.completedMissions.has(missionId)) return;
         this.completedMissions.add(missionId);
 
-        const missionEl = document.getElementById(`mission-${missionId}`);
-        if (missionEl) {
-            missionEl.classList.remove('pending');
-            missionEl.classList.add('done');
-            const statusSpan = missionEl.querySelector('.task-status');
-            if (statusSpan) statusSpan.innerHTML = '¡Completado con éxito! ⭐';
-        }
+        this.updateMissionPanel();
 
         this.addXP(100);
         this.updateProgressText();
@@ -813,7 +901,7 @@ export class HUD {
     }
 
     // --- DIÁLOGO INTERACTIVO CON MEL-BOT ---
-    public openMelDialog(speechText: string, onGuide: () => void, onViewMap?: () => void) {
+    public openMelDialog(speechText: string, onGuide: () => void, onViewMap?: () => void, btnLabels?: string[]) {
         if (!this.melDialogModal) return;
         this.isModalOpen = true;
         this.melGuideCallback = onGuide;
@@ -830,6 +918,14 @@ export class HUD {
         }
         if (this.melDialogText) {
             this.melDialogText.innerHTML = speechText;
+        }
+
+        if (btnLabels && btnLabels.length >= 2) {
+            if (this.melGuideBtn) this.melGuideBtn.innerText = btnLabels[0];
+            if (this.melMapBtn) this.melMapBtn.innerText = btnLabels[1];
+        } else {
+            if (this.melGuideBtn) this.melGuideBtn.innerHTML = '¡Sí, vamos! <span class="kbd-hint">[E]</span>';
+            if (this.melMapBtn) this.melMapBtn.innerText = 'Ver Mapa';
         }
 
         this.melDialogModal.classList.remove('hidden');

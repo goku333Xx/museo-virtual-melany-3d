@@ -12,37 +12,7 @@ export class PotatoBattery {
     }
 
     private createPotato(): void {
-        // High-poly icosahedron for an organic shape
-        const geometry = new THREE.IcosahedronGeometry(0.15, 16);
-        const positionAttribute = geometry.attributes.position;
-        const vertex = new THREE.Vector3();
-
-        // Procedural vertex displacement for potato bumps and irregularities
-        for (let i = 0; i < positionAttribute.count; i++) {
-            vertex.fromBufferAttribute(positionAttribute, i);
-            
-            // Base elongation (potatoes are generally oblong)
-            vertex.x *= 1.4;
-            vertex.y *= 0.9;
-            vertex.z *= 0.9;
-
-            // Simple noise using sine/cosine for displacement
-            const noise = 
-                Math.sin(vertex.x * 25.0) * 0.01 +
-                Math.cos(vertex.y * 30.0) * 0.01 +
-                Math.sin(vertex.z * 20.0) * 0.01 +
-                Math.sin(vertex.x * 50.0 + vertex.y * 50.0) * 0.005;
-            
-            vertex.add(vertex.clone().normalize().multiplyScalar(noise));
-
-            // Indentations (eyes of the potato)
-            const eyeNoise = Math.pow(Math.abs(Math.sin(vertex.x * 30) * Math.cos(vertex.z * 30)), 4);
-            vertex.add(vertex.clone().normalize().multiplyScalar(-eyeNoise * 0.015));
-
-            positionAttribute.setXYZ(i, vertex.x, vertex.y, vertex.z);
-        }
-
-        geometry.computeVertexNormals();
+        const geometry = new THREE.SphereGeometry(0.15, 12, 12);
 
         // Realistic potato material
         const material = new THREE.MeshStandardMaterial({
@@ -53,10 +23,37 @@ export class PotatoBattery {
         });
         
         const potatoMesh = new THREE.Mesh(geometry, material);
+        potatoMesh.scale.set(1, 0.8, 1.2);
         potatoMesh.castShadow = true;
         potatoMesh.receiveShadow = true;
 
         this.group.add(potatoMesh);
+
+        // Laboratory Tray
+        const trayGeo = new THREE.BoxGeometry(0.6, 0.05, 0.4);
+        const trayMat = new THREE.MeshStandardMaterial({
+            color: 0x4a4a4a,
+            metalness: 0.8,
+            roughness: 0.2
+        });
+        const tray = new THREE.Mesh(trayGeo, trayMat);
+        tray.position.set(0, -0.145, 0);
+        tray.receiveShadow = true;
+        tray.castShadow = true;
+        this.group.add(tray);
+
+        // Dramatic mad scientist base glow
+        const glowGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.02, 32);
+        const glowMat = new THREE.MeshStandardMaterial({
+            color: 0x00ff00,
+            emissive: 0x00ff00,
+            emissiveIntensity: 0.5,
+            transparent: true,
+            opacity: 0.6
+        });
+        const glow = new THREE.Mesh(glowGeo, glowMat);
+        glow.position.set(0, -0.12, 0);
+        this.group.add(glow);
 
         const sproutGeo = new THREE.ConeGeometry(0.015, 0.04, 8);
         const sproutMat = new THREE.MeshStandardMaterial({ color: 0x4ade80, roughness: 0.8 });
