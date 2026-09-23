@@ -609,7 +609,7 @@ export class RobotGuide {
                 `🤖 Mel-Bot: ¡Mirá el multímetro de las papas! Marca 1.94V reales de las 2 papas en serie sumando energía.`,
                 `🤖 Mel-Bot: En la Bobina de Tesla, la energía viaja invisible por el aire y enciende el tubo fluorescente.`,
                 `🤖 Mel-Bot: En la maqueta eólica, el viento hace girar imanes de fuerza para iluminar toda la ciudad.`,
-                `🤖 Mel-Bot: ¡Buscá los 7 Orbes Cuánticos flotando en el museo para ganar +25 XP en cada uno!`
+                `🤖 Mel-Bot: ¡Buscá los 8 Orbes Cuánticos flotando en el museo para ganar +25 XP en cada uno!`
             ];
         } else {
             this.tips = [
@@ -617,7 +617,7 @@ export class RobotGuide {
                 `🤖 Mel-Bot: ¡Mirá el multímetro de las papas! Marca 1.94V reales de las 2 papas en serie sumando energía.`,
                 `🤖 Mel-Bot: En la Bobina de Tesla, la energía viaja invisible por el aire y enciende el tubo fluorescente sin cables.`,
                 `🤖 Mel-Bot: En la maqueta eólica, el viento hace girar imanes de fuerza para iluminar toda la ciudad.`,
-                `🤖 Mel-Bot: ¡Buscá los 7 Orbes Cuánticos flotando en el museo para ganar +25 XP en cada uno!`
+                `🤖 Mel-Bot: ¡Buscá los 8 Orbes Cuánticos flotando en el museo para ganar +25 XP en cada uno!`
             ];
         }
     }
@@ -667,8 +667,8 @@ export class RobotGuide {
                 const targetAngle = Math.atan2(dirX, dirZ);
                 this.group.rotation.y = lerpAngle(this.group.rotation.y, targetAngle, 0.14);
 
-                // Inclinación aerodinámica cinemática
-                this.group.rotation.z = THREE.MathUtils.lerp(this.group.rotation.z, -Math.sin(dirX * 0.1) * 0.25, 0.1);
+                // Inclinación aerodinámica cinemática + tilt de curiosidad
+                this.group.rotation.z = THREE.MathUtils.lerp(this.group.rotation.z, -Math.sin(dirX * 0.1) * 0.25 + 0.12, 0.1);
 
                 // Brazo derecho apuntando al frente
                 this.rightArmGroup.rotation.x = -Math.PI / 2.2;
@@ -710,7 +710,8 @@ export class RobotGuide {
                 this._dirVec.subVectors(this.targetDestination, this.group.position);
                 const targetRot = Math.atan2(this._dirVec.x, this._dirVec.z);
                 this.group.rotation.y = lerpAngle(this.group.rotation.y, targetRot, 0.1);
-                this.group.rotation.z = THREE.MathUtils.lerp(this.group.rotation.z, 0, 0.1);
+                // Head tilt slightly to the side to simulate curiosity or engagement when pointing
+                this.group.rotation.z = THREE.MathUtils.lerp(this.group.rotation.z, 0.15, 0.1);
 
                 this.rightArmGroup.rotation.x = -Math.PI / 2.2;
                 this.rightArmGroup.rotation.z = -0.1;

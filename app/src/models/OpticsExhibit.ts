@@ -178,26 +178,36 @@ export class OpticsExhibit {
         // 5. ETAPA GONIOMÉTRICA DE PRECISIÓN Y PRISMA GIGANTE (Montado sobre carrierPrism en X = 0)
         this.prismStage.position.set(0, railHeight + 0.022, 0);
 
-        // Torreta circular con escala en grados (radio 0.22m)
+        // Torreta circular con escala en grados (radio 0.22m) - Anodized black metal
         const stageDisc = new THREE.Mesh(
             new THREE.CylinderGeometry(0.22, 0.23, 0.035, 48),
-            new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8, roughness: 0.3 })
+            new THREE.MeshStandardMaterial({ color: 0x050505, metalness: 0.95, roughness: 0.4 })
         );
         stageDisc.position.set(0, 0.018, 0);
         this.prismStage.add(stageDisc);
 
-        // 3 tornillos micrométricos niveladores de bronce
+        // Tiny glowing indicator LEDs around the disc
+        const ledMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x00f0ff, emissiveIntensity: 2.0 });
+        for (let i = 0; i < 12; i++) {
+            const angle = (i * Math.PI * 2) / 12;
+            const led = new THREE.Mesh(new THREE.BoxGeometry(0.005, 0.005, 0.005), ledMat);
+            led.position.set(Math.cos(angle) * 0.225, 0.025, Math.sin(angle) * 0.225);
+            this.prismStage.add(led);
+        }
+
+        // 3 tornillos micrométricos niveladores de metal oscuro
+        const darkMetalMat = new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.9, roughness: 0.3 });
         for (let i = 0; i < 3; i++) {
             const angle = (i * Math.PI * 2) / 3;
-            const screw = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.018, 0.045, 16), footMat);
+            const screw = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.018, 0.045, 16), darkMetalMat);
             screw.position.set(Math.cos(angle) * 0.16, 0.04, Math.sin(angle) * 0.16);
             this.prismStage.add(screw);
         }
 
-        // Base de sujeción del prisma
+        // Base de sujeción del prisma - Anodized black metal
         const prismPlate = new THREE.Mesh(
             new THREE.CylinderGeometry(0.18, 0.18, 0.02, 36),
-            new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.9, roughness: 0.2 })
+            new THREE.MeshStandardMaterial({ color: 0x0a0a0a, metalness: 0.85, roughness: 0.2 })
         );
         prismPlate.position.set(0, 0.065, 0);
         this.prismStage.add(prismPlate);

@@ -91,11 +91,11 @@ export class TeslaCoil {
         });
 
         for (let i = 0; i < 5; i++) {
-            const r = 0.35 - i * 0.04;
-            const turnGeom = new THREE.TorusGeometry(r, 0.015, 16, 32);
+            const r = 0.35 - i * 0.035;
+            const turnGeom = new THREE.TorusGeometry(r, 0.025, 16, 48);
             turnGeom.rotateX(Math.PI / 2);
             const turn = new THREE.Mesh(turnGeom, copperMat);
-            turn.position.y = i * 0.03;
+            turn.position.y = i * 0.055;
             primaryCoilGroup.add(turn);
         }
         this.group.add(primaryCoilGroup);
@@ -131,6 +131,20 @@ export class TeslaCoil {
         secondaryCoil.castShadow = true;
         this.group.add(secondaryCoil);
         this.interactableMeshes.push(secondaryCoil);
+
+        // Efecto de aire ionizado (Glow) alrededor de la bobina secundaria
+        const ionizedGeom = new THREE.CylinderGeometry(0.09, 0.09, secondaryHeight, 32);
+        const ionizedMat = new THREE.MeshBasicMaterial({
+            color: 0x6644ff,
+            transparent: true,
+            opacity: 0.12,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+        const ionizedGlow = new THREE.Mesh(ionizedGeom, ionizedMat);
+        ionizedGlow.position.y = secondaryCoil.position.y;
+        this.group.add(ionizedGlow);
+
 
         // 4. Toroide Superior (Elegante y muy metálico)
         const toroidGeom = new THREE.TorusGeometry(0.28, 0.1, 32, 64);

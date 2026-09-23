@@ -475,57 +475,15 @@ export class DynamoExhibit {
         socket.position.y = 0.09;
         lampGroup.add(socket);
 
-        // Ampolla de vidrio tipo bombilla clásica Edison
-        const bulbGlassMat = new THREE.MeshStandardMaterial({
-            color: 0xffffff,
-            transparent: true,
-            opacity: 0.3,
-            roughness: 0.05,
-            metalness: 0.15
-        });
-        const bulbGlass = new THREE.Mesh(new THREE.SphereGeometry(0.10, 24, 24), bulbGlassMat);
-        bulbGlass.position.y = 0.22;
-        bulbGlass.scale.set(1.0, 1.3, 1.0);
-        lampGroup.add(bulbGlass);
-        this.interactableMeshes.push(bulbGlass);
+        // Bombilla Premium Estandarizada
+        const premiumBulb = this.createPremiumBulb();
+        premiumBulb.group.position.y = 0.16;
+        lampGroup.add(premiumBulb.group);
+        this.interactableMeshes.push(premiumBulb.glass);
 
-        // Filamento de tungsteno en jaula doble espiral
-        const filamentGeom = new THREE.TorusGeometry(0.038, 0.005, 12, 24);
-        const filamentMat = new THREE.MeshStandardMaterial({
-            color: 0x334155,
-            emissive: 0x000000,
-            emissiveIntensity: 0.0,
-            roughness: 0.4
-        });
-        this.bulbFilament = new THREE.Mesh(filamentGeom, filamentMat);
-        this.bulbFilament.position.y = 0.22;
-        this.bulbFilament.rotation.x = Math.PI / 2;
-        lampGroup.add(this.bulbFilament);
-
-        // Luz dinámica emitida por la bombilla
-        this.bulbPointLight = new THREE.PointLight(0xffedd5, 0, 4.5, 1.5);
-        this.bulbPointLight.position.set(0, 0.22, 0);
-        lampGroup.add(this.bulbPointLight);
-
-        // Halo resplandeciente en la bombilla
-        const spriteCanvas = document.createElement('canvas');
-        spriteCanvas.width = 64;
-        spriteCanvas.height = 64;
-        const ctx = spriteCanvas.getContext('2d')!;
-        const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
-        grad.addColorStop(0, 'rgba(255, 230, 150, 1)');
-        grad.addColorStop(0.4, 'rgba(255, 160, 50, 0.5)');
-        grad.addColorStop(1, 'rgba(255, 100, 0, 0)');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, 64, 64);
-
-        const glowTex = new THREE.CanvasTexture(spriteCanvas);
-        this.bulbGlowSprite = new THREE.Sprite(
-            new THREE.SpriteMaterial({ map: glowTex, transparent: true, opacity: 0, blending: THREE.AdditiveBlending })
-        );
-        this.bulbGlowSprite.position.set(0, 0.22, 0);
-        this.bulbGlowSprite.scale.set(0.65, 0.65, 0.65);
-        lampGroup.add(this.bulbGlowSprite);
+        this.bulbFilament = premiumBulb.filament;
+        this.bulbPointLight = premiumBulb.pointLight;
+        this.bulbGlowSprite = premiumBulb.glowSprite;
 
         this.group.add(lampGroup);
 
@@ -917,5 +875,79 @@ export class DynamoExhibit {
 
     public getInteractables(): THREE.Object3D[] {
         return this.interactableMeshes;
+    }
+
+    private createPremiumBulb() {
+        const group = new THREE.Group();
+
+        // Base metálica con rosca
+        const baseGeom = new THREE.CylinderGeometry(0.045, 0.045, 0.06, 32);
+        const baseMat = new THREE.MeshStandardMaterial({
+            color: 0xcccccc,
+            metalness: 0.9,
+            roughness: 0.3
+        });
+        const base = new THREE.Mesh(baseGeom, baseMat);
+        for (let i = 0; i < 4; i++) {
+            const ring = new THREE.Mesh(new THREE.TorusGeometry(0.046, 0.002, 8, 32), baseMat);
+            ring.position.y = -0.02 + i * 0.01;
+            ring.rotation.x = Math.PI / 2;
+            base.add(ring);
+        }
+        group.add(base);
+
+        // Ampolla de vidrio
+        const glassGeom = new THREE.SphereGeometry(0.1, 32, 32);
+        const glassMat = new THREE.MeshPhysicalMaterial({
+            color: 0xffffff,
+            transmission: 1.0,
+            roughness: 0.1,
+            thickness: 0.02,
+            transparent: true,
+            opacity: 1.0
+        });
+        const glass = new THREE.Mesh(glassGeom, glassMat);
+        glass.position.y = 0.12;
+        glass.scale.set(1.0, 1.2, 1.0);
+        group.add(glass);
+
+        // Filamento interno incandescente
+        const filamentGeom = new THREE.TorusGeometry(0.02, 0.002, 16, 32);
+        const filamentMat = new THREE.MeshStandardMaterial({
+            color: 0x334155,
+            emissive: 0x000000,
+            emissiveIntensity: 0.0,
+            roughness: 0.4
+        });
+        const filament = new THREE.Mesh(filamentGeom, filamentMat);
+        filament.position.y = 0.12;
+        filament.rotation.x = Math.PI / 2;
+        group.add(filament);
+
+        // Luz dinámica emitida
+        const pointLight = new THREE.PointLight(0xffedd5, 0, 4.5, 1.5);
+        pointLight.position.y = 0.12;
+        group.add(pointLight);
+
+        // Halo resplandeciente
+        const spriteCanvas = document.createElement('canvas');
+        spriteCanvas.width = 64;
+        spriteCanvas.height = 64;
+        const ctx = spriteCanvas.getContext('2d')!;
+        const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+        grad.addColorStop(0, 'rgba(255, 230, 150, 1)');
+        grad.addColorStop(0.4, 'rgba(255, 160, 50, 0.5)');
+        grad.addColorStop(1, 'rgba(255, 100, 0, 0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 64, 64);
+        const glowTex = new THREE.CanvasTexture(spriteCanvas);
+        const glowSprite = new THREE.Sprite(
+            new THREE.SpriteMaterial({ map: glowTex, transparent: true, opacity: 0, blending: THREE.AdditiveBlending })
+        );
+        glowSprite.position.y = 0.12;
+        glowSprite.scale.set(0.65, 0.65, 0.65);
+        group.add(glowSprite);
+
+        return { group, filament, pointLight, glowSprite, glass };
     }
 }

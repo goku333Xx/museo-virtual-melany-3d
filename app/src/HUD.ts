@@ -218,7 +218,7 @@ export class HUD {
 
         this.quizContinueBtn.onclick = () => {
             this.closeQuiz();
-            if (this.completedMissions.size === 7 && !this.celebrationTriggered) {
+            if (this.completedMissions.size === 8 && !this.celebrationTriggered) {
                 this.triggerGrandCelebration();
             }
         };
@@ -623,20 +623,21 @@ export class HUD {
         { title: "Panel Solar", desc: "Atrapá fotones y hacé que gire el motor del avión" },
         { title: "Van de Graaff", desc: "Juntá 150.000V y mirá cómo levitan las cintas locas" },
         { title: "Cuna de Newton", desc: "Comprobá cómo la energía rebota de punta a punta" },
-        { title: "Dínamo Manual", desc: "¡Transpirá un poco y encendé la lámpara a pura manivela!" }
+        { title: "Dínamo Manual", desc: "¡Transpirá un poco y encendé la lámpara a pura manivela!" },
+        { title: "Prisma Óptico", desc: "Separá la luz blanca y descubrí los colores escondidos" }
     ];
 
     public updateMissionPanel() {
         if (!this.missionBody) return;
 
         let currentMission = 1;
-        while (this.completedMissions.has(currentMission) && currentMission <= 7) {
+        while (this.completedMissions.has(currentMission) && currentMission <= 8) {
             currentMission++;
         }
 
         const headerTitle = document.querySelector('.mission-main-title') as HTMLElement;
         if (headerTitle) {
-            headerTitle.innerText = `MISIONES: ${this.completedMissions.size} / 7 COMPLETADAS`;
+            headerTitle.innerText = `MISIONES: ${this.completedMissions.size} / 8 COMPLETADAS`;
         }
 
         // Hide eyebrow if needed to save space
@@ -649,7 +650,7 @@ export class HUD {
         const listContainer = document.createElement('div');
         listContainer.className = 'mission-list';
 
-        if (currentMission <= 7) {
+        if (currentMission <= 8) {
             // Current active mission
             const currData = this.missionsData[currentMission - 1];
             const currEl = document.createElement('div');
@@ -669,7 +670,7 @@ export class HUD {
             listContainer.appendChild(currEl);
 
             // Next mission (greyed out)
-            if (currentMission < 7) {
+            if (currentMission < 8) {
                 const nextData = this.missionsData[currentMission];
                 const nextEl = document.createElement('div');
                 nextEl.className = 'task locked-discovery';
@@ -778,17 +779,17 @@ export class HUD {
     private updateProgressText() {
         const count = this.completedMissions.size;
         if (this.progressText) {
-            this.progressText.innerText = count === 7 
+            this.progressText.innerText = count === 8 
                 ? '🏆 ¡EXPEDICIÓN COMPLETA! ¡Gran Maestro de la Energía!' 
-                : `Progreso: ${count} de 7 salas completadas`;
+                : `Progreso: ${count} de 8 salas completadas`;
         }
         if (this.missionCounterBadge) {
-            this.missionCounterBadge.innerText = count === 7 ? '7/7 ⭐' : `${count}/7`;
-            if (count === 7) {
+            this.missionCounterBadge.innerText = count === 8 ? '8/8 ⭐' : `${count}/8`;
+            if (count === 8) {
                 this.missionCounterBadge.parentElement?.classList.add('all-done');
             }
         }
-        if (count === 7 && !this.celebrationTriggered) {
+        if (count === 8 && !this.celebrationTriggered) {
             this.triggerGrandCelebration();
         }
     }

@@ -10,13 +10,17 @@ export interface VanDeGraaffModeInfo {
 
 export class VanDeGraaffExhibit {
     private group: THREE.Group;
-    private beltMesh: THREE.Mesh;
+    private beltMat!: THREE.MeshStandardMaterial;
+    private rollerTop!: THREE.Mesh;
+    private rollerBot!: THREE.Mesh;
     private hairsData: {mesh: THREE.Mesh, qCharged: THREE.Quaternion, qDischarged: THREE.Quaternion}[] = [];
     private coronaMesh!: THREE.Mesh;
     private innerCoronaMesh!: THREE.Mesh;
-    private sparkLine: THREE.Line;
-    private sparkPositions = new Float32Array(9 * 3);
-    private sparkPosAttr: THREE.BufferAttribute;
+    private sparkCore!: THREE.InstancedMesh;
+    private sparkGlow!: THREE.InstancedMesh;
+    private dummyObj = new THREE.Object3D();
+    private p1 = new THREE.Vector3();
+    private p2 = new THREE.Vector3();
     private sparkLight: THREE.PointLight;
     private interactableMeshes: THREE.Object3D[] = [];
     
@@ -133,7 +137,6 @@ export class VanDeGraaffExhibit {
         this.group.add(column);
 
         // 4. CORREA DE CAUCHO INTERIOR QUE TRANSPORTA CARGA
-        const beltGeom = new THREE.BoxGeometry(0.08, columnH - 0.04, 0.01);
         const beltCanvas = document.createElement('canvas');
         beltCanvas.width = 128;
         beltCanvas.height = 128;
@@ -170,24 +173,32 @@ export class VanDeGraaffExhibit {
         beltTex.wrapT = THREE.RepeatWrapping;
         beltTex.repeat.set(1, 4);
 
-        const beltMat = new THREE.MeshStandardMaterial({
+        this.beltMat = new THREE.MeshStandardMaterial({
             map: beltTex,
             roughness: 0.7,
-            metalness: 0.2
+            metalness: 0.2,
+            side: THREE.DoubleSide
         });
-        this.beltMesh = new THREE.Mesh(beltGeom, beltMat);
-        this.beltMesh.position.set(genX, columnY, 0);
-        this.group.add(this.beltMesh);
+
+        // Correa formada por dos planos para dejar hueco interior para los rodillos
+        const beltHeight = columnH - 0.06;
+        const beltGeom = new THREE.PlaneGeometry(0.08, beltHeight);
+        const beltFront = new THREE.Mesh(beltGeom, this.beltMat);
+        beltFront.position.set(genX, columnY, 0.026);
+        const beltBack = new THREE.Mesh(beltGeom, this.beltMat);
+        beltBack.position.set(genX, columnY, -0.026);
+        beltBack.rotation.y = Math.PI; // Face outwards
+        this.group.add(beltFront, beltBack);
 
         // Rodillos de teflón y aluminio en extremos de la correa
         const rollerMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9 });
-        const rollerBot = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.09, 16), rollerMat);
-        rollerBot.rotation.z = Math.PI / 2;
-        rollerBot.position.set(genX, tableH + baseH + 0.15 + 0.03, 0);
-        const rollerTop = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.09, 16), rollerMat);
-        rollerTop.rotation.z = Math.PI / 2;
-        rollerTop.position.set(genX, tableH + baseH + 0.15 + columnH - 0.03, 0);
-        this.group.add(rollerBot, rollerTop);
+        this.rollerBot = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.09, 16), rollerMat);
+        this.rollerBot.rotation.z = Math.PI / 2;
+        this.rollerBot.position.set(genX, tableH + baseH + 0.15 + 0.03, 0);
+        this.rollerTop = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.09, 16), rollerMat);
+        this.rollerTop.rotation.z = Math.PI / 2;
+        this.rollerTop.position.set(genX, tableH + baseH + 0.15 + columnH - 0.03, 0);
+        this.group.add(this.rollerBot, this.rollerTop);
 
         // 5. CÚPULA DE ALTO VOLTAJE DE ALUMINIO ESPEJADO
         const domeRadius = 0.28;
@@ -313,17 +324,29 @@ export class VanDeGraaffExhibit {
         this.group.add(groundWire);
 
         // 9. ARCOS DE CHISPAS PROCEDURALES (DESCARGA ENTRE ESFERAS)
-        const sparkGeom = new THREE.BufferGeometry();
-        this.sparkPosAttr = new THREE.BufferAttribute(this.sparkPositions, 3);
-        sparkGeom.setAttribute('position', this.sparkPosAttr);
-        const sparkMat = new THREE.LineBasicMaterial({
+        // Spark segments using InstancedMesh for performance and thickness
+        const segmentGeom = new THREE.CylinderGeometry(0.003, 0.003, 1, 6);
+        segmentGeom.translate(0, 0.5, 0); // pivot at base
+        segmentGeom.rotateX(Math.PI / 2); // pivot points along Z axis
+        const sparkCoreMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        this.sparkCore = new THREE.InstancedMesh(segmentGeom, sparkCoreMat, 8);
+        this.sparkCore.visible = false;
+        
+        // outer glow segment
+        const glowGeom = new THREE.CylinderGeometry(0.012, 0.012, 1, 6);
+        glowGeom.translate(0, 0.5, 0);
+        glowGeom.rotateX(Math.PI / 2);
+        const sparkGlowMat = new THREE.MeshBasicMaterial({
             color: 0xc084fc,
-            linewidth: 3,
-            blending: THREE.AdditiveBlending
+            transparent: true,
+            opacity: 0.6,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
         });
-        this.sparkLine = new THREE.Line(sparkGeom, sparkMat);
-        this.sparkLine.visible = false;
-        this.group.add(this.sparkLine);
+        this.sparkGlow = new THREE.InstancedMesh(glowGeom, sparkGlowMat, 8);
+        this.sparkGlow.visible = false;
+        
+        this.group.add(this.sparkCore, this.sparkGlow);
 
         // Luz estroboscópica de las chispas
         this.sparkLight = new THREE.PointLight(0xc084fc, 0, 3.0);
@@ -336,9 +359,13 @@ export class VanDeGraaffExhibit {
         // Animación de la correa girando
         if (this.currentMode !== 2) {
             this.beltOffset = (this.beltOffset + delta * 2.5) % 1.0;
-            if ((this.beltMesh.material as THREE.MeshStandardMaterial).map) {
-                (this.beltMesh.material as THREE.MeshStandardMaterial).map!.offset.y = this.beltOffset;
+            if (this.beltMat.map) {
+                this.beltMat.map.offset.y = this.beltOffset;
             }
+            // spin rollers around local X axis (which is aligned with world Y? No, rotation.z = PI/2 aligns Y with X. 
+            // So we spin around local Y to spin along the belt)
+            this.rollerTop.rotateY(delta * 15);
+            this.rollerBot.rotateY(delta * 15);
         }
 
         // Interpolación de levitación de pelos y brillo de corona
@@ -379,26 +406,45 @@ export class VanDeGraaffExhibit {
             const endZ = 0;
 
             const isSparking = Math.random() > 0.35;
-            this.sparkLine.visible = isSparking;
+            this.sparkCore.visible = isSparking;
+            this.sparkGlow.visible = isSparking;
             this.sparkLight.intensity = isSparking ? (2.5 + Math.random() * 2.0) : 0;
 
             if (isSparking) {
                 SoundSynthesizer.getInstance().playElectrostaticSpark();
                 const segments = 8;
-                for (let s = 0; s <= segments; s++) {
-                    const alpha = s / segments;
-                    const jx = (s > 0 && s < segments) ? (Math.random() - 0.5) * 0.06 : 0;
-                    const jy = (s > 0 && s < segments) ? (Math.random() - 0.5) * 0.08 : 0;
-                    const jz = (s > 0 && s < segments) ? (Math.random() - 0.5) * 0.08 : 0;
-                    const idx = s * 3;
-                    this.sparkPositions[idx] = startX + (endX - startX) * alpha + jx;
-                    this.sparkPositions[idx + 1] = startY + (endY - startY) * alpha + jy;
-                    this.sparkPositions[idx + 2] = startZ + (endZ - startZ) * alpha + jz;
+                
+                this.p1.set(startX, startY, startZ);
+                
+                for (let s = 0; s < segments; s++) {
+                    const alpha = (s + 1) / segments;
+                    const jx = (s < segments - 1) ? (Math.random() - 0.5) * 0.06 : 0;
+                    const jy = (s < segments - 1) ? (Math.random() - 0.5) * 0.08 : 0;
+                    const jz = (s < segments - 1) ? (Math.random() - 0.5) * 0.08 : 0;
+                    
+                    this.p2.set(
+                        startX + (endX - startX) * alpha + jx,
+                        startY + (endY - startY) * alpha + jy,
+                        startZ + (endZ - startZ) * alpha + jz
+                    );
+                    
+                    const dist = this.p1.distanceTo(this.p2);
+                    this.dummyObj.position.copy(this.p1);
+                    this.dummyObj.lookAt(this.p2);
+                    this.dummyObj.scale.set(1, 1, dist);
+                    this.dummyObj.updateMatrix();
+                    
+                    this.sparkCore.setMatrixAt(s, this.dummyObj.matrix);
+                    this.sparkGlow.setMatrixAt(s, this.dummyObj.matrix);
+                    
+                    this.p1.copy(this.p2);
                 }
-                this.sparkPosAttr.needsUpdate = true;
+                this.sparkCore.instanceMatrix.needsUpdate = true;
+                this.sparkGlow.instanceMatrix.needsUpdate = true;
             }
         } else {
-            this.sparkLine.visible = false;
+            this.sparkCore.visible = false;
+            this.sparkGlow.visible = false;
             this.sparkLight.intensity = 0;
         }
     }

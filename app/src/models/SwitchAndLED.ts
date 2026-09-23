@@ -4,9 +4,8 @@ export class SwitchExhibit {
     private group: THREE.Group;
     private board: THREE.Mesh;
     private switchLeverGroup: THREE.Group;
-    private ledOuterDome: THREE.Mesh;
     private ledInnerCore: THREE.Mesh;
-    private ledCoronaGlow: THREE.Mesh;
+    private ledCoronaGlow: THREE.Sprite;
     private ledLight: THREE.PointLight;
 
     private isOn: boolean = false;
@@ -135,46 +134,15 @@ export class SwitchExhibit {
         pin2.position.set(0.05, 0.13, 0);
         ledContainer.add(pin1, pin2);
 
-        // Cúpula del LED realista
-        const ledDomeGeom = new THREE.CapsuleGeometry(0.12, 0.18, 32, 32);
-        const ledDomeMat = new THREE.MeshPhysicalMaterial({
-            color: 0x86efac,
-            roughness: 0.1,
-            metalness: 0.1,
-            transmission: 0.9,
-            thickness: 0.1,
-            transparent: true,
-            opacity: 0.85
-        });
-        this.ledOuterDome = new THREE.Mesh(ledDomeGeom, ledDomeMat);
-        this.ledOuterDome.position.set(0, 0.27, 0);
-        ledContainer.add(this.ledOuterDome);
-        this.interactableMeshes.push(this.ledOuterDome);
+        // Bombilla Premium Estandarizada
+        const premiumBulb = this.createPremiumBulb();
+        premiumBulb.group.position.y = 0.15;
+        ledContainer.add(premiumBulb.group);
+        this.interactableMeshes.push(premiumBulb.glass);
 
-        // Elemento interno
-        const coreGeom = new THREE.CylinderGeometry(0.04, 0.08, 0.08, 16);
-        const coreMat = new THREE.MeshStandardMaterial({ color: 0xa3a3a3, metalness: 0.9, roughness: 0.2 });
-        this.ledInnerCore = new THREE.Mesh(coreGeom, coreMat);
-        this.ledInnerCore.position.set(0, 0.23, 0);
-        ledContainer.add(this.ledInnerCore);
-
-        // Corona luminosa difusa
-        const coronaGeom = new THREE.SphereGeometry(0.25, 32, 32);
-        const coronaMat = new THREE.MeshBasicMaterial({
-            color: 0x22c55e,
-            transparent: true,
-            opacity: 0.0,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false
-        });
-        this.ledCoronaGlow = new THREE.Mesh(coronaGeom, coronaMat);
-        this.ledCoronaGlow.position.set(0, 0.3, 0);
-        ledContainer.add(this.ledCoronaGlow);
-
-        // Luz del LED
-        this.ledLight = new THREE.PointLight(0x22c55e, 0, 4.0, 2.0);
-        this.ledLight.position.set(0, 0.35, 0);
-        ledContainer.add(this.ledLight);
+        this.ledInnerCore = premiumBulb.filament;
+        this.ledCoronaGlow = premiumBulb.glowSprite;
+        this.ledLight = premiumBulb.pointLight;
 
         // 5. Bornes de tornillo
         const termGeom = new THREE.CylinderGeometry(0.04, 0.05, 0.1, 16);
@@ -285,16 +253,15 @@ export class SwitchExhibit {
         this.wasActive = active;
 
         const coreMat = this.ledInnerCore.material as THREE.MeshStandardMaterial;
-        const coronaMat = this.ledCoronaGlow.material as THREE.MeshBasicMaterial;
+        const coronaMat = this.ledCoronaGlow.material as THREE.SpriteMaterial;
 
         if (active) {
-            coreMat.emissive.setHex(0xa7f3d0);
-            coreMat.emissiveIntensity = 2.0;
-            coronaMat.opacity = 0.6 + Math.sin(time * 15) * 0.1;
-            this.ledLight.intensity = 1.2;
+            coreMat.emissive.setHex(0xffaa00);
+            coreMat.emissiveIntensity = 3.0;
+            coronaMat.opacity = 0.8 + Math.sin(time * 15) * 0.1;
+            this.ledLight.intensity = 1.5;
             this.ledLight.visible = true;
         } else {
-            coreMat.emissive.setHex(0x000000);
             coreMat.emissiveIntensity = 0;
             coronaMat.opacity = 0.0;
             this.ledLight.intensity = 0.0;
@@ -332,5 +299,79 @@ export class SwitchExhibit {
 
     public getMesh(): THREE.Group {
         return this.group;
+    }
+
+    private createPremiumBulb() {
+        const group = new THREE.Group();
+
+        // Base metálica con rosca
+        const baseGeom = new THREE.CylinderGeometry(0.045, 0.045, 0.06, 32);
+        const baseMat = new THREE.MeshStandardMaterial({
+            color: 0xcccccc,
+            metalness: 0.9,
+            roughness: 0.3
+        });
+        const base = new THREE.Mesh(baseGeom, baseMat);
+        for (let i = 0; i < 4; i++) {
+            const ring = new THREE.Mesh(new THREE.TorusGeometry(0.046, 0.002, 8, 32), baseMat);
+            ring.position.y = -0.02 + i * 0.01;
+            ring.rotation.x = Math.PI / 2;
+            base.add(ring);
+        }
+        group.add(base);
+
+        // Ampolla de vidrio
+        const glassGeom = new THREE.SphereGeometry(0.1, 32, 32);
+        const glassMat = new THREE.MeshPhysicalMaterial({
+            color: 0xffffff,
+            transmission: 1.0,
+            roughness: 0.1,
+            thickness: 0.02,
+            transparent: true,
+            opacity: 1.0
+        });
+        const glass = new THREE.Mesh(glassGeom, glassMat);
+        glass.position.y = 0.12;
+        glass.scale.set(1.0, 1.2, 1.0);
+        group.add(glass);
+
+        // Filamento interno incandescente
+        const filamentGeom = new THREE.TorusGeometry(0.02, 0.002, 16, 32);
+        const filamentMat = new THREE.MeshStandardMaterial({
+            color: 0x334155,
+            emissive: 0x000000,
+            emissiveIntensity: 0.0,
+            roughness: 0.4
+        });
+        const filament = new THREE.Mesh(filamentGeom, filamentMat);
+        filament.position.y = 0.12;
+        filament.rotation.x = Math.PI / 2;
+        group.add(filament);
+
+        // Luz dinámica emitida
+        const pointLight = new THREE.PointLight(0xffedd5, 0, 4.5, 1.5);
+        pointLight.position.y = 0.12;
+        group.add(pointLight);
+
+        // Halo resplandeciente
+        const spriteCanvas = document.createElement('canvas');
+        spriteCanvas.width = 64;
+        spriteCanvas.height = 64;
+        const ctx = spriteCanvas.getContext('2d')!;
+        const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+        grad.addColorStop(0, 'rgba(255, 230, 150, 1)');
+        grad.addColorStop(0.4, 'rgba(255, 160, 50, 0.5)');
+        grad.addColorStop(1, 'rgba(255, 100, 0, 0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 64, 64);
+        const glowTex = new THREE.CanvasTexture(spriteCanvas);
+        const glowSprite = new THREE.Sprite(
+            new THREE.SpriteMaterial({ map: glowTex, transparent: true, opacity: 0, blending: THREE.AdditiveBlending })
+        );
+        glowSprite.position.y = 0.12;
+        glowSprite.scale.set(0.65, 0.65, 0.65);
+        group.add(glowSprite);
+
+        return { group, filament, pointLight, glowSprite, glass };
     }
 }

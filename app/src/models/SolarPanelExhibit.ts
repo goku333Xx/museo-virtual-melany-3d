@@ -131,9 +131,41 @@ export class SolarPanelExhibit {
         backSheet.position.y = frameH / 2 + 0.001;
         panelGroup.add(backSheet);
 
+        // Textura programática para la celda solar (grid de líneas fotovoltaicas)
+        const cellCanvas = document.createElement('canvas');
+        cellCanvas.width = 256;
+        cellCanvas.height = 256;
+        const cCtx = cellCanvas.getContext('2d')!;
+        
+        // Fondo azul oscuro
+        cCtx.fillStyle = '#081735';
+        cCtx.fillRect(0, 0, 256, 256);
+        
+        // Líneas secundarias finas (fingers)
+        cCtx.strokeStyle = '#e2e8f0'; // Plateado/Blanco
+        cCtx.lineWidth = 1;
+        cCtx.beginPath();
+        for (let y = 0; y < 256; y += 12) {
+            cCtx.moveTo(0, y);
+            cCtx.lineTo(256, y);
+        }
+        cCtx.stroke();
+
+        // Líneas principales gruesas (busbars)
+        cCtx.lineWidth = 5;
+        cCtx.beginPath();
+        cCtx.moveTo(85, 0); cCtx.lineTo(85, 256);
+        cCtx.moveTo(170, 0); cCtx.lineTo(170, 256);
+        cCtx.stroke();
+        
+        const cellTex = new THREE.CanvasTexture(cellCanvas);
+        cellTex.wrapS = THREE.RepeatWrapping;
+        cellTex.wrapT = THREE.RepeatWrapping;
+
         // Vidrio templado con tratamiento antirreflejo y silicio monocristalino (azul oscuro iridiscente)
         const siliconMat = new THREE.MeshPhysicalMaterial({
-            color: 0x081735,
+            color: 0xffffff,
+            map: cellTex,
             roughness: 0.08,
             metalness: 0.65,
             clearcoat: 1.0,
@@ -381,9 +413,9 @@ export class SolarPanelExhibit {
             cylinder.position.set(xPos, 0, 0.12);
             batteryGroup.add(cylinder);
 
-            // Tapa de contacto superior e inferior
-            const capGeom = new THREE.CylinderGeometry(0.022, 0.022, 0.015, 16);
-            const capMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.9 });
+            // Tapa de contacto superior e inferior (Heavy-duty metallic caps)
+            const capGeom = new THREE.CylinderGeometry(0.024, 0.024, 0.018, 24);
+            const capMat = new THREE.MeshStandardMaterial({ color: 0xc0c0c0, metalness: 0.95, roughness: 0.2 });
             const capTop = new THREE.Mesh(capGeom, capMat);
             capTop.position.set(xPos, 0.08, 0.12);
             batteryGroup.add(capTop);
@@ -391,6 +423,12 @@ export class SolarPanelExhibit {
             const capBot = new THREE.Mesh(capGeom, capMat);
             capBot.position.set(xPos, -0.08, 0.12);
             batteryGroup.add(capBot);
+
+            // Terminal positivo de la batería (arriba)
+            const terminalGeom = new THREE.CylinderGeometry(0.01, 0.01, 0.006, 16);
+            const terminalTop = new THREE.Mesh(terminalGeom, capMat);
+            terminalTop.position.set(xPos, 0.08 + 0.009 + 0.003, 0.12);
+            batteryGroup.add(terminalTop);
 
             // Núcleo de energía luminoso (simulando nivel de carga)
             const core = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.15, 12), coreMat);

@@ -52,9 +52,31 @@ export class NewtonsCradle {
     }
 
     private createCradle() {
+        // Generar textura de madera procedural
+        const woodCanvas = document.createElement('canvas');
+        woodCanvas.width = 512;
+        woodCanvas.height = 512;
+        const ctx = woodCanvas.getContext('2d');
+        if (ctx) {
+            ctx.fillStyle = '#4a2f1d';
+            ctx.fillRect(0, 0, 512, 512);
+            for (let i = 0; i < 200; i++) {
+                ctx.fillStyle = Math.random() > 0.5 ? '#3b2413' : '#2a1708';
+                const y = Math.random() * 512;
+                const h = Math.random() * 8 + 2;
+                ctx.globalAlpha = Math.random() * 0.4 + 0.1;
+                ctx.fillRect(0, y, 512, h);
+            }
+            ctx.globalAlpha = 1.0;
+        }
+        const woodTexture = new THREE.CanvasTexture(woodCanvas);
+        woodTexture.wrapS = THREE.RepeatWrapping;
+        woodTexture.wrapT = THREE.RepeatWrapping;
+        
         // Base de madera noble pulida
         const baseMaterial = new THREE.MeshStandardMaterial({
-            color: 0x3b2413,
+            map: woodTexture,
+            color: 0xffffff,
             roughness: 0.4,
             metalness: 0.1
         });
@@ -162,6 +184,13 @@ export class NewtonsCradle {
             sphere.castShadow = true;
             this.spheres.push(sphere);
             this.interactableMeshes.push(sphere);
+
+            // Ganchito (Eyelet) para las cuerdas
+            const eyeletGeom = new THREE.TorusGeometry(0.03, 0.008, 8, 16);
+            const eyelet = new THREE.Mesh(eyeletGeom, chromeMaterial);
+            eyelet.position.set(0, sphereRadius, 0);
+            eyelet.rotation.y = Math.PI / 2;
+            sphere.add(eyelet);
             
             // Hilos en V dobles (Nylon/Steel)
             const string1 = new THREE.Mesh(wireGeom, wireMat);

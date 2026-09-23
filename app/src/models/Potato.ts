@@ -13,7 +13,16 @@ export class PotatoBattery {
     }
 
     private createPotato(): void {
-        const geometry = new THREE.SphereGeometry(0.08, 16, 16);
+        const geometry = new THREE.IcosahedronGeometry(0.15, 4);
+        const posAttribute = geometry.attributes.position;
+        const v = new THREE.Vector3();
+        for (let i = 0; i < posAttribute.count; i++) {
+            v.fromBufferAttribute(posAttribute, i);
+            const offset = Math.random() * 0.02 - 0.01;
+            v.add(v.clone().normalize().multiplyScalar(offset));
+            posAttribute.setXYZ(i, v.x, v.y, v.z);
+        }
+        geometry.computeVertexNormals();
 
         // Realistic potato material
         const material = new THREE.MeshStandardMaterial({
@@ -71,6 +80,17 @@ export class PotatoBattery {
         copperHead.position.y = 0.1;
         copperElectrode.add(copperHead);
 
+        // Hexagonal Nut for Copper
+        const nutGeo = new THREE.CylinderGeometry(0.014, 0.014, 0.008, 6);
+        const nutMat = new THREE.MeshStandardMaterial({
+            color: 0xd1d5db,
+            roughness: 0.3,
+            metalness: 0.9
+        });
+        const copperNut = new THREE.Mesh(nutGeo, nutMat);
+        copperNut.position.y = 0.085;
+        copperElectrode.add(copperNut);
+
         // Zinc Electrode (Cathode) - Galvanized nail look
         const zincGeo = new THREE.CylinderGeometry(0.004, 0.004, 0.2, 16);
         const zincMat = new THREE.MeshStandardMaterial({
@@ -88,6 +108,11 @@ export class PotatoBattery {
         const zincHead = new THREE.Mesh(zincHeadGeo, zincMat);
         zincHead.position.y = 0.1;
         zincElectrode.add(zincHead);
+
+        // Hexagonal Nut for Zinc
+        const zincNut = new THREE.Mesh(nutGeo, nutMat);
+        zincNut.position.y = 0.085;
+        zincElectrode.add(zincNut);
 
         this.group.add(copperElectrode);
         this.group.add(zincElectrode);

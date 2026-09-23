@@ -21,6 +21,11 @@ export class WindTurbineExhibit {
     private streetLights: THREE.MeshBasicMaterial[] = [];
     private interactableMeshes: THREE.Object3D[] = [];
 
+    private floatingTextSprite!: THREE.Sprite;
+    private floatingTextCanvas!: HTMLCanvasElement;
+    private floatingTextTexture!: THREE.CanvasTexture;
+    private floatingTextTime: number = 0;
+
     private currentMode: number = 1;
     private currentRpm: number = 85;
     private targetRpm: number = 85;
@@ -347,16 +352,17 @@ export class WindTurbineExhibit {
         const roofGeom = new THREE.ConeGeometry(0.11, 0.08, 4);
         roofGeom.rotateY(Math.PI / 4);
         const chimneyGeom = new THREE.BoxGeometry(0.02, 0.06, 0.02);
+        const houseDoorGeom = new THREE.BoxGeometry(0.03, 0.06, 0.01);
 
         const townData = [
-            { x: -0.35, z: -0.30, rot: 0.2, color: 0xf1f5f9, roof: 0xef4444 }, // Blanco, techo rojo
-            { x: -0.15, z: -0.40, rot: -0.1, color: 0xbfdbfe, roof: 0x3b82f6 }, // Celestito
-            { x: 0.10,  z: -0.32, rot: 0.5, color: 0xfef08a, roof: 0xd97706 }, // Amarillito
-            { x: 0.35,  z: -0.35, rot: -0.3, color: 0xf1f5f9, roof: 0xef4444 },
-            { x: -0.30, z: 0.35, rot: 3.1, color: 0xa7f3d0, roof: 0x059669 }, // Verdecito
-            { x: -0.10, z: 0.42, rot: 2.8, color: 0xf1f5f9, roof: 0x64748b },
-            { x: 0.15,  z: 0.38, rot: 3.4, color: 0xfde047, roof: 0xd97706 },
-            { x: 0.35,  z: 0.30, rot: 2.9, color: 0xbfdbfe, roof: 0x3b82f6 }
+            { x: -0.35, z: -0.30, rot: 0.2, color: 0xf1f5f9, roof: 0xef4444, scaleY: 1.0, scaleXZ: 1.0 }, // Blanco, techo rojo
+            { x: -0.15, z: -0.40, rot: -0.1, color: 0xbfdbfe, roof: 0x3b82f6, scaleY: 1.3, scaleXZ: 0.9 }, // Celestito
+            { x: 0.10,  z: -0.32, rot: 0.5, color: 0xfef08a, roof: 0xd97706, scaleY: 0.8, scaleXZ: 1.1 }, // Amarillito
+            { x: 0.35,  z: -0.35, rot: -0.3, color: 0xf1f5f9, roof: 0xef4444, scaleY: 1.1, scaleXZ: 1.0 },
+            { x: -0.30, z: 0.35, rot: 3.1, color: 0xa7f3d0, roof: 0x059669, scaleY: 0.9, scaleXZ: 1.05 }, // Verdecito
+            { x: -0.10, z: 0.42, rot: 2.8, color: 0xf1f5f9, roof: 0x64748b, scaleY: 1.4, scaleXZ: 0.95 },
+            { x: 0.15,  z: 0.38, rot: 3.4, color: 0xfde047, roof: 0xd97706, scaleY: 0.85, scaleXZ: 1.2 },
+            { x: 0.35,  z: 0.30, rot: 2.9, color: 0xbfdbfe, roof: 0x3b82f6, scaleY: 1.05, scaleXZ: 0.9 }
         ];
 
         // Ventanas brillantes (emissive)
@@ -380,18 +386,25 @@ export class WindTurbineExhibit {
             // Techo a dos aguas (simulado con cono de 4 lados)
             const roofMat = new THREE.MeshStandardMaterial({ color: b.roof, roughness: 0.7 });
             const roof = new THREE.Mesh(roofGeom, roofMat);
-            roof.position.y = 0.05 + 0.04;
+            roof.scale.set(b.scaleXZ, b.scaleY, b.scaleXZ);
+            roof.position.y = 0.05 + 0.04 * b.scaleY;
             houseGroup.add(roof);
 
             // Chimenea
             const chimney = new THREE.Mesh(chimneyGeom, new THREE.MeshStandardMaterial({ color: 0x78716c }));
-            chimney.position.set(0.04, 0.09, -0.03);
+            chimney.position.set(0.04, 0.09 * b.scaleY, -0.03);
             houseGroup.add(chimney);
+
+            // Puerta
+            const doorMat = new THREE.MeshStandardMaterial({ color: 0x3f3f46, roughness: 0.9 });
+            const door = new THREE.Mesh(houseDoorGeom, doorMat);
+            door.position.set(0, -0.02, 0.07);
+            houseGroup.add(door);
 
             const winGeom = new THREE.BoxGeometry(0.03, 0.03, 0.01);
             // Ventana frontal
             const win1 = new THREE.Mesh(winGeom, winMat);
-            win1.position.set(-0.02, 0.01, 0.07);
+            win1.position.set(-0.03, 0.01, 0.07);
             houseGroup.add(win1);
             const win2 = new THREE.Mesh(winGeom, winMat);
             win2.position.set(0.03, 0.01, 0.07);
@@ -567,6 +580,44 @@ export class WindTurbineExhibit {
         // Tramo 3: Poste 2 -> Subestación
         this.group.add(createCatenaryWire(p1_L, subStationL, 0.025));
         this.group.add(createCatenaryWire(p1_R, subStationR, 0.025));
+
+        // Floating Text Sprite para feedback
+        this.floatingTextCanvas = document.createElement('canvas');
+        this.floatingTextCanvas.width = 512;
+        this.floatingTextCanvas.height = 128;
+        this.floatingTextTexture = new THREE.CanvasTexture(this.floatingTextCanvas);
+        
+        const spriteMat = new THREE.SpriteMaterial({ 
+            map: this.floatingTextTexture, 
+            transparent: true, 
+            opacity: 0,
+            depthTest: false
+        });
+        this.floatingTextSprite = new THREE.Sprite(spriteMat);
+        this.floatingTextSprite.scale.set(0.6, 0.15, 1);
+        this.floatingTextSprite.position.set(0.1, tableH + towerH + 0.4, 0); // Arriba del molino y la ciudad
+        this.floatingTextSprite.renderOrder = 999;
+        this.group.add(this.floatingTextSprite);
+    }
+
+    private showFloatingText(text: string) {
+        const ctx = this.floatingTextCanvas.getContext('2d')!;
+        ctx.clearRect(0, 0, 512, 128);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 50px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        // Borde
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 6;
+        ctx.strokeText(text, 256, 64);
+        
+        // Relleno
+        ctx.fillText(text, 256, 64);
+        
+        this.floatingTextTexture.needsUpdate = true;
+        this.floatingTextTime = 2.0;
     }
 
     public setSleep(sleep: boolean): void {
@@ -604,22 +655,38 @@ export class WindTurbineExhibit {
         this.voltmeterNeedle.rotation.z = -needleAngle;
 
         // 6. Brillo de ventanas y farolas en función del voltaje producido
-        const emissiveLevel = 0.15 + normV * 1.35;
+        // Cambio dramático: exponencial para alto voltaje
+        const emissiveLevel = normV < 0.3 ? 0.02 : (normV > 0.8 ? 2.5 : 0.3 + normV * 0.5);
         this.cityWindows.forEach(wMat => {
             wMat.emissiveIntensity = emissiveLevel;
         });
         this.streetLights.forEach(lMat => {
-            lMat.color.setScalar(normV > 0.1 ? 1.0 : 0.2);
+            lMat.color.setScalar(normV > 0.1 ? (normV > 0.8 ? 1.5 : 0.8) : 0.1);
         });
+
+        // 7. Actualizar texto flotante
+        if (this.floatingTextTime > 0) {
+            this.floatingTextTime -= delta;
+            const opacity = Math.min(1.0, this.floatingTextTime * 2);
+            this.floatingTextSprite.material.opacity = opacity;
+            this.floatingTextSprite.position.y = 1.9 + (2.0 - this.floatingTextTime) * 0.1;
+        } else {
+            this.floatingTextSprite.material.opacity = 0;
+        }
     }
 
     public cycleMode(): WindTurbineModeInfo {
         this.currentMode = (this.currentMode + 1) % this.modes.length;
         const info = this.modes[this.currentMode];
 
-        const rpmMap = [35, 90, 180];
+        // Hacer el cambio dramático: 25 (bajo), 100 (medio), 320 (alto)
+        const rpmMap = [25, 100, 320];
         this.targetRpm = rpmMap[this.currentMode];
         this.targetVoltage = info.voltage;
+
+        // Mostrar texto flotante con la parte principal del nombre
+        const mainName = info.name.split(' (')[0].toUpperCase();
+        this.showFloatingText(mainName);
 
         return info;
     }

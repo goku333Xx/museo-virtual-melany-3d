@@ -599,7 +599,7 @@ export class World {
             title: "Galería Especial: Prisma Óptico",
             tag: "🌈 EL SECRETO DE LA LUZ",
             description: "Hace un montón, Isaac Newton descubrió que la luz blanca tiene todos los colores del arcoíris mezclados. ¡Al atravesar este prisma triangular, la luz se frena y cada color sale por su lado como un abanico re flashero!",
-            badge: "💎 Exhibición de Muestra e Historia",
+            badge: "🏅 +100 XP · Medalla Óptica",
             getModeText: () => `LÁSER: ${this.optics.getCurrentModeInfo().name.toUpperCase()}`,
             quiz: opticsQuiz,
             onInteract: () => {
@@ -608,7 +608,16 @@ export class World {
                 this.hud.setCardModePill(`LÁSER: ${newMode.name.toUpperCase()}`);
             },
             onChallenge: () => {
-                this.hud.showAchievementToast('Muestra de Óptica', 'Esta exhibición es un homenaje a la física de la luz y calibración visual.', '🌈');
+                if (!this.hud.isMissionCompleted(8)) {
+                    this.hud.openQuiz(opticsQuiz, (success) => {
+                        if (success) {
+                            this.hud.completeMission(8);
+                            this.unlockNextRoom(8);
+                        }
+                    });
+                } else {
+                    this.hud.showAchievementToast('Muestra de Óptica: ¡Completado!', 'Ya descubriste los colores escondidos de la luz blanca.', '🌈');
+                }
             }
         };
 
@@ -643,7 +652,7 @@ export class World {
         };
 
         const getNextIncompleteRoom = (excludeId?: number) => {
-            for (let i = 0; i < 7; i++) {
+            for (let i = 0; i < 8; i++) {
                 const r = museumRooms[i];
                 if (r.id !== excludeId && !this.hud.isMissionCompleted(r.id)) {
                     return r;
@@ -670,7 +679,7 @@ export class World {
             onInteract: () => {
                 const currentRoom = getCurrentPlayerRoom(this.lastPlayerPos);
                 const nextRoom = getNextIncompleteRoom(currentRoom ? currentRoom.id : undefined);
-                const isAllCompleted = this.hud.getCompletedCount() >= 7;
+                const isAllCompleted = this.hud.getCompletedCount() >= 8;
 
                 let speech: string;
                 let btn1Label = '¡De una, vamos!';
@@ -682,7 +691,7 @@ export class World {
                 };
 
                 if (isAllCompleted) {
-                    speech = `🎉 ¡FELICITACIONES, <b>${this.hud.getStudentName()}</b>! 🏆<br><br>¡Zarpado! Completaste las 7 salas y ya sos un <b>Gran Maestro de la Energía</b> oficial.<br><br>¿Te copás si vamos volando a la <b>Galería Óptica</b> para ver el prisma de Newton o preferís chusmear tu diploma en el Diario? 🌈`;
+                    speech = `🎉 ¡FELICITACIONES, <b>${this.hud.getStudentName()}</b>! 🏆<br><br>¡Zarpado! Completaste las 8 salas y ya sos un <b>Gran Maestro de la Energía</b> oficial.<br><br>¿Te copás si vamos volando a la <b>Galería Óptica</b> para ver el prisma de Newton o preferís chusmear tu diploma en el Diario? 🌈`;
                     btn1Label = 'Ir a Óptica';
                 } else if (currentRoom && !this.hud.isMissionCompleted(currentRoom.id)) {
                     speech = `¡Ojo al piojo, <b>${this.hud.getStudentName()}</b>! 🔬<br><br>Todavía te falta esta sala. Acordate de interactuar (con la tecla [E]) y después mandale click a 🏆 <b>[DESAFÍO CIENTÍFICO]</b> (tecla [R]) para responder la trivia y ganarte la medalla. ¡Vos podés!`;
