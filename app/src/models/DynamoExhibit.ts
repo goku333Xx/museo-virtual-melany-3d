@@ -318,6 +318,28 @@ export class DynamoExhibit {
         shaft.rotation.x = Math.PI / 2;
         this.rotorArmatureGroup.add(shaft);
 
+        // Manivela en el eje del rotor principal
+        const rotorCrankGroup = new THREE.Group();
+        rotorCrankGroup.position.set(0, 0, 0.15); // End of shaft
+        
+        const rotorCrankArm = new THREE.Mesh(
+            new THREE.BoxGeometry(0.015, 0.12, 0.01),
+            new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9, roughness: 0.2 })
+        );
+        rotorCrankArm.position.set(0, 0.06, 0);
+        rotorCrankGroup.add(rotorCrankArm);
+
+        const rotorCrankHandle = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.012, 0.015, 0.06, 16),
+            new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.7 })
+        );
+        rotorCrankHandle.rotation.x = Math.PI / 2;
+        rotorCrankHandle.position.set(0, 0.12, 0.03);
+        rotorCrankGroup.add(rotorCrankHandle);
+        this.interactableMeshes.push(rotorCrankHandle);
+
+        this.rotorArmatureGroup.add(rotorCrankGroup);
+
         // 5 Polos del inducido (diseño realista de motor DC)
         for (let i = 0; i < 5; i++) {
             const angle = (i / 5) * Math.PI * 2;

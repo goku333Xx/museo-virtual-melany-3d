@@ -333,7 +333,7 @@ export class VanDeGraaffExhibit {
         if (this.isSleeping) return;
         // Animación de la correa girando
         if (this.currentMode !== 2) {
-            this.beltOffset = (this.beltOffset - delta * 2.5) % 1.0;
+            this.beltOffset = (this.beltOffset + delta * 2.5) % 1.0;
             if ((this.beltMesh.material as THREE.MeshStandardMaterial).map) {
                 (this.beltMesh.material as THREE.MeshStandardMaterial).map!.offset.y = this.beltOffset;
             }

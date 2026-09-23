@@ -27,6 +27,10 @@ export class SolarPanelExhibit {
     private targetBulbColor = new THREE.Color(0xfef08a);
     private currentBulbColor = new THREE.Color(0xfef08a);
 
+    // Partículas de polvo en el haz de luz
+    private dustParticles!: THREE.Points;
+    private dustPositions!: Float32Array;
+
     // Pantalla digital LCD de telemetría solar
     private digitalCanvas: HTMLCanvasElement;
     private digitalCtx: CanvasRenderingContext2D;
@@ -315,6 +319,30 @@ export class SolarPanelExhibit {
         this.sunSpotLight.castShadow = false;
         this.sunLampPivot.add(this.sunSpotLight);
 
+        // Partículas de polvo ("dust motes") en el cono de luz
+        const dustCount = 150;
+        this.dustPositions = new Float32Array(dustCount * 3);
+        for (let i = 0; i < dustCount; i++) {
+            const r = Math.random() * 0.15;
+            const theta = Math.random() * Math.PI * 2;
+            const dist = Math.random() * 1.5; 
+            this.dustPositions[i * 3] = r * Math.cos(theta) * (dist + 0.5);
+            this.dustPositions[i * 3 + 1] = r * Math.sin(theta) * (dist + 0.5);
+            this.dustPositions[i * 3 + 2] = -dist; 
+        }
+        const dustGeom = new THREE.BufferGeometry();
+        dustGeom.setAttribute('position', new THREE.BufferAttribute(this.dustPositions, 3));
+        const dustMat = new THREE.PointsMaterial({
+            color: 0xfef08a,
+            size: 0.012,
+            transparent: true,
+            opacity: 0.5,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+        this.dustParticles = new THREE.Points(dustGeom, dustMat);
+        this.sunLampPivot.add(this.dustParticles);
+
         this.group.add(this.sunLampPivot);
 
         // =========================================================================
@@ -508,6 +536,23 @@ export class SolarPanelExhibit {
         // Actualizar UI con el nivel intermedio
         if (Math.abs(this.targetPropellerRpm - this.currentPropellerRpm) > 10) {
             this.updateDigitalDisplay();
+        }
+
+        // 4. Animar partículas de polvo en el haz de luz
+        if (this.dustParticles && this.dustPositions) {
+            for (let i = 0; i < 150; i++) {
+                this.dustPositions[i * 3] += Math.sin(_time * 0.5 + i) * 0.0005; 
+                this.dustPositions[i * 3 + 1] += Math.cos(_time * 0.4 + i) * 0.0005; 
+                this.dustPositions[i * 3 + 2] -= delta * 0.15; 
+                
+                if (this.dustPositions[i * 3 + 2] < -1.8) {
+                    this.dustPositions[i * 3 + 2] = 0;
+                    this.dustPositions[i * 3] = (Math.random() - 0.5) * 0.1;
+                    this.dustPositions[i * 3 + 1] = (Math.random() - 0.5) * 0.1;
+                }
+            }
+            this.dustParticles.geometry.attributes.position.needsUpdate = true;
+            (this.dustParticles.material as THREE.PointsMaterial).opacity = Math.min(0.5, (this.currentLightIntensity / 4.2) * 0.5);
         }
     }
 

@@ -11,6 +11,7 @@ export interface WindTurbineModeInfo {
 
 export class WindTurbineExhibit {
     private group: THREE.Group;
+    private yawGroup: THREE.Group;
     private rotorHub: THREE.Group;
     private generatorRotor: THREE.Group;
     private anemometerHub: THREE.Group;
@@ -139,8 +140,12 @@ export class WindTurbineExhibit {
         const nacelleY = tableH + towerH + 0.07;
 
         // Cuerpo estilizado y curvado de la góndola (fibra de vidrio blanca)
+        this.yawGroup = new THREE.Group();
+        this.yawGroup.position.set(turbineBaseX, nacelleY, 0);
+        this.group.add(this.yawGroup);
+
         const nacelleGroup = new THREE.Group();
-        nacelleGroup.position.set(turbineBaseX, nacelleY, 0);
+        this.yawGroup.add(nacelleGroup);
 
         const nacelleBody = new THREE.Mesh(
             new THREE.BoxGeometry(0.42, 0.12, 0.13),
@@ -234,13 +239,13 @@ export class WindTurbineExhibit {
         this.beaconLight.position.set(-0.21, 0.08, 0);
         nacelleGroup.add(this.beaconLight);
 
-        this.group.add(nacelleGroup);
+        // Ya añadido a yawGroup
 
         // =========================================================================
         // 4. BUJE Y 3 ASPAS AERODINÁMICAS BLANCAS CON PUNTA ROJA ("POSTA")
         // =========================================================================
         this.rotorHub = new THREE.Group();
-        this.rotorHub.position.set(turbineBaseX + 0.25, nacelleY, 0);
+        this.rotorHub.position.set(0.25, 0, 0);
 
         // Nariz cónica aerodinámica (Nosecone) en blanco industrial
         const noseCone = new THREE.Mesh(
@@ -314,7 +319,7 @@ export class WindTurbineExhibit {
             this.rotorHub.add(bladePivot);
         }
 
-        this.group.add(this.rotorHub);
+        this.yawGroup.add(this.rotorHub);
         this.interactableMeshes.push(this.rotorHub);
 
         // =========================================================================
@@ -575,11 +580,15 @@ export class WindTurbineExhibit {
         this.currentRpm += (this.targetRpm - this.currentRpm) * Math.min(1.0, delta * 3.2);
         this.currentVoltage += (this.targetVoltage - this.currentVoltage) * Math.min(1.0, delta * 3.2);
 
-        // 2. Rotación de las aspas del aerogenerador
+        // 2. Rotación de las aspas del aerogenerador y búsqueda de viento
         const rps = this.currentRpm / 60;
         this.currentAngle += rps * Math.PI * 2 * delta;
         this.rotorHub.rotation.x = this.currentAngle;
         this.generatorRotor.rotation.x = this.currentAngle;
+
+        if (this.yawGroup) {
+            this.yawGroup.rotation.y = Math.sin(time * 0.1) * 0.25;
+        }
 
         // 3. Rotación del anemómetro en el techo
         this.anemometerAngle += rps * 3.5 * Math.PI * 2 * delta;

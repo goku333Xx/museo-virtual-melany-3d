@@ -663,6 +663,11 @@ export class MuseumRoom {
 
             pedestalGroup.add(edgeBack, edgeFront, edgeLeft, edgeRight);
 
+            // Fake Ambient Occlusion Shadow
+            const dropShadow = this.createDropShadow(2.2, 0.65);
+            dropShadow.position.set(0, 0.01, 0);
+            pedestalGroup.add(dropShadow);
+
             pedestalGroup.position.set(pos[0], 0, pos[1]);
             this.group.add(pedestalGroup);
 
@@ -671,6 +676,35 @@ export class MuseumRoom {
 
             this.createFloatingHaloLight(pos[0], pos[1], idx * 2.1);
         });
+    }
+
+    private createDropShadow(radius: number, opacity: number): THREE.Mesh {
+        const canvas = document.createElement('canvas');
+        canvas.width = 128;
+        canvas.height = 128;
+        const ctx = canvas.getContext('2d')!;
+
+        const gradient = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+        gradient.addColorStop(0, 'rgba(0, 0, 0, 1)');
+        gradient.addColorStop(0.6, 'rgba(0, 0, 0, 0.8)');
+        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, 128, 128);
+
+        const tex = new THREE.CanvasTexture(canvas);
+        const geo = new THREE.PlaneGeometry(radius * 2, radius * 2);
+        const mat = new THREE.MeshBasicMaterial({
+            map: tex,
+            transparent: true,
+            opacity: opacity,
+            depthWrite: false, // Previene el z-fighting
+            color: 0xffffff
+        });
+
+        const plane = new THREE.Mesh(geo, mat);
+        plane.rotation.x = -Math.PI / 2;
+        return plane;
     }
 
     private createFloatingHaloLight(x: number, z: number, phase: number) {

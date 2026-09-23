@@ -18,6 +18,8 @@ export class NewtonsCradle {
     private isSleeping = false;
     private shockWaveTimer = 0;
     private sphereMats: THREE.MeshStandardMaterial[] = [];
+    private shockwaveMesh!: THREE.Mesh;
+    private shockwaveMat!: THREE.MeshBasicMaterial;
 
     // Modos de física realista de conservación de momento
     private currentMode: number = 0;
@@ -60,9 +62,23 @@ export class NewtonsCradle {
         // Acero cromado brillante para capturar la luz del halo flotante
         const chromeMaterial = new THREE.MeshStandardMaterial({
             color: 0xf8fafc,
-            roughness: 0.08,
-            metalness: 0.98
+            roughness: 0.1,
+            metalness: 1.0
         });
+
+        // Shockwave visual effect
+        const ringGeom = new THREE.TorusGeometry(0.35, 0.015, 16, 64);
+        this.shockwaveMat = new THREE.MeshBasicMaterial({ 
+            color: 0x00f0ff, 
+            transparent: true, 
+            opacity: 0, 
+            blending: THREE.AdditiveBlending, 
+            depthWrite: false 
+        });
+        this.shockwaveMesh = new THREE.Mesh(ringGeom, this.shockwaveMat);
+        this.shockwaveMesh.position.set(0, 2.7 + 0.1 - 2.0, 0); // frameHeight + 0.1 - stringLength
+        this.shockwaveMesh.rotation.x = Math.PI / 2;
+        this.group.add(this.shockwaveMesh);
 
         // Base geometry
         const baseGeometry = new THREE.BoxGeometry(3.5, 0.25, 2.2);
@@ -125,7 +141,13 @@ export class NewtonsCradle {
         const spacing = sphereRadius * 2;
         const stringLength = 2.0;
         
-        const stringMaterial = new THREE.LineBasicMaterial({ color: 0x94a3b8 });
+        const wireLen = Math.sqrt(0.78 * 0.78 + stringLength * stringLength);
+        const wireGeom = new THREE.CylinderGeometry(0.006, 0.006, wireLen, 8);
+        const wireMat = new THREE.MeshStandardMaterial({
+            color: 0xaaaaaa,
+            metalness: 0.9,
+            roughness: 0.2
+        });
         
         for (let i = 0; i < numSpheres; i++) {
             const pendulumGroup = new THREE.Group();
@@ -141,18 +163,14 @@ export class NewtonsCradle {
             this.spheres.push(sphere);
             this.interactableMeshes.push(sphere);
             
-            // Hilos en V dobles
-            const stringGeometry1 = new THREE.BufferGeometry().setFromPoints([
-                new THREE.Vector3(0, 0, -0.78),
-                new THREE.Vector3(0, -stringLength, 0)
-            ]);
-            const string1 = new THREE.Line(stringGeometry1, stringMaterial);
+            // Hilos en V dobles (Nylon/Steel)
+            const string1 = new THREE.Mesh(wireGeom, wireMat);
+            string1.position.set(0, -stringLength / 2, -0.39);
+            string1.rotation.x = -Math.atan2(0.78, stringLength);
             
-            const stringGeometry2 = new THREE.BufferGeometry().setFromPoints([
-                new THREE.Vector3(0, 0, 0.78),
-                new THREE.Vector3(0, -stringLength, 0)
-            ]);
-            const string2 = new THREE.Line(stringGeometry2, stringMaterial);
+            const string2 = new THREE.Mesh(wireGeom, wireMat);
+            string2.position.set(0, -stringLength / 2, 0.39);
+            string2.rotation.x = Math.atan2(0.78, stringLength);
             
             pendulumGroup.add(sphere);
             pendulumGroup.add(string1);
@@ -187,7 +205,17 @@ export class NewtonsCradle {
         if (this.isSleeping) return;
         if (this.shockWaveTimer > 0) {
             this.shockWaveTimer -= delta;
-            const intensity = Math.max(0, this.shockWaveTimer / 0.15);
+            
+            const swProgress = 1 - Math.max(0, this.shockWaveTimer / 0.4);
+            if (swProgress < 1) {
+                const scale = 1 + swProgress * 4.0;
+                this.shockwaveMesh.scale.set(scale, scale, scale);
+                this.shockwaveMat.opacity = (1 - swProgress) * 0.8;
+            } else {
+                this.shockwaveMat.opacity = 0;
+            }
+
+            const intensity = Math.max(0, this.shockWaveTimer / 0.4) * 2.0;
             for (let i = 1; i <= 3; i++) {
                 this.sphereMats[i].emissiveIntensity = intensity;
             }
@@ -208,10 +236,12 @@ export class NewtonsCradle {
                 if (playerDist === undefined || playerDist < 14) {
                     const volumeFactor = playerDist !== undefined ? Math.max(0.08, 1 - (playerDist / 14)) : 0.45;
                     SoundSynthesizer.getInstance().playNewtonClack(volumeFactor);
-                        this.shockWaveTimer = 0.15;
-                        for (let i = 1; i <= 3; i++) {
-                            this.sphereMats[i].emissive.setHex(0x00f0ff);
-                        }
+                    this.shockWaveTimer = 0.4;
+                    this.shockwaveMesh.scale.set(1, 1, 1);
+                    this.shockwaveMat.opacity = 0.8;
+                    for (let i = 1; i <= 3; i++) {
+                        this.sphereMats[i].emissive.setHex(0x00f0ff);
+                    }
                 }
             }
             this.prevSineWave = sineWave;
@@ -262,7 +292,9 @@ export class NewtonsCradle {
                     if (playerDist === undefined || playerDist < 14) {
                         const volumeFactor = playerDist !== undefined ? Math.max(0.08, 1 - (playerDist / 14)) : 0.45;
                         SoundSynthesizer.getInstance().playNewtonClack(volumeFactor);
-                        this.shockWaveTimer = 0.15;
+                        this.shockWaveTimer = 0.4;
+                        this.shockwaveMesh.scale.set(1, 1, 1);
+                        this.shockwaveMat.opacity = 0.8;
                         for (let i = 1; i <= 3; i++) {
                             this.sphereMats[i].emissive.setHex(0x00f0ff);
                         }

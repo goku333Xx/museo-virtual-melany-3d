@@ -503,7 +503,7 @@ export class HUD {
 
             this.quizFeedback.className = 'quiz-feedback';
             this.feedbackIcon.innerText = '🌟';
-            this.feedbackText.innerText = `¡Excelente, ${this.studentName}! ${explanation}`;
+            this.feedbackText.innerText = `¡Zarpado, ${this.studentName}! ${explanation}`;
             this.quizFeedback.classList.remove('hidden');
             this.quizContinueBtn.classList.remove('hidden');
             if (this.quizRetryCloseBtn) {
@@ -520,7 +520,7 @@ export class HUD {
             clickedBtn.classList.add('wrong');
             this.quizFeedback.className = 'quiz-feedback error';
             this.feedbackIcon.innerText = '🤔';
-            this.feedbackText.innerText = '¡Casi! Pensalo de nuevo o cerrá para mirar el experimento de nuevo.';
+            this.feedbackText.innerText = '¡Uy, casi! Pensalo de nuevo o cerrá para investigar el experimento un ratito más.';
             this.quizFeedback.classList.remove('hidden');
         }
     }
@@ -617,13 +617,13 @@ export class HUD {
     }
 
     private readonly missionsData = [
-        { title: "Pila de Papa", desc: "Cerrá el circuito electroquímico (~1.94V)" },
-        { title: "Bobina de Tesla", desc: "Transmití energía inalámbrica y encendé el tubo" },
-        { title: "Aerogenerador Faraday", desc: "Generá energía eólica e iluminá la ciudad" },
-        { title: "Panel Solar Fotovoltaico", desc: "Activá fotones y hacé girar la hélice" },
-        { title: "Generador Van de Graaff", desc: "Acumulá 150.000V y hacé levitar las cintas" },
-        { title: "Cuna de Newton", desc: "Probá la conservación de momento y choques" },
-        { title: "Dínamo Manual con Manivela", desc: "Girá la manivela y encendé la lámpara Edison" }
+        { title: "Pila de Papa", desc: "Cerrá el circuito y mirá cómo viajan los electrones (~1.94V)" },
+        { title: "Bobina de Tesla", desc: "¡Magia pura! Pasá energía por el aire sin cables" },
+        { title: "Aerogenerador Faraday", desc: "Usá el viento para darle luz a toda la mini ciudad" },
+        { title: "Panel Solar", desc: "Atrapá fotones y hacé que gire el motor del avión" },
+        { title: "Van de Graaff", desc: "Juntá 150.000V y mirá cómo levitan las cintas locas" },
+        { title: "Cuna de Newton", desc: "Comprobá cómo la energía rebota de punta a punta" },
+        { title: "Dínamo Manual", desc: "¡Transpirá un poco y encendé la lámpara a pura manivela!" }
     ];
 
     public updateMissionPanel() {
@@ -721,13 +721,13 @@ export class HUD {
 
         // Notificación de logro con toast y sonido
         const achievements: Record<number, { title: string; desc: string }> = {
-            1: { title: 'Pila de Papa: Reacción Redox', desc: '¡Has cerrado el circuito generando ~1.94V electroquímicos reales!' },
-            2: { title: 'Bobina de Tesla: Inducción Inalámbrica', desc: '¡Encendiste el tubo a distancia con ondas electromagnéticas!' },
-            3: { title: 'Aerogenerador Faraday: Energía Eólica', desc: '¡Convertiste la fuerza del viento en electricidad para la ciudad!' },
-            4: { title: 'Panel Solar: Efecto Fotoeléctrico', desc: '¡Transformaste fotones de luz en rotación mecánica de la hélice!' },
-            5: { title: 'Van de Graaff: Repulsión Estática', desc: '¡Acumulaste 150.000V e hiciste levitar las cintas en el aire!' },
-            6: { title: 'Cuna de Newton: Choque Elástico', desc: '¡Comprobaste la conservación simultánea de momento y energía!' },
-            7: { title: 'Dínamo Manual: Manivela e Inducción', desc: '¡Convertiste tu esfuerzo físico en 24V y luz incandescente!' }
+            1: { title: 'Pila de Papa: ¡Corriente Zarpada!', desc: '¡Cerraste el circuito y sacaste ~1.94V de unas simples papas!' },
+            2: { title: 'Bobina de Tesla: ¡Pura Magia!', desc: '¡Transmitiste energía inalámbrica por el aire como un campeón!' },
+            3: { title: 'Aerogenerador: ¡Alto Viento!', desc: '¡Le diste electricidad a la ciudad usando solo la fuerza del viento!' },
+            4: { title: 'Panel Solar: ¡Fotones al Ataque!', desc: '¡Transformaste la luz del sol para hacer girar la hélice!' },
+            5: { title: 'Van de Graaff: ¡Pelos de Punta!', desc: '¡Acumulaste tanta estática que hiciste levitar las cintas!' },
+            6: { title: 'Cuna de Newton: ¡Ping Pong de Energía!', desc: '¡Comprobaste cómo la energía viaja de lado a lado sin perderse!' },
+            7: { title: 'Dínamo Manual: ¡A Puro Músculo!', desc: '¡Transformaste tu propio esfuerzo en luz de verdad!' }
         };
 
         if (achievements[missionId]) {
@@ -740,13 +740,13 @@ export class HUD {
         this.scoreText.innerText = `⭐ ${this.xp} XP`;
 
         if (this.xp >= 700) {
-            this.rankText.innerText = 'Nivel 5: Gran Maestro de la Energía Universal';
+            this.rankText.innerText = 'Nivel 5: ¡Gran Maestro de la Energía!';
         } else if (this.xp >= 500) {
-            this.rankText.innerText = 'Nivel 4: Ingeniero de Energías Renovables';
+            this.rankText.innerText = 'Nivel 4: Ingeniero Súper Renovable';
         } else if (this.xp >= 300) {
-            this.rankText.innerText = 'Nivel 3: Domador de la Inducción';
+            this.rankText.innerText = 'Nivel 3: Domador de Electrones';
         } else if (this.xp >= 100) {
-            this.rankText.innerText = 'Nivel 2: Investigador de Circuitos';
+            this.rankText.innerText = 'Nivel 2: Investigador Curioso';
         } else {
             this.rankText.innerText = 'Nivel 1: Aprendiz de la Energía';
         }
@@ -779,7 +779,7 @@ export class HUD {
         const count = this.completedMissions.size;
         if (this.progressText) {
             this.progressText.innerText = count === 7 
-                ? '🏆 ¡EXPEDICIÓN COMPLETA! Gran Maestro de la Energía' 
+                ? '🏆 ¡EXPEDICIÓN COMPLETA! ¡Gran Maestro de la Energía!' 
                 : `Progreso: ${count} de 7 salas completadas`;
         }
         if (this.missionCounterBadge) {

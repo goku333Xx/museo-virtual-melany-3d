@@ -18,6 +18,7 @@ export class OpticsExhibit {
     private screenMaterial: THREE.MeshStandardMaterial;
     private rearScreenMaterial!: THREE.MeshStandardMaterial;
     private inGlowMesh!: THREE.Mesh;
+    private monoGlowMesh!: THREE.Mesh;
     private interactableMeshes: THREE.Object3D[] = [];
 
     private currentMode: number = 0;
@@ -170,8 +171,8 @@ export class OpticsExhibit {
             opacity: 0.35,
             blending: THREE.AdditiveBlending
         });
-        const inGlow = new THREE.Mesh(inGlowGeom, inGlowMat);
-        this.incomingBeam.add(inGlow);
+        this.inGlowMesh = new THREE.Mesh(inGlowGeom, inGlowMat);
+        this.incomingBeam.add(this.inGlowMesh);
 
         // 5. ETAPA GONIOMÉTRICA DE PRECISIÓN Y PRISMA GIGANTE (Montado sobre carrierPrism en X = 0)
         this.prismStage.position.set(0, railHeight + 0.022, 0);
@@ -221,12 +222,17 @@ export class OpticsExhibit {
         const prismGeom = new THREE.ExtrudeGeometry(prismShape, extrudeSettings);
         prismGeom.center();
 
-        const prismMat = new THREE.MeshStandardMaterial({
-            color: 0xd4e8f8,
+        const prismMat = new THREE.MeshPhysicalMaterial({
+            color: 0xffffff,
             transparent: true,
-            opacity: 0.35,
+            opacity: 0.3,
             roughness: 0.02,
-            metalness: 0.4
+            metalness: 0.1,
+            clearcoat: 1.0,
+            clearcoatRoughness: 0.02,
+            iridescence: 1.0,
+            iridescenceIOR: 1.5,
+            side: THREE.DoubleSide
         });
 
         this.prismMesh = new THREE.Mesh(prismGeom, prismMat);
@@ -251,12 +257,48 @@ export class OpticsExhibit {
         this.rainbowGroup = new THREE.Group();
         this.rainbowGroup.position.set(0.105, beamY, 0);
 
-        // Construir la malla continua del arcoíris que llega directo a la pantalla (0.628m)
-        this.buildVibrantRainbowFan(beamSpan);
+        // Rayos de dispersión cromática (Arcoíris Volumétrico)
+        const spectralRays = [
+            { name: "ROJO", col: 0xff0022, angle: -0.06 },
+            { name: "NARANJA", col: 0xff6600, angle: -0.02 },
+            { name: "AMARILLO", col: 0xffcc00, angle: 0.02 },
+            { name: "VERDE", col: 0x00dd44, angle: 0.06 },
+            { name: "CIAN", col: 0x00d4ff, angle: 0.10 },
+            { name: "AZUL", col: 0x1155ff, angle: 0.14 },
+            { name: "VIOLETA", col: 0x8800ff, angle: 0.18 }
+        ];
 
-        // Wavelength labels
-        const labelNames = ["ROJO", "NARANJA", "AMARILLO", "VERDE", "CIAN", "AZUL", "VIOLETA"];
-        labelNames.forEach((name, i) => {
+        spectralRays.forEach((ray) => {
+            const rayPivot = new THREE.Group();
+            rayPivot.rotation.y = ray.angle;
+
+            // Núcleo del rayo (más denso)
+            const coreGeo = new THREE.CylinderGeometry(0.004, 0.004, beamSpan, 12);
+            coreGeo.rotateZ(Math.PI / 2);
+            const coreMat = new THREE.MeshBasicMaterial({
+                color: ray.col,
+                transparent: true,
+                opacity: 0.85
+            });
+            const coreMesh = new THREE.Mesh(coreGeo, coreMat);
+            coreMesh.position.set(beamSpan / 2, 0, 0);
+            rayPivot.add(coreMesh);
+
+            // Halo del rayo (brillo aditivo)
+            const glowGeo = new THREE.CylinderGeometry(0.012, 0.012, beamSpan, 12);
+            glowGeo.rotateZ(Math.PI / 2);
+            const glowMat = new THREE.MeshBasicMaterial({
+                color: ray.col,
+                transparent: true,
+                opacity: 0.4,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false
+            });
+            const glowMesh = new THREE.Mesh(glowGeo, glowMat);
+            glowMesh.position.set(beamSpan / 2, 0, 0);
+            rayPivot.add(glowMesh);
+
+            // Etiqueta del color
             const canvas = document.createElement('canvas');
             canvas.width = 128;
             canvas.height = 32;
@@ -264,45 +306,15 @@ export class OpticsExhibit {
             ctx.fillStyle = '#ffffff';
             ctx.font = 'bold 20px sans-serif';
             ctx.textAlign = 'center';
-            ctx.fillText(name, 64, 24);
+            ctx.fillText(ray.name, 64, 24);
             const tex = new THREE.CanvasTexture(canvas);
             const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true }));
             
-            const t = i / 6;
-            const angle = -0.06 + t * 0.24;
-            sprite.position.set(Math.cos(angle) * (length * 0.8), 0.05, Math.sin(angle) * (length * 0.8));
+            sprite.position.set(beamSpan * 0.8, 0.05, 0);
             sprite.scale.set(0.08, 0.02, 1);
-            
+            rayPivot.add(sprite);
             this.labels.push(sprite);
-            this.rainbowGroup.add(sprite);
-        });
 
-
-        // Rayos de guía espectral nítidos con colores saturados puros
-        const spectralRays = [
-            { col: 0xff0022, angle: -0.06, name: "700nm Rojo" },
-            { col: 0xff6600, angle: -0.02, name: "620nm Naranja" },
-            { col: 0xffcc00, angle: 0.02, name: "580nm Amarillo" },
-            { col: 0x00dd44, angle: 0.06, name: "530nm Verde" },
-            { col: 0x00d4ff, angle: 0.10, name: "490nm Cian" },
-            { col: 0x1155ff, angle: 0.14, name: "450nm Azul" },
-            { col: 0x8800ff, angle: 0.18, name: "400nm Violeta" }
-        ];
-
-        spectralRays.forEach(ray => {
-            const rayGeo = new THREE.CylinderGeometry(0.005, 0.009, beamSpan, 8);
-            rayGeo.rotateZ(Math.PI / 2);
-            const rayMat = new THREE.MeshBasicMaterial({
-                color: ray.col,
-                transparent: true,
-                opacity: 0.90
-            });
-            const rMesh = new THREE.Mesh(rayGeo, rayMat);
-
-            const rayPivot = new THREE.Group();
-            rayPivot.rotation.y = ray.angle;
-            rMesh.position.set(beamSpan / 2, 0, 0);
-            rayPivot.add(rMesh);
             this.rainbowGroup.add(rayPivot);
         });
 
@@ -318,6 +330,19 @@ export class OpticsExhibit {
         });
         this.monochromaticBeam = new THREE.Mesh(monoGeo, monoMat);
         this.monochromaticBeam.position.set(0.105 + beamSpan / 2, beamY, 0);
+
+        const monoGlowGeo = new THREE.CylinderGeometry(0.024, 0.024, beamSpan, 12);
+        monoGlowGeo.rotateZ(Math.PI / 2);
+        const monoGlowMat = new THREE.MeshBasicMaterial({
+            color: 0x4ade80,
+            transparent: true,
+            opacity: 0.35,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+        this.monoGlowMesh = new THREE.Mesh(monoGlowGeo, monoGlowMat);
+        this.monochromaticBeam.add(this.monoGlowMesh);
+
         this.monochromaticBeam.visible = false;
         this.group.add(this.monochromaticBeam);
 
@@ -390,78 +415,7 @@ export class OpticsExhibit {
         carrierScreen.add(screenHolder);
     }
 
-    private buildVibrantRainbowFan(length: number = 0.628) {
-        const fanGeom = new THREE.BufferGeometry();
-        const segments = 36;
-        const startWidth = 0.025;
 
-        const positions: number[] = [];
-        const colors: number[] = [];
-
-        // Generar un abanico plano continuo con interpolación de colores espectrales de alta saturación
-        for (let i = 0; i <= segments; i++) {
-            const t = i / segments; // 0 (Rojo) a 1 (Violeta)
-            const angle = -0.06 + t * 0.24; // Extensión angular del arcoíris
-
-            const xEnd = Math.cos(angle) * length;
-            const zEnd = Math.sin(angle) * length;
-
-            // Vértice en el origen del prisma
-            positions.push(0, 0, (t - 0.5) * startWidth);
-            // Vértice en la pantalla receptora
-            positions.push(xEnd, 0, zEnd);
-
-            // Color saturado puro
-            const col = this.getSaturatedSpectralColor(t);
-            colors.push(col.r, col.g, col.b);
-            colors.push(col.r, col.g, col.b);
-        }
-
-        const indices: number[] = [];
-        for (let i = 0; i < segments; i++) {
-            const v1 = i * 2;
-            const v2 = v1 + 1;
-            const v3 = v1 + 2;
-            const v4 = v1 + 3;
-            indices.push(v1, v2, v3);
-            indices.push(v2, v4, v3);
-        }
-
-        fanGeom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-        fanGeom.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-        fanGeom.setIndex(indices);
-        fanGeom.computeVertexNormals();
-
-        // Usar NormalBlending con alta opacidad para que los colores brillen vivos y no se saturen en blanco
-        const fanMat = new THREE.MeshBasicMaterial({
-            vertexColors: true,
-            side: THREE.DoubleSide,
-            transparent: true,
-            opacity: 0.88,
-            depthWrite: false
-        });
-
-        const fanMesh = new THREE.Mesh(fanGeom, fanMat);
-        this.rainbowGroup.add(fanMesh);
-    }
-
-    private getSaturatedSpectralColor(t: number): THREE.Color {
-        const c = new THREE.Color();
-        if (t < 0.16) {
-            c.setRGB(1.0, (t / 0.16) * 0.45, 0.0); // Rojo puro a Naranja intenso
-        } else if (t < 0.33) {
-            c.setRGB(1.0, 0.45 + ((t - 0.16) / 0.17) * 0.55, 0.0); // Naranja a Amarillo puro
-        } else if (t < 0.50) {
-            c.setRGB(1.0 - ((t - 0.33) / 0.17), 1.0, 0.0); // Amarillo a Verde puro
-        } else if (t < 0.67) {
-            c.setRGB(0.0, 1.0, ((t - 0.50) / 0.17)); // Verde a Cian eléctrico
-        } else if (t < 0.83) {
-            c.setRGB(0.08, 1.0 - ((t - 0.67) / 0.16) * 0.75, 1.0); // Cian a Azul zafiro
-        } else {
-            c.setRGB(0.55 + ((t - 0.83) / 0.17) * 0.45, 0.0, 1.0); // Azul a Violeta real
-        }
-        return c;
-    }
 
     private generateRulerTexture(): THREE.CanvasTexture {
         const canvas = document.createElement('canvas');
@@ -694,6 +648,7 @@ export class OpticsExhibit {
             intMat.color.setHex(0x22c55e);
             monoMat.color.setHex(0x22c55e);
             if (this.inGlowMesh) (this.inGlowMesh.material as THREE.MeshBasicMaterial).color.setHex(0x4ade80);
+            if (this.monoGlowMesh) (this.monoGlowMesh.material as THREE.MeshBasicMaterial).color.setHex(0x4ade80);
             this.screenMaterial.emissive.setHex(0x22c55e);
             this.screenMaterial.emissiveIntensity = 0.65;
             if (this.rearScreenMaterial) {
@@ -708,6 +663,7 @@ export class OpticsExhibit {
             intMat.color.setHex(0xef4444);
             monoMat.color.setHex(0xef4444);
             if (this.inGlowMesh) (this.inGlowMesh.material as THREE.MeshBasicMaterial).color.setHex(0xf87171);
+            if (this.monoGlowMesh) (this.monoGlowMesh.material as THREE.MeshBasicMaterial).color.setHex(0xf87171);
             this.screenMaterial.emissive.setHex(0xef4444);
             this.screenMaterial.emissiveIntensity = 0.65;
             if (this.rearScreenMaterial) {

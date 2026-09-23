@@ -4,6 +4,7 @@ export class PotatoBattery {
     private group: THREE.Group;
     private isSleeping = false;
     private bubbles: { mesh: THREE.Mesh, basePos: THREE.Vector3, speed: number, offset: number }[] = [];
+    private sparks: { mesh: THREE.Mesh, basePos: THREE.Vector3, speed: number, offset: number, radius: number }[] = [];
 
     constructor() {
         this.group = new THREE.Group();
@@ -120,6 +121,32 @@ export class PotatoBattery {
         };
         addBubbles(new THREE.Vector3(0.1, 0.08, 0));
         addBubbles(new THREE.Vector3(-0.1, 0.08, 0));
+
+        // Tiny glowing sparks / floating energy motes
+        const sparkGeo = new THREE.SphereGeometry(0.0015, 4, 4);
+        const addSparks = (basePos: THREE.Vector3, isZinc: boolean) => {
+            const color = isZinc ? 0x88ccff : 0xffaa00;
+            const mat = new THREE.MeshBasicMaterial({ 
+                color: color, 
+                transparent: true, 
+                opacity: 0.8,
+                blending: THREE.AdditiveBlending 
+            });
+            for(let i = 0; i < 6; i++) {
+                const s = new THREE.Mesh(sparkGeo, mat);
+                s.visible = false;
+                this.group.add(s);
+                this.sparks.push({ 
+                    mesh: s, 
+                    basePos: basePos.clone(), 
+                    speed: 1.5 + Math.random(), 
+                    offset: Math.random() * Math.PI * 2,
+                    radius: 0.015 + Math.random() * 0.015
+                });
+            }
+        };
+        addSparks(new THREE.Vector3(0.1, 0.08, 0), false); // Copper
+        addSparks(new THREE.Vector3(-0.1, 0.08, 0), true);  // Zinc
     }
 
     public setSleep(sleep: boolean): void {
@@ -135,6 +162,21 @@ export class PotatoBattery {
                 b.mesh.position.copy(b.basePos);
                 b.mesh.position.y += p * 0.15;
                 b.mesh.position.x += Math.sin(time * 10 + b.offset * 10) * 0.01;
+            }
+        });
+
+        this.sparks.forEach(s => {
+            s.mesh.visible = isOn;
+            if (isOn) {
+                const angle = time * s.speed + s.offset;
+                const vertPos = Math.sin(time * s.speed * 0.4 + s.offset) * 0.06;
+                s.mesh.position.copy(s.basePos);
+                s.mesh.position.x += Math.cos(angle) * s.radius;
+                s.mesh.position.z += Math.sin(angle) * s.radius;
+                s.mesh.position.y += vertPos;
+                
+                const mat = s.mesh.material as THREE.MeshBasicMaterial;
+                mat.opacity = 0.8 * (1.0 - Math.abs(vertPos) / 0.06);
             }
         });
     }

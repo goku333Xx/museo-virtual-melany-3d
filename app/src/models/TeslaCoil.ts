@@ -13,11 +13,11 @@ export class TeslaCoil {
 
     // Componentes visuales
     private toroidMesh: THREE.Mesh;
+    private haloMesh!: THREE.Mesh;
     private isSleeping: boolean = false;
     private arcLines: THREE.Line[] = [];
     private arcPositions: Float32Array[] = [];
     private sparkSprites: THREE.Sprite[] = [];
-    private lastArcUpdate: number = 0;
 
     // Tubo fluorescente inalámbrico
     private tubeCore: THREE.Mesh;
@@ -28,6 +28,14 @@ export class TeslaCoil {
     // Modos de operación
     private currentMode: number = 0;
     private lastZapTime: number = 0;
+    private lastArcUpdate: number = 0;
+    
+    // Performance: Variables pre-alocadas para evitar Garbage Collection
+    private startPos = new THREE.Vector3();
+    private targetPos = new THREE.Vector3(0.6, 0.4, 0.4);
+    private endPos = new THREE.Vector3();
+    private groundPos = new THREE.Vector3(-0.6, 0.8, -0.4);
+
     private readonly modes: TeslaModeInfo[] = [
         {
             id: 0,
@@ -127,19 +135,32 @@ export class TeslaCoil {
         // 4. Toroide Superior (Elegante y muy metálico)
         const toroidGeom = new THREE.TorusGeometry(0.28, 0.1, 32, 64);
         toroidGeom.rotateX(Math.PI / 2);
-        const chromeMat = new THREE.MeshStandardMaterial({
-            color: 0xffffff,
-            roughness: 0.1,
+        const aluminumMat = new THREE.MeshStandardMaterial({
+            color: 0xeeeeee,
+            roughness: 0.15,
             metalness: 1.0
         });
-        this.toroidMesh = new THREE.Mesh(toroidGeom, chromeMat);
+        this.toroidMesh = new THREE.Mesh(toroidGeom, aluminumMat);
         this.toroidMesh.position.y = 0.12 + secondaryHeight + 0.1;
         this.toroidMesh.castShadow = true;
         this.group.add(this.toroidMesh);
         this.interactableMeshes.push(this.toroidMesh);
 
+        // Halo / Glow sphere around toroid
+        const haloGeom = new THREE.SphereGeometry(0.42, 16, 16);
+        const haloMat = new THREE.MeshBasicMaterial({
+            color: 0x00ffff,
+            transparent: true,
+            opacity: 0.0, // Pulsed in update()
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+        this.haloMesh = new THREE.Mesh(haloGeom, haloMat);
+        this.haloMesh.position.y = this.toroidMesh.position.y;
+        this.group.add(this.haloMesh);
+
         const terminalGeom = new THREE.SphereGeometry(0.03, 16, 16);
-        const terminalMesh = new THREE.Mesh(terminalGeom, chromeMat);
+        const terminalMesh = new THREE.Mesh(terminalGeom, aluminumMat);
         terminalMesh.position.set(0, 0.12 + secondaryHeight + 0.2, 0);
         this.group.add(terminalMesh);
 
@@ -155,7 +176,7 @@ export class TeslaCoil {
         );
         groundRod.position.set(-0.6, 0.4, -0.4);
         this.group.add(groundRod);
-        const groundSphere = new THREE.Mesh(new THREE.SphereGeometry(0.03, 16, 16), chromeMat);
+        const groundSphere = new THREE.Mesh(new THREE.SphereGeometry(0.03, 16, 16), aluminumMat);
         groundSphere.position.set(-0.6, 0.8, -0.4);
         this.group.add(groundSphere);
 
@@ -268,7 +289,7 @@ export class TeslaCoil {
     public update(time: number, playerDist?: number): void {
         if (this.isSleeping) return;
         const toroidY = 0.12 + 0.8 + 0.1;
-        const startPos = new THREE.Vector3(0, toroidY + 0.05, 0);
+        this.startPos.set(0, toroidY + 0.05, 0);
 
         if (time - this.lastZapTime > 0.12 + Math.random() * 0.1) {
             this.lastZapTime = time;
@@ -312,10 +333,12 @@ export class TeslaCoil {
             this.arcLines[index].visible = true;
         };
 
+        let haloBaseOpacity = 0;
+
         if (this.currentMode === 0) { // Transmisión Inalámbrica
-            const targetPos = new THREE.Vector3(0.6, 0.4, 0.4);
-            updateLine(0, startPos, targetPos, 0.2);
-            this.sparkSprites[0].position.copy(targetPos);
+            this.targetPos.set(0.6, 0.4, 0.4);
+            updateLine(0, this.startPos, this.targetPos, 0.2);
+            this.sparkSprites[0].position.copy(this.targetPos);
             this.sparkSprites[0].visible = true;
 
             const coreMat = this.tubeCore.material as THREE.MeshBasicMaterial;
@@ -325,20 +348,21 @@ export class TeslaCoil {
             glowMat.opacity = 0.45 * pulse;
             this.tubeLight.intensity = 2.2 * pulse;
             this.sparkLight.intensity = 1.8 * pulse;
+            haloBaseOpacity = 0.08 * pulse;
 
         } else if (this.currentMode === 1) { // Tormenta de Plasma
             const arcCount = 5;
             for (let a = 0; a < arcCount; a++) {
                 const angle = (a / arcCount) * Math.PI * 2 + Math.sin(time * 10 + a) * 0.5;
                 const endRadius = 0.4 + Math.random() * 0.3;
-                const endPos = new THREE.Vector3(
+                this.endPos.set(
                     Math.cos(angle) * endRadius,
                     toroidY + (Math.random() - 0.5) * 0.5,
                     Math.sin(angle) * endRadius
                 );
 
-                updateLine(a, startPos, endPos, 0.3);
-                this.sparkSprites[a].position.copy(endPos);
+                updateLine(a, this.startPos, this.endPos, 0.3);
+                this.sparkSprites[a].position.copy(this.endPos);
                 this.sparkSprites[a].visible = true;
             }
 
@@ -349,11 +373,12 @@ export class TeslaCoil {
             glowMat.opacity = 0.15 * pulse;
             this.tubeLight.intensity = 1.0 * pulse;
             this.sparkLight.intensity = 3.5;
+            haloBaseOpacity = 0.15 + Math.random() * 0.05;
 
         } else { // Descarga Focalizada
-            const groundPos = new THREE.Vector3(-0.6, 0.8, -0.4);
-            updateLine(0, startPos, groundPos, 0.25);
-            this.sparkSprites[0].position.copy(groundPos);
+            this.groundPos.set(-0.6, 0.8, -0.4);
+            updateLine(0, this.startPos, this.groundPos, 0.25);
+            this.sparkSprites[0].position.copy(this.groundPos);
             this.sparkSprites[0].visible = true;
 
             const coreMat = this.tubeCore.material as THREE.MeshBasicMaterial;
@@ -362,6 +387,12 @@ export class TeslaCoil {
             glowMat.opacity = 0.0;
             this.tubeLight.intensity = 0.0;
             this.sparkLight.intensity = 4.0;
+            haloBaseOpacity = 0.12 + Math.random() * 0.08;
+        }
+
+        if (this.haloMesh) {
+            const haloMat = this.haloMesh.material as THREE.MeshBasicMaterial;
+            haloMat.opacity = haloBaseOpacity;
         }
     }
 
