@@ -31,21 +31,6 @@ export class EnergyCables {
         
         const numElectrons = 6;
         
-        // Direction arrows
-        const arrowGeo = new THREE.ConeGeometry(0.01, 0.02, 6);
-        const arrowMat = new THREE.MeshBasicMaterial({ color: 0x67e8f9 });
-        [0.25, 0.5, 0.75].forEach(t => {
-            const pos = this.curve.getPointAt(t);
-            const tangent = this.curve.getTangentAt(t);
-            const arrow = new THREE.Mesh(arrowGeo, arrowMat);
-            arrow.position.copy(pos);
-            const up = new THREE.Vector3(0, 1, 0);
-            const axis = new THREE.Vector3().crossVectors(up, tangent).normalize();
-            const radians = Math.acos(up.dot(tangent));
-            if (radians > 0) arrow.quaternion.setFromAxisAngle(axis, radians);
-            this.group.add(arrow);
-        });
-
         for (let i = 0; i < numElectrons; i++) {
             const eGroup = new THREE.Group();
             

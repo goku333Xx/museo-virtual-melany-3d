@@ -3,7 +3,7 @@ import * as THREE from 'three';
 export class SwitchExhibit {
     private group: THREE.Group;
     private board: THREE.Mesh;
-    private button: THREE.Mesh;
+    private switchLeverGroup: THREE.Group;
     private ledOuterDome: THREE.Mesh;
     private ledInnerCore: THREE.Mesh;
     private ledCoronaGlow: THREE.Mesh;
@@ -25,7 +25,7 @@ export class SwitchExhibit {
     private isSleeping: boolean = false;
     private hintRing!: THREE.Mesh;
 
-    // Multímetro Digital ubicado a la derecha, en diagonal, bien visible y sin tapar las papas
+    // Multímetro Digital
     private meterGroup!: THREE.Group;
     private meterCanvas!: HTMLCanvasElement;
     private meterCtx!: CanvasRenderingContext2D;
@@ -35,14 +35,14 @@ export class SwitchExhibit {
     private lastMeterUpdateTime: number = 0;
 
     // Terminales para conexión de cables
-    public readonly terminalInPos = new THREE.Vector3(-0.9, 0.05, 0.8);   // Entrada desde papas izquierdas
-    public readonly terminalBridgePos = new THREE.Vector3(0.0, 0.05, 0.8);  // Puente Switch -> LED
-    public readonly terminalOutPos = new THREE.Vector3(0.9, 0.05, 0.8);    // Salida hacia papas derechas
+    public readonly terminalInPos = new THREE.Vector3(-0.9, 0.05, 0.8);
+    public readonly terminalBridgePos = new THREE.Vector3(0.0, 0.05, 0.8);
+    public readonly terminalOutPos = new THREE.Vector3(0.9, 0.05, 0.8);
 
     constructor() {
         this.group = new THREE.Group();
 
-        // 1. PLACA BASE DE LABORATORIO CENTRAL (2.2m x 2.2m)
+        // 1. PLACA BASE DE LABORATORIO CENTRAL
         const boardGeom = new THREE.BoxGeometry(2.2, 0.05, 2.2);
         const boardMat = new THREE.MeshStandardMaterial({
             color: 0x18202f,
@@ -63,81 +63,100 @@ export class SwitchExhibit {
         boardRim.position.set(0, 0.0125, 0);
         this.group.add(boardRim);
 
-        // 2. MÓDULO DEL INTERRUPTOR INDUSTRIAL GIGANTE
-        const swBaseGeom = new THREE.BoxGeometry(0.8, 0.1, 0.8);
-        const swBaseMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.3, metalness: 0.8 });
+        // 2. INTERRUPTOR INDUSTRIAL (TIPO PALANCA)
+        const swBaseGeom = new THREE.BoxGeometry(0.4, 0.08, 0.6);
+        const swBaseMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.4, metalness: 0.7 });
         const swBase = new THREE.Mesh(swBaseGeom, swBaseMat);
-        swBase.position.set(0.5, 0.1, 0.5);
+        swBase.position.set(0.4, 0.09, 0.3);
+        swBase.castShadow = true;
         this.group.add(swBase);
         this.interactableMeshes.push(swBase);
 
-        // Botón pulsador rojo GIGANTE
-        const btnRadius = 0.32;
-        const btnGeom = new THREE.CylinderGeometry(btnRadius, btnRadius, 0.15, 32);
-        const btnMat = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.3, metalness: 0.2 });
-        this.button = new THREE.Mesh(btnGeom, btnMat);
-        this.button.position.set(0.5, 0.2, 0.5);
-        this.group.add(this.button);
-        this.interactableMeshes.push(this.button);
+        // Placa superior del interruptor
+        const swTopGeom = new THREE.BoxGeometry(0.35, 0.02, 0.55);
+        const swTopMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.2, metalness: 0.9 });
+        const swTop = new THREE.Mesh(swTopGeom, swTopMat);
+        swTop.position.set(0.4, 0.14, 0.3);
+        this.group.add(swTop);
 
-        // Anillo de latón alrededor del pulsador
-        const btnRing = new THREE.Mesh(
-            new THREE.TorusGeometry(btnRadius + 0.03, 0.02, 16, 32),
-            new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.85, roughness: 0.2 })
-        );
-        btnRing.rotation.x = Math.PI / 2;
-        btnRing.position.set(0.5, 0.16, 0.5);
-        this.group.add(btnRing);
+        // Soporte de la palanca
+        const hingeGeom = new THREE.CylinderGeometry(0.04, 0.04, 0.12, 16);
+        hingeGeom.rotateZ(Math.PI / 2);
+        const hinge = new THREE.Mesh(hingeGeom, swTopMat);
+        hinge.position.set(0.4, 0.16, 0.3);
+        this.group.add(hinge);
 
+        // Grupo de la palanca animada
+        this.switchLeverGroup = new THREE.Group();
+        this.switchLeverGroup.position.set(0.4, 0.16, 0.3);
+        this.switchLeverGroup.rotation.x = -Math.PI / 6; // Off state
+
+        const leverGeom = new THREE.CylinderGeometry(0.02, 0.03, 0.25, 16);
+        leverGeom.translate(0, 0.125, 0);
+        const leverMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.3, metalness: 0.8 });
+        const lever = new THREE.Mesh(leverGeom, leverMat);
+        this.switchLeverGroup.add(lever);
+
+        const knobGeom = new THREE.SphereGeometry(0.06, 32, 32);
+        const knobMat = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.2, metalness: 0.1 });
+        const knob = new THREE.Mesh(knobGeom, knobMat);
+        knob.position.set(0, 0.28, 0);
+        this.switchLeverGroup.add(knob);
+
+        this.group.add(this.switchLeverGroup);
+        this.interactableMeshes.push(lever, knob);
+
+        // Anillo de pista visual
         this.hintRing = new THREE.Mesh(
-            new THREE.TorusGeometry(btnRadius + 0.05, 0.01, 16, 32),
+            new THREE.TorusGeometry(0.1, 0.005, 16, 32),
             new THREE.MeshStandardMaterial({ color: 0xfde047, emissive: 0xfde047, metalness: 0.85, roughness: 0.2 })
         );
         this.hintRing.rotation.x = Math.PI / 2;
-        this.hintRing.position.set(0.5, 0.16, 0.5);
-        this.group.add(this.hintRing);
+        this.hintRing.position.set(0, 0, 0);
+        this.switchLeverGroup.add(this.hintRing);
 
-        // 3. MÓDULO DEL DIODO LED DE POTENCIA (CONTENEDOR SCI-FI GIGANTE)
-        const socketGeom = new THREE.CylinderGeometry(0.5, 0.55, 0.12, 32);
-        const socketMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.2, metalness: 0.9 });
+        // 3. DIODO LED REALISTA
+        const socketGeom = new THREE.CylinderGeometry(0.18, 0.2, 0.12, 32);
+        const socketMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.4, metalness: 0.8 });
         const socket = new THREE.Mesh(socketGeom, socketMat);
-        socket.position.set(-0.5, 0.11, -0.2);
+        socket.position.set(-0.4, 0.11, -0.2);
         this.group.add(socket);
         this.interactableMeshes.push(socket);
 
-        // Patas metálicas ánodo y cátodo
-        const pinGeom = new THREE.CylinderGeometry(0.02, 0.02, 0.3, 16);
+        // Patas metálicas ánodo y cátodo (más realistas)
+        const pinGeom = new THREE.CylinderGeometry(0.015, 0.015, 0.15, 16);
         const pinMat = new THREE.MeshStandardMaterial({ color: 0xd1d5db, metalness: 0.95, roughness: 0.1 });
         const pin1 = new THREE.Mesh(pinGeom, pinMat);
-        pin1.position.set(-0.65, 0.2, -0.2);
+        pin1.position.set(-0.45, 0.18, -0.2);
         const pin2 = new THREE.Mesh(pinGeom, pinMat);
-        pin2.position.set(-0.35, 0.2, -0.2);
+        pin2.position.set(-0.35, 0.18, -0.2);
         this.group.add(pin1, pin2);
 
-        // Cúpula translúcida esmeralda GIGANTE
-        const domeRadius = 0.4;
-        const ledDomeGeom = new THREE.CapsuleGeometry(domeRadius, 0.6, 32, 32);
-        const ledDomeMat = new THREE.MeshStandardMaterial({
+        // Cúpula del LED realista (epoxi transparente)
+        const ledDomeGeom = new THREE.CapsuleGeometry(0.12, 0.18, 32, 32);
+        const ledDomeMat = new THREE.MeshPhysicalMaterial({
             color: 0x86efac,
-            roughness: 0.05,
-            metalness: 0.2,
+            roughness: 0.1,
+            metalness: 0.1,
+            transmission: 0.9,
+            thickness: 0.1,
             transparent: true,
             opacity: 0.85
         });
         this.ledOuterDome = new THREE.Mesh(ledDomeGeom, ledDomeMat);
-        this.ledOuterDome.position.set(-0.5, 0.6, -0.2);
+        this.ledOuterDome.position.set(-0.4, 0.32, -0.2);
         this.group.add(this.ledOuterDome);
         this.interactableMeshes.push(this.ledOuterDome);
 
-        // Chip emisor nuclear interno GIGANTE
-        const coreGeom = new THREE.SphereGeometry(0.2, 32, 32);
-        const coreMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+        // Elemento interno (copa reflectora y yunque)
+        const coreGeom = new THREE.CylinderGeometry(0.04, 0.08, 0.08, 16);
+        const coreMat = new THREE.MeshStandardMaterial({ color: 0xa3a3a3, metalness: 0.9, roughness: 0.2 });
         this.ledInnerCore = new THREE.Mesh(coreGeom, coreMat);
-        this.ledInnerCore.position.set(-0.5, 0.6, -0.2);
+        this.ledInnerCore.position.set(-0.4, 0.28, -0.2);
         this.group.add(this.ledInnerCore);
 
-        // Corona / Halo difuso GIGANTE
-        const coronaGeom = new THREE.SphereGeometry(0.7, 32, 32);
+        // Corona luminosa difusa
+        const coronaGeom = new THREE.SphereGeometry(0.25, 32, 32);
         const coronaMat = new THREE.MeshBasicMaterial({
             color: 0x22c55e,
             transparent: true,
@@ -146,18 +165,18 @@ export class SwitchExhibit {
             depthWrite: false
         });
         this.ledCoronaGlow = new THREE.Mesh(coronaGeom, coronaMat);
-        this.ledCoronaGlow.position.set(-0.5, 0.6, -0.2);
+        this.ledCoronaGlow.position.set(-0.4, 0.35, -0.2);
         this.group.add(this.ledCoronaGlow);
 
-        // Luz suave GIGANTE
-        this.ledLight = new THREE.PointLight(0x22c55e, 0, 8.0, 2.0);
-        this.ledLight.position.set(-0.5, 0.8, -0.2);
+        // Luz del LED
+        this.ledLight = new THREE.PointLight(0x22c55e, 0, 4.0, 2.0);
+        this.ledLight.position.set(-0.4, 0.4, -0.2);
         this.group.add(this.ledLight);
 
-        // 4. MULTÍMETRO DIGITAL UBICADO A LA DERECHA EN FRENTE DE LAS PAPAS (SIN TAPARLAS)
+        // 4. MULTÍMETRO DIGITAL UBICADO A LA DERECHA
         this.buildDigitalMultimeter();
 
-        // 5. Bornes de tornillo GIGANTES
+        // 5. Bornes de tornillo
         const termGeom = new THREE.CylinderGeometry(0.04, 0.05, 0.1, 16);
         const copperTerm = new THREE.Mesh(termGeom, new THREE.MeshStandardMaterial({ color: 0xb87333, metalness: 0.9 }));
         copperTerm.position.copy(this.terminalInPos);
@@ -174,14 +193,11 @@ export class SwitchExhibit {
         this.buildSparkSystem();
     }
 
-    // MULTÍMETRO DIGITAL ASENTADO EN LA MESA CON ALFOMBRILLA Y CABALLETE TRIPODE REAL
     private buildDigitalMultimeter() {
         this.meterGroup = new THREE.Group();
-        // Ubicado firmemente sobre la mesa (Y = 0) al frente derecho del circuito
         this.meterGroup.position.set(0.8, 0.0, 0.5);
-        this.meterGroup.rotation.y = -Math.PI / 5.2; // Orientado ergonómicamente hacia el centro de la mirada
+        this.meterGroup.rotation.y = -Math.PI / 5.2;
 
-        // 1. Alfombrilla antiestática de laboratorio (0.36m x 0.32m) asentada sobre la mesa
         const matGeom = new THREE.BoxGeometry(0.36, 0.006, 0.32);
         const matMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.9, metalness: 0.1 });
         const labMat = new THREE.Mesh(matGeom, matMat);
@@ -189,14 +205,12 @@ export class SwitchExhibit {
         labMat.receiveShadow = true;
         this.meterGroup.add(labMat);
 
-        // Borde cian sutil serigrafiado en la alfombrilla
         const matRimGeom = new THREE.BoxGeometry(0.364, 0.002, 0.324);
         const matRimMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.4 });
         const matRim = new THREE.Mesh(matRimGeom, matRimMat);
         matRim.position.set(0, 0.006, 0);
         this.meterGroup.add(matRim);
 
-        // 2. Patas frontales de goma antideslizante (descansan sobre la alfombrilla en Y = 0.006)
         const footGeom = new THREE.CylinderGeometry(0.014, 0.016, 0.016, 16);
         const footMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.95, metalness: 0.05 });
         const leftFrontFoot = new THREE.Mesh(footGeom, footMat);
@@ -205,13 +219,11 @@ export class SwitchExhibit {
         rightFrontFoot.position.set(0.10, 0.014, 0.07);
         this.meterGroup.add(leftFrontFoot, rightFrontFoot);
 
-        // 3. Grupo de inclinación del tester (Pivota desde el eje de las patas frontales)
         const tiltGroup = new THREE.Group();
         tiltGroup.position.set(0, 0.022, 0.07);
-        const tiltAngle = -Math.PI / 6.6; // ~27.2° de inclinación hacia atrás (62.8° sobre la mesa)
+        const tiltAngle = -Math.PI / 6.6;
         tiltGroup.rotation.x = tiltAngle;
 
-        // Carcasa del tester (Amarillo industrial Fluke de alta gama)
         const caseWidth = 0.27;
         const caseHeight = 0.37;
         const caseDepth = 0.065;
@@ -223,14 +235,12 @@ export class SwitchExhibit {
         caseMesh.castShadow = true;
         tiltGroup.add(caseMesh);
 
-        // Bumper de goma protectora grafito perimetral
         const bumperGeom = new THREE.BoxGeometry(caseWidth + 0.016, caseHeight + 0.016, caseDepth - 0.008);
         const bumperMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.85, metalness: 0.1 });
         const bumperMesh = new THREE.Mesh(bumperGeom, bumperMat);
         bumperMesh.position.set(0, caseHeight / 2, 0);
         tiltGroup.add(bumperMesh);
 
-        // Pantalla LCD grande nítida (512x256)
         this.meterCanvas = document.createElement('canvas');
         this.meterCanvas.width = 512;
         this.meterCanvas.height = 256;
@@ -245,7 +255,6 @@ export class SwitchExhibit {
         this.meterScreenMesh.position.set(0, caseHeight / 2 + 0.08, caseDepth / 2 + 0.005);
         tiltGroup.add(this.meterScreenMesh);
 
-        // Perilla selectora central
         const knobGeom = new THREE.CylinderGeometry(0.044, 0.047, 0.024, 24);
         const knobMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.4, metalness: 0.6 });
         const knobMesh = new THREE.Mesh(knobGeom, knobMat);
@@ -253,14 +262,12 @@ export class SwitchExhibit {
         knobMesh.position.set(0, caseHeight / 2 - 0.05, caseDepth / 2 + 0.013);
         tiltGroup.add(knobMesh);
 
-        // Puntero blanco en la perilla
         const pointerGeom = new THREE.BoxGeometry(0.008, 0.035, 0.004);
         const pointerMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
         const pointerMesh = new THREE.Mesh(pointerGeom, pointerMat);
         pointerMesh.position.set(0, 0.015, 0.014);
         knobMesh.add(pointerMesh);
 
-        // Bornes de conexión para sondas
         const jackGeom = new THREE.CylinderGeometry(0.009, 0.009, 0.016, 16);
         jackGeom.rotateX(Math.PI / 2);
 
@@ -270,30 +277,25 @@ export class SwitchExhibit {
         jackRed.position.set(0.045, caseHeight / 2 - 0.135, caseDepth / 2 + 0.008);
         tiltGroup.add(jackBlack, jackRed);
 
-        // 4. Caballete metálico trasero que apoya perfectamente en la alfombrilla (Y = 0.006)
         const standGeom = new THREE.CylinderGeometry(0.006, 0.006, 0.25, 12);
         const standMat = new THREE.MeshStandardMaterial({ color: 0xd1d5db, metalness: 0.95, roughness: 0.1 });
         
-        // Pata trasera izquierda
         const leftLeg = new THREE.Mesh(standGeom, standMat);
         leftLeg.position.set(-0.09, 0.11, -0.08);
         leftLeg.rotation.x = 0.38;
         tiltGroup.add(leftLeg);
 
-        // Pata trasera derecha
         const rightLeg = new THREE.Mesh(standGeom, standMat);
         rightLeg.position.set(0.09, 0.11, -0.08);
         rightLeg.rotation.x = 0.38;
         tiltGroup.add(rightLeg);
 
-        // Barra transversal estabilizadora con topes de goma apoyados en la alfombrilla
         const crossbarGeom = new THREE.CylinderGeometry(0.006, 0.006, 0.19, 12);
         crossbarGeom.rotateZ(Math.PI / 2);
         const crossbar = new THREE.Mesh(crossbarGeom, standMat);
         crossbar.position.set(0, -0.01, -0.155);
         tiltGroup.add(crossbar);
 
-        // Topes de goma traseros que tocan la alfombrilla
         [-0.09, 0.09].forEach(px => {
             const legFoot = new THREE.Mesh(new THREE.SphereGeometry(0.012, 12, 12), footMat);
             legFoot.position.set(px, -0.01, -0.155);
@@ -304,12 +306,10 @@ export class SwitchExhibit {
         this.group.add(this.meterGroup);
         this.interactableMeshes.push(caseMesh, this.meterScreenMesh);
 
-        // 5. CABLES DE PRUEBA REALISTAS (SONDAS ROJA Y NEGRA APOYADAS EN LA MESA)
         this.buildProbeCables();
     }
 
     private buildProbeCables() {
-        // Cable Negro (COM): Sale del jack negro, cae suavemente a la mesa y se conecta al borne de entrada
         const blackCurve = new THREE.CatmullRomCurve3([
             new THREE.Vector3(0.76, 0.08, 0.57),
             new THREE.Vector3(0.74, 0.015, 0.55),
@@ -323,7 +323,6 @@ export class SwitchExhibit {
         blackProbeWire.castShadow = true;
         this.group.add(blackProbeWire);
 
-        // Cable Rojo (V): Sale del jack rojo, cae a la mesa y se conecta al borne de salida
         const redCurve = new THREE.CatmullRomCurve3([
             new THREE.Vector3(0.84, 0.08, 0.57),
             new THREE.Vector3(0.82, 0.015, 0.53),
@@ -337,7 +336,6 @@ export class SwitchExhibit {
         redProbeWire.castShadow = true;
         this.group.add(redProbeWire);
 
-        // Pinzas cocodrilo doradas en los bornes
         const clipGeom = new THREE.CylinderGeometry(0.015, 0.015, 0.08, 12);
         clipGeom.rotateX(Math.PI / 2);
         const clipMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.95, roughness: 0.15 });
@@ -354,23 +352,18 @@ export class SwitchExhibit {
         const w = this.meterCanvas.width;
         const h = this.meterCanvas.height;
 
-        // Fondo LCD retroiluminado esmeralda / pizarra
         ctx.fillStyle = isActive ? '#064e3b' : '#0f172a';
         ctx.fillRect(0, 0, w, h);
 
-        // Marco interior LCD
         ctx.strokeStyle = isActive ? '#22c55e' : '#334155';
         ctx.lineWidth = 6;
         ctx.strokeRect(8, 8, w - 16, h - 16);
 
-        // Texto superior con indicador de función
         ctx.fillStyle = isActive ? '#a7f3d0' : '#64748b';
         ctx.font = 'bold 28px monospace';
         ctx.fillText('DC VOLTAJE [ESCALA 20V]', 24, 46);
 
-        // Valor de voltaje digital grande de alta legibilidad
         if (isActive) {
-            // Fluctuación orgánica realista de 4 celdas galvánicas en serie (~1.96V)
             const jitter = (Math.sin(time * 6) * 0.015) + (Math.cos(time * 11) * 0.008);
             const val = (1.96 + jitter).toFixed(2);
             this.currentVoltageDisplay = `${val} V`;
@@ -387,7 +380,6 @@ export class SwitchExhibit {
         ctx.fillText(this.currentVoltageDisplay, 48, 140);
         ctx.shadowBlur = 0;
 
-        // Barra gráfica analógica inferior en la pantalla LCD
         ctx.fillStyle = isActive ? 'rgba(74, 222, 128, 0.4)' : 'rgba(71, 85, 105, 0.2)';
         ctx.fillRect(24, 180, w - 48, 22);
 
@@ -434,7 +426,7 @@ export class SwitchExhibit {
         });
 
         this.sparkPoints = new THREE.Points(this.sparkGeometry, sparkMaterial);
-        this.sparkPoints.position.set(0.5, 0.17, 0.5); // En el interruptor
+        this.sparkPoints.position.set(0.4, 0.16, 0.3); // Base del interruptor
         this.sparkPoints.visible = false;
         this.group.add(this.sparkPoints);
     }
@@ -445,18 +437,18 @@ export class SwitchExhibit {
 
         for (let i = 0; i < this.sparkCount; i++) {
             const i3 = i * 3;
-            this.sparkPositions[i3] = (Math.random() - 0.5) * 0.02;
-            this.sparkPositions[i3 + 1] = Math.random() * 0.02;
-            this.sparkPositions[i3 + 2] = (Math.random() - 0.5) * 0.02;
+            this.sparkPositions[i3] = (Math.random() - 0.5) * 0.04;
+            this.sparkPositions[i3 + 1] = Math.random() * 0.04;
+            this.sparkPositions[i3 + 2] = (Math.random() - 0.5) * 0.04;
 
             const angle = Math.random() * Math.PI * 2;
-            const speed = 0.35 + Math.random() * 0.6;
+            const speed = 0.4 + Math.random() * 0.8;
             this.sparkVelocities[i3] = Math.cos(angle) * speed;
-            this.sparkVelocities[i3 + 1] = 0.5 + Math.random() * 0.8;
+            this.sparkVelocities[i3 + 1] = 0.6 + Math.random() * 1.0;
             this.sparkVelocities[i3 + 2] = Math.sin(angle) * speed;
 
             this.sparkLifetimes[i] = 0;
-            this.sparkMaxLifetimes[i] = 0.15 + Math.random() * 0.2;
+            this.sparkMaxLifetimes[i] = 0.15 + Math.random() * 0.25;
         }
         this.sparkGeometry.attributes.position.needsUpdate = true;
     }
@@ -465,10 +457,10 @@ export class SwitchExhibit {
         this.isOn = !this.isOn;
 
         if (this.isOn) {
-            this.button.position.y = 0.17; // Pressed down
+            this.switchLeverGroup.rotation.x = Math.PI / 6; // On state
             this.triggerSparks();
         } else {
-            this.button.position.y = 0.20; // Released up
+            this.switchLeverGroup.rotation.x = -Math.PI / 6; // Off state
         }
 
         return this.isOn;
@@ -479,7 +471,7 @@ export class SwitchExhibit {
         if (this.isSleeping) {
             this.ledLight.visible = false;
         } else {
-            this.ledLight.visible = true;
+            this.ledLight.visible = this.isOn;
         }
     }
 
@@ -489,14 +481,10 @@ export class SwitchExhibit {
         (this.hintRing.material as THREE.MeshStandardMaterial).emissiveIntensity = Math.sin(time * 3) * 0.5 + 0.5;
         const active = this.isOn && isPlugged;
 
-        // Detección de flanco ascendente para chispas
         if (active && !this.wasActive) {
             this.triggerSparks();
         }
 
-        // OPTIMIZACIÓN SUPREMA DE RENDIMIENTO:
-        // Solo actualizar el canvas del multímetro si cambió de estado O cada 100ms cuando está activo (10 FPS de refresco LCD)
-        // Esto elimina el 90% de subidas de texturas GPU por frame
         const stateChanged = (active !== this.wasActive);
         if (stateChanged || (active && (time - this.lastMeterUpdateTime > 0.1))) {
             this.renderMeterScreen(active, time);
@@ -504,21 +492,23 @@ export class SwitchExhibit {
         }
         this.wasActive = active;
 
-        // Actualizar estado luminoso del LED sin recompilación de shaders
-        const coreMat = this.ledInnerCore.material as THREE.MeshBasicMaterial;
+        const coreMat = this.ledInnerCore.material as THREE.MeshStandardMaterial;
         const coronaMat = this.ledCoronaGlow.material as THREE.MeshBasicMaterial;
 
         if (active) {
-            coreMat.color.setHex(0xa7f3d0);
-            coronaMat.opacity = 0.8 + Math.sin(time * 12) * 0.15;
-            this.ledLight.intensity = 1.6;
+            coreMat.emissive.setHex(0xa7f3d0);
+            coreMat.emissiveIntensity = 2.0;
+            coronaMat.opacity = 0.6 + Math.sin(time * 15) * 0.1;
+            this.ledLight.intensity = 1.2;
+            this.ledLight.visible = true;
         } else {
-            coreMat.color.setHex(0x000000);
+            coreMat.emissive.setHex(0x000000);
+            coreMat.emissiveIntensity = 0;
             coronaMat.opacity = 0.0;
             this.ledLight.intensity = 0.0;
+            this.ledLight.visible = false;
         }
 
-        // Actualizar partículas de chispas
         if (this.sparksActive) {
             let anyAlive = false;
             for (let i = 0; i < this.sparkCount; i++) {

@@ -19,7 +19,6 @@ export class SolarPanelExhibit {
     private propellerGroup: THREE.Group;
     private currentPropellerRpm: number = 2400;
     private targetPropellerRpm: number = 2400;
-    private propellerAngle: number = 0;
     private interactableMeshes: THREE.Object3D[] = [];
 
     // Animación cinemática suave del foco solar
@@ -47,30 +46,30 @@ export class SolarPanelExhibit {
     private readonly modes: SolarPanelModeInfo[] = [
         {
             id: 0,
-            name: "Luz Cenital Directa (Incidencia 90° · Potencia 100% · 2400 RPM)",
+            name: "Luz Cenital Directa (Incidencia 90° · Potencia 100% · Carga Rápida)",
             efficiency: 1.0,
             rpm: 2400,
             voltage: "18.4 V",
             lux: "1000 W/m²",
-            desc: "Los rayos de sol artificial caen de lleno a 90°. Las pelotitas de luz (fotones) impactan el silicio a toda velocidad y hacen correr billones de electrones, haciendo girar la hélice como un ventilador de avión."
+            desc: "Los rayos del potente foco de estudio caen de lleno a 90°. Los fotones impactan el silicio a toda velocidad y generan un flujo eléctrico intenso que carga las baterías de litio al máximo nivel."
         },
         {
             id: 1,
-            name: "Luz Inclinada (Incidencia 45° · Potencia 50% · 1100 RPM)",
+            name: "Luz Inclinada (Incidencia 45° · Potencia 50% · Carga Lenta)",
             efficiency: 0.5,
-            rpm: 1100,
+            rpm: 1200,
             voltage: "9.2 V",
             lux: "500 W/m²",
-            desc: "Al inclinar el foco a 45° (como a la tarde cuando baja el sol), los rayos se desparraman en una superficie más grande. Menos fotones golpean cada centímetro y la hélice gira a media máquina."
+            desc: "Al inclinar el foco a 45° (como a la tarde cuando baja el sol), los rayos se desparraman. Menos fotones golpean cada centímetro del panel, por lo que las baterías se cargan a la mitad de velocidad."
         },
         {
             id: 2,
-            name: "Sombra / Nube Tapada (Incidencia 0° · Potencia 0% · Frenado)",
+            name: "Sombra / Nube Tapada (Incidencia 0° · Potencia 0% · Sin Carga)",
             efficiency: 0.0,
             rpm: 0,
             voltage: "0.2 V",
             lux: "25 W/m²",
-            desc: "Al tapar la luz, la electricidad se apaga al instante. Esto enseña que el panel solar no es una batería: ¡convierte la luz en energía en vivo y en directo en el mismo segundo!"
+            desc: "Al apagar o tapar el foco, la producción eléctrica cae al instante. Las baterías dejan de recibir energía. ¡Esto demuestra que los paneles solares necesitan luz directa y constante para funcionar bien!"
         }
     ];
 
@@ -203,9 +202,9 @@ export class SolarPanelExhibit {
         this.group.add(panelGroup);
 
         // =========================================================================
-        // 3. BRAZO INDUSTRIAL Y "SOL ARTIFICIAL" (Cinemático y Regulable)
+        // 3. FOCO DE ESTUDIO CINEMÁTICO (SOL ARTIFICIAL)
         // =========================================================================
-        // Arco pórtico de soporte de acero estructural
+        // Brazo telescópico y arco pórtico
         const arch = new THREE.Mesh(
             new THREE.TorusGeometry(0.72, 0.024, 16, 32, Math.PI * 0.75),
             mountMat
@@ -217,60 +216,85 @@ export class SolarPanelExhibit {
         this.sunLampPivot = new THREE.Group();
         this.sunLampPivot.position.copy(this.currentLampPos);
 
-        // Cabezal industrial del foco con aletas de refrigeración de aluminio
-        const reflectorMat = new THREE.MeshStandardMaterial({
-            color: 0x3b82f6,
-            metalness: 0.85,
-            roughness: 0.25
+        // Carcasa de foco de estudio profesional tipo ARRI / Fresnel
+        const housingMat = new THREE.MeshStandardMaterial({
+            color: 0x0f172a,
+            metalness: 0.9,
+            roughness: 0.2
         });
         const lampHousing = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.18, 0.12, 0.22, 24),
-            reflectorMat
+            new THREE.CylinderGeometry(0.18, 0.18, 0.25, 32),
+            housingMat
         );
+        lampHousing.rotation.z = Math.PI / 2;
         lampHousing.position.y = 0.05;
         this.sunLampPivot.add(lampHousing);
         this.interactableMeshes.push(lampHousing);
+        
+        // Aletas direccionales (Barndoors) del foco de estudio
+        const barndoorMat = new THREE.MeshStandardMaterial({ color: 0x050505, metalness: 0.8, roughness: 0.5 });
+        const flapGeom = new THREE.BoxGeometry(0.18, 0.01, 0.12);
+        
+        const flapTop = new THREE.Mesh(flapGeom, barndoorMat);
+        flapTop.position.set(0, -0.08, 0.14);
+        flapTop.rotation.x = Math.PI / 6;
+        this.sunLampPivot.add(flapTop);
 
-        // Campana reflectora parabólica interior dorada
-        const interiorCone = new THREE.Mesh(
-            new THREE.ConeGeometry(0.16, 0.16, 24, 1, true),
-            new THREE.MeshStandardMaterial({ color: 0xfde047, metalness: 0.95, roughness: 0.1 })
-        );
-        interiorCone.rotation.x = Math.PI;
-        interiorCone.position.y = -0.04;
-        this.sunLampPivot.add(interiorCone);
+        const flapBottom = new THREE.Mesh(flapGeom, barndoorMat);
+        flapBottom.position.set(0, -0.08, -0.14);
+        flapBottom.rotation.x = -Math.PI / 6;
+        this.sunLampPivot.add(flapBottom);
+        
+        const flapSideGeom = new THREE.BoxGeometry(0.01, 0.18, 0.12);
+        const flapLeft = new THREE.Mesh(flapSideGeom, barndoorMat);
+        flapLeft.position.set(0.14, -0.08, 0);
+        flapLeft.rotation.z = Math.PI / 6;
+        this.sunLampPivot.add(flapLeft);
 
-        // Bombilla solar incandescente de alta intensidad
+        const flapRight = new THREE.Mesh(flapSideGeom, barndoorMat);
+        flapRight.position.set(-0.14, -0.08, 0);
+        flapRight.rotation.z = -Math.PI / 6;
+        this.sunLampPivot.add(flapRight);
+
+        // Lente de cristal de cuarzo (Fresnel)
+        const lensMat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, transmission: 0.9, opacity: 1, roughness: 0.2, thickness: 0.05 });
+        const lens = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.02, 32), lensMat);
+        lens.rotation.z = Math.PI / 2;
+        lens.position.y = -0.08;
+        this.sunLampPivot.add(lens);
+
+        // Bombilla halógena interna
         this.sunLampBulb = new THREE.Mesh(
-            new THREE.SphereGeometry(0.065, 24, 24),
+            new THREE.SphereGeometry(0.06, 24, 24),
             new THREE.MeshBasicMaterial({ color: 0xfef08a })
         );
-        this.sunLampBulb.position.y = -0.05;
+        this.sunLampBulb.position.y = 0.02;
         this.sunLampPivot.add(this.sunLampBulb);
 
-        // Destello radial suave (Sprite para simular resplandor del sol artificial)
+        // Destello radial (Sprite)
         const glowCanvas = document.createElement('canvas');
-        glowCanvas.width = 64;
-        glowCanvas.height = 64;
+        glowCanvas.width = 128;
+        glowCanvas.height = 128;
         const gCtx = glowCanvas.getContext('2d')!;
-        const grad = gCtx.createRadialGradient(32, 32, 0, 32, 32, 32);
-        grad.addColorStop(0, 'rgba(254, 240, 138, 0.95)');
-        grad.addColorStop(0.35, 'rgba(251, 146, 60, 0.4)');
+        const grad = gCtx.createRadialGradient(64, 64, 0, 64, 64, 64);
+        grad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+        grad.addColorStop(0.2, 'rgba(254, 240, 138, 0.8)');
+        grad.addColorStop(0.5, 'rgba(251, 146, 60, 0.3)');
         grad.addColorStop(1, 'rgba(251, 146, 60, 0)');
         gCtx.fillStyle = grad;
-        gCtx.fillRect(0, 0, 64, 64);
+        gCtx.fillRect(0, 0, 128, 128);
 
         const glowTex = new THREE.CanvasTexture(glowCanvas);
         this.lampGlowSprite = new THREE.Sprite(
-            new THREE.SpriteMaterial({ map: glowTex, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending })
+            new THREE.SpriteMaterial({ map: glowTex, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending })
         );
-        this.lampGlowSprite.position.set(0, -0.06, 0);
-        this.lampGlowSprite.scale.set(0.65, 0.65, 0.65);
+        this.lampGlowSprite.position.set(0, -0.09, 0);
+        this.lampGlowSprite.scale.set(0.8, 0.8, 0.8);
         this.sunLampPivot.add(this.lampGlowSprite);
 
-        // Haz físico SpotLight proyectando luz sobre el panel (sin sobrecosto de shadow map)
-        this.sunSpotLight = new THREE.SpotLight(0xfef08a, 4.2, 3.8, Math.PI / 4.8, 0.4, 1.2);
-        this.sunSpotLight.position.set(0, -0.05, 0);
+        // Haz SpotLight
+        this.sunSpotLight = new THREE.SpotLight(0xfef08a, 4.2, 3.8, Math.PI / 5, 0.5, 1.0);
+        this.sunSpotLight.position.set(0, 0, 0);
         this.sunSpotLight.target = panelGroup;
         this.sunSpotLight.castShadow = false;
         this.sunLampPivot.add(this.sunSpotLight);
@@ -278,103 +302,60 @@ export class SolarPanelExhibit {
         this.group.add(this.sunLampPivot);
 
         // =========================================================================
-        // 4. MOTOR ELÉCTRICO DC TRANSPARENTE Y HÉLICE AERODINÁMICA (X = +0.50)
+        // 4. BANCO DE BATERÍAS DE LITIO DE ALTA TECNOLOGÍA (X = +0.50)
         // =========================================================================
-        const motorGroup = new THREE.Group();
-        motorGroup.position.set(0.50, tableH + 0.16, 0);
+        const batteryGroup = new THREE.Group();
+        batteryGroup.position.set(0.50, tableH + 0.12, 0);
 
-        // Pedestal de montaje antivibración de latón y goma
-        const motorPedestal = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.12, 0.15, 0.28, 24),
-            new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8, roughness: 0.25 })
+        // Rack de almacenamiento metálico
+        const rackGeom = new THREE.BoxGeometry(0.35, 0.22, 0.25);
+        const rackMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8, roughness: 0.2 });
+        const rack = new THREE.Mesh(rackGeom, rackMat);
+        batteryGroup.add(rack);
+        this.interactableMeshes.push(rack);
+        
+        // Letrero "STORAGE"
+        const plate = new THREE.Mesh(
+            new THREE.BoxGeometry(0.18, 0.04, 0.26),
+            new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.9, roughness: 0.4 })
         );
-        motorGroup.add(motorPedestal);
+        plate.position.set(0, 0.10, 0);
+        batteryGroup.add(plate);
 
-        // Carcasa del motor con ventana de acrílico transparente para ver el bobinado
-        const motorHousing = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.07, 0.07, 0.20, 24),
-            new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.9, roughness: 0.15 })
-        );
-        motorHousing.rotation.z = Math.PI / 2;
-        motorHousing.position.y = 0.20;
-        motorGroup.add(motorHousing);
-        this.interactableMeshes.push(motorHousing);
+        // Baterías cilíndricas transparentes que se llenan de luz
+        this.propellerGroup = new THREE.Group(); // Reutilizamos esta variable para guardar los núcleos luminosos
+        this.propellerGroup.position.set(0, 0, 0);
+        
+        const glassMat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, transmission: 0.9, opacity: 1, roughness: 0.1 });
+        const coreMat = new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0x22c55e, emissiveIntensity: 2.0 });
 
-        // Bobinas de cobre del inducido visibles a través de la ventana
-        const coilMat = new THREE.MeshStandardMaterial({ color: 0xb45309, metalness: 0.95, roughness: 0.1 });
-        for (let i = 0; i < 3; i++) {
-            const coil = new THREE.Mesh(new THREE.TorusGeometry(0.035, 0.012, 12, 20), coilMat);
-            coil.position.set(-0.04 + i * 0.04, 0.20, 0);
-            coil.rotation.y = Math.PI / 2;
-            motorGroup.add(coil);
+        for (let i = 0; i < 4; i++) {
+            const xPos = -0.10 + i * 0.066;
+            
+            // Cápsula de cristal
+            const cylinder = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.16, 16), glassMat);
+            cylinder.position.set(xPos, 0, 0.12);
+            batteryGroup.add(cylinder);
+
+            // Tapa de contacto superior e inferior
+            const capGeom = new THREE.CylinderGeometry(0.022, 0.022, 0.015, 16);
+            const capMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.9 });
+            const capTop = new THREE.Mesh(capGeom, capMat);
+            capTop.position.set(xPos, 0.08, 0.12);
+            batteryGroup.add(capTop);
+            
+            const capBot = new THREE.Mesh(capGeom, capMat);
+            capBot.position.set(xPos, -0.08, 0.12);
+            batteryGroup.add(capBot);
+
+            // Núcleo de energía luminoso (simulando nivel de carga)
+            const core = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.15, 12), coreMat);
+            core.position.set(xPos, -0.075, 0.12);
+            this.propellerGroup.add(core); // Lo agregamos a propellerGroup para iterar sobre ellos luego
         }
-
-        // Eje de acero rectificado
-        const shaft = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.012, 0.012, 0.10, 16),
-            new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.95, roughness: 0.05 })
-        );
-        shaft.rotation.z = Math.PI / 2;
-        shaft.position.set(0.14, 0.20, 0);
-        motorGroup.add(shaft);
-
-        // Buje cónico de hélice
-        this.propellerGroup = new THREE.Group();
-        this.propellerGroup.position.set(0.18, 0.20, 0);
-
-        const propSpinner = new THREE.Mesh(
-            new THREE.ConeGeometry(0.038, 0.08, 20),
-            new THREE.MeshStandardMaterial({ color: 0xef4444, metalness: 0.7, roughness: 0.2 })
-        );
-        propSpinner.rotation.z = -Math.PI / 2;
-        this.propellerGroup.add(propSpinner);
-
-        // Hélice aerodinámica de 3 palas con perfil torsionado y bordes de alta visibilidad
-        const bladeLen = 0.22;
-        const bladeShape = new THREE.Shape();
-        bladeShape.moveTo(0, 0);
-        bladeShape.lineTo(0.022, bladeLen * 0.25);
-        bladeShape.lineTo(0.016, bladeLen * 0.85);
-        bladeShape.lineTo(0, bladeLen);
-        bladeShape.lineTo(-0.016, bladeLen * 0.85);
-        bladeShape.lineTo(-0.022, bladeLen * 0.25);
-        bladeShape.closePath();
-
-        const bladeGeom = new THREE.ExtrudeGeometry(bladeShape, { depth: 0.005, bevelEnabled: false });
-        bladeGeom.center();
-        const bladeMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, metalness: 0.3, roughness: 0.25 });
-
-        for (let b = 0; b < 3; b++) {
-            const bladePivot = new THREE.Group();
-            bladePivot.rotation.x = (b * Math.PI * 2) / 3;
-
-            const blade = new THREE.Mesh(bladeGeom, bladeMat);
-            blade.position.set(0, bladeLen / 2 + 0.02, 0);
-            blade.rotation.y = 0.25; // Ángulo de ataque aerodinámico
-            bladePivot.add(blade);
-
-            // Franja de advertencia en las puntas (estilo aviación)
-            const tipMesh = new THREE.Mesh(
-                new THREE.BoxGeometry(0.008, 0.035, 0.02),
-                new THREE.MeshBasicMaterial({ color: 0xef4444 })
-            );
-            tipMesh.position.set(0, bladeLen + 0.01, 0);
-            bladePivot.add(tipMesh);
-
-            this.propellerGroup.add(bladePivot);
-        }
-
-        // Aro de protección aerodinámico perimetral (seguridad de laboratorio)
-        const shroud = new THREE.Mesh(
-            new THREE.TorusGeometry(bladeLen + 0.04, 0.010, 16, 32),
-            new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.9, roughness: 0.2 })
-        );
-        shroud.rotation.y = Math.PI / 2;
-        shroud.position.set(0.18, 0.20, 0);
-        motorGroup.add(shroud);
-
-        motorGroup.add(this.propellerGroup);
-        this.group.add(motorGroup);
+        
+        batteryGroup.add(this.propellerGroup);
+        this.group.add(batteryGroup);
 
         // =========================================================================
         // 5. MULTÍMETRO DIGITAL Y RADIÓMETRO SOLAR (PANTALLA LCD EN VIVO)
@@ -408,14 +389,14 @@ export class SolarPanelExhibit {
         const wirePosCurve = new THREE.CatmullRomCurve3([
             new THREE.Vector3(-0.15, tableH + 0.12, 0.15),
             new THREE.Vector3(0.08, tableH + 0.04, 0.22),
-            new THREE.Vector3(0.42, tableH + 0.22, 0.08)
+            new THREE.Vector3(0.42, tableH + 0.12, 0.08)
         ]);
         const wirePos = new THREE.Mesh(new THREE.TubeGeometry(wirePosCurve, 20, 0.008, 8, false), new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.3 }));
 
         const wireNegCurve = new THREE.CatmullRomCurve3([
             new THREE.Vector3(-0.15, tableH + 0.12, -0.15),
             new THREE.Vector3(0.08, tableH + 0.04, -0.22),
-            new THREE.Vector3(0.42, tableH + 0.22, -0.08)
+            new THREE.Vector3(0.42, tableH + 0.12, -0.08)
         ]);
         const wireNeg = new THREE.Mesh(new THREE.TubeGeometry(wireNegCurve, 20, 0.008, 8, false), new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.3 }));
 
@@ -467,10 +448,13 @@ export class SolarPanelExhibit {
         ctx.fillStyle = info.efficiency > 0.6 ? '#22c55e' : (info.efficiency > 0.2 ? '#f59e0b' : '#ef4444');
         ctx.fillRect(24, 150, powerWidth, 28);
 
-        // Estado del motor
+        // Estado del motor -> Estado de Batería
         ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 22px "Inter", monospace';
-        ctx.fillText(`MOTOR: ${Math.round(this.currentPropellerRpm)} RPM · POTENCIA: ${Math.round(info.efficiency * 100)}%`, 24, 218);
+        
+        let chargePercentage = Math.round((this.currentPropellerRpm / 2400) * 100);
+        chargePercentage = Math.max(0, Math.min(100, chargePercentage));
+        ctx.fillText(`CARGA: ${chargePercentage}% · POTENCIA: ${Math.round(info.efficiency * 100)}%`, 24, 218);
 
         this.digitalTexture.needsUpdate = true;
     }
@@ -498,13 +482,23 @@ export class SolarPanelExhibit {
         (this.sunLampBulb.material as THREE.MeshBasicMaterial).color.copy(this.currentBulbColor);
         this.lampGlowSprite.material.opacity = Math.min(1.0, this.currentLightIntensity / 4.0) * 0.85;
 
-        // 3. Inercia física aerodinámica de la hélice
-        const rpmLerp = Math.min(1.0, delta * 3.0);
+        // 3. Simulación física del nivel de carga de la batería (reusando variables de motor)
+        const rpmLerp = Math.min(1.0, delta * 2.5);
         this.currentPropellerRpm += (this.targetPropellerRpm - this.currentPropellerRpm) * rpmLerp;
 
-        const rps = this.currentPropellerRpm / 60;
-        this.propellerAngle += rps * Math.PI * 2 * delta;
-        this.propellerGroup.rotation.x = this.propellerAngle;
+        const chargeLevel = Math.max(0.01, this.currentPropellerRpm / 2400.0);
+        
+        this.propellerGroup.children.forEach(core => {
+            // Escalar en Y para simular llenado
+            core.scale.y = chargeLevel;
+            // Ajustar posición para que crezca desde abajo
+            core.position.y = -0.075 + (0.15 * chargeLevel) / 2;
+        });
+        
+        // Actualizar UI con el nivel intermedio
+        if (Math.abs(this.targetPropellerRpm - this.currentPropellerRpm) > 10) {
+            this.updateDigitalDisplay();
+        }
     }
 
     public cycleMode(): SolarPanelModeInfo {

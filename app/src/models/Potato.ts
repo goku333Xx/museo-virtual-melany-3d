@@ -12,7 +12,7 @@ export class PotatoBattery {
     }
 
     private createPotato(): void {
-        const geometry = new THREE.SphereGeometry(0.15, 12, 12);
+        const geometry = new THREE.SphereGeometry(0.08, 12, 12);
 
         // Realistic potato material
         const material = new THREE.MeshStandardMaterial({
@@ -22,44 +22,33 @@ export class PotatoBattery {
             bumpScale: 0.02
         });
         
-        const potatoMesh = new THREE.Mesh(geometry, material);
-        potatoMesh.scale.set(1, 0.8, 1.2);
-        potatoMesh.castShadow = true;
-        potatoMesh.receiveShadow = true;
+        const potatoMesh1 = new THREE.Mesh(geometry, material);
+        potatoMesh1.scale.set(1, 0.8, 1.2);
+        potatoMesh1.position.set(-0.15, -0.05, 0);
+        potatoMesh1.castShadow = true;
+        potatoMesh1.receiveShadow = true;
 
-        this.group.add(potatoMesh);
+        const potatoMesh2 = new THREE.Mesh(geometry, material);
+        potatoMesh2.scale.set(1.1, 0.7, 1.1);
+        potatoMesh2.position.set(0.15, -0.05, 0);
+        potatoMesh2.rotation.y = Math.PI / 4;
+        potatoMesh2.castShadow = true;
+        potatoMesh2.receiveShadow = true;
+
+        this.group.add(potatoMesh1, potatoMesh2);
 
         // Laboratory Tray
-        const trayGeo = new THREE.BoxGeometry(0.6, 0.05, 0.4);
+        const trayGeo = new THREE.BoxGeometry(0.6, 0.02, 0.4);
         const trayMat = new THREE.MeshStandardMaterial({
             color: 0x4a4a4a,
             metalness: 0.8,
             roughness: 0.2
         });
         const tray = new THREE.Mesh(trayGeo, trayMat);
-        tray.position.set(0, -0.145, 0);
+        tray.position.set(0, -0.1, 0);
         tray.receiveShadow = true;
         tray.castShadow = true;
         this.group.add(tray);
-
-        // Dramatic mad scientist base glow
-        const glowGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.02, 32);
-        const glowMat = new THREE.MeshStandardMaterial({
-            color: 0x00ff00,
-            emissive: 0x00ff00,
-            emissiveIntensity: 0.5,
-            transparent: true,
-            opacity: 0.6
-        });
-        const glow = new THREE.Mesh(glowGeo, glowMat);
-        glow.position.set(0, -0.12, 0);
-        this.group.add(glow);
-
-        const sproutGeo = new THREE.ConeGeometry(0.015, 0.04, 8);
-        const sproutMat = new THREE.MeshStandardMaterial({ color: 0x4ade80, roughness: 0.8 });
-        const sprout = new THREE.Mesh(sproutGeo, sproutMat);
-        sprout.position.set(0, 0.15, 0);
-        this.group.add(sprout);
     }
 
     private createElectrodes(): void {

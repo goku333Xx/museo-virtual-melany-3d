@@ -105,115 +105,116 @@ export class World {
         const pHeight = 1.2;
 
         // =========================================================================
-        // SALA 01 (OESTE: X = -15, Z = 0): ENERGÍA QUÍMICA & PILA DE PAPA (~1.94V)
+        // SALA 01 (OESTE: X = -15, Z = 10): ENERGÍA QUÍMICA & PILA DE PAPA (~1.94V)
         // =========================================================================
         const s1X = -15;
+        const s1Z = 10;
         this.potato1 = new PotatoBattery();
         const p1Mesh = this.potato1.getMesh();
-        p1Mesh.position.set(s1X - 0.82, pHeight + 0.12, -0.20);
+        p1Mesh.position.set(s1X - 0.82, pHeight + 0.12, s1Z - 0.20);
         this.scene.add(p1Mesh);
 
         this.potato2 = new PotatoBattery();
         const p2Mesh = this.potato2.getMesh();
-        p2Mesh.position.set(s1X - 0.62, pHeight + 0.12, 0.22);
+        p2Mesh.position.set(s1X - 0.62, pHeight + 0.12, s1Z + 0.22);
         this.scene.add(p2Mesh);
 
         this.potato3 = new PotatoBattery();
         const p3Mesh = this.potato3.getMesh();
-        p3Mesh.position.set(s1X + 0.68, pHeight + 0.12, 0.15);
+        p3Mesh.position.set(s1X + 0.68, pHeight + 0.12, s1Z + 0.15);
         this.scene.add(p3Mesh);
 
         this.potato4 = new PotatoBattery();
         const p4Mesh = this.potato4.getMesh();
-        p4Mesh.position.set(s1X + 0.85, pHeight + 0.12, -0.22);
+        p4Mesh.position.set(s1X + 0.85, pHeight + 0.12, s1Z - 0.22);
         this.scene.add(p4Mesh);
 
         this.switchExhibit = new SwitchExhibit();
         const switchMesh = this.switchExhibit.getMesh();
-        switchMesh.position.set(s1X - 0.05, pHeight, 0.08);
+        switchMesh.position.set(s1X - 0.05, pHeight, s1Z + 0.08);
         this.scene.add(switchMesh);
 
         const plugGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.05, 16);
         const plugMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.9, roughness: 0.2 });
         this.plugMesh = new THREE.Mesh(plugGeo, plugMat);
-        this.plugMesh.position.set(s1X - 0.82, pHeight + 0.22, -0.20);
+        this.plugMesh.position.set(s1X - 0.82, pHeight + 0.22, s1Z - 0.20);
         this.scene.add(this.plugMesh);
 
         const cablePoints = [
-            new THREE.Vector3(s1X - 0.76, pHeight + 0.16, -0.18),
-            new THREE.Vector3(s1X - 0.72, pHeight + 0.08, 0.02),
-            new THREE.Vector3(s1X - 0.62, pHeight + 0.16, 0.18),
-            new THREE.Vector3(s1X - 0.56, pHeight + 0.16, 0.24),
-            new THREE.Vector3(s1X - 0.40, pHeight + 0.06, 0.20),
-            new THREE.Vector3(s1X - 0.29, pHeight + 0.05, 0.18),
-            new THREE.Vector3(s1X - 0.05, pHeight + 0.05, 0.18),
-            new THREE.Vector3(s1X + 0.19, pHeight + 0.05, 0.18),
-            new THREE.Vector3(s1X + 0.42, pHeight + 0.06, 0.18),
-            new THREE.Vector3(s1X + 0.64, pHeight + 0.16, 0.12),
-            new THREE.Vector3(s1X + 0.72, pHeight + 0.16, 0.18),
-            new THREE.Vector3(s1X + 0.78, pHeight + 0.08, -0.04),
-            new THREE.Vector3(s1X + 0.85, pHeight + 0.16, -0.18),
-            new THREE.Vector3(s1X + 0.0, pHeight + 0.04, -0.42),
-            new THREE.Vector3(s1X - 0.85, pHeight + 0.16, -0.22)
+            new THREE.Vector3(s1X - 0.76, pHeight + 0.16, s1Z - 0.18),
+            new THREE.Vector3(s1X - 0.72, pHeight + 0.08, s1Z + 0.02),
+            new THREE.Vector3(s1X - 0.62, pHeight + 0.16, s1Z + 0.18),
+            new THREE.Vector3(s1X - 0.56, pHeight + 0.16, s1Z + 0.24),
+            new THREE.Vector3(s1X - 0.40, pHeight + 0.06, s1Z + 0.20),
+            new THREE.Vector3(s1X - 0.29, pHeight + 0.05, s1Z + 0.18),
+            new THREE.Vector3(s1X - 0.05, pHeight + 0.05, s1Z + 0.18),
+            new THREE.Vector3(s1X + 0.19, pHeight + 0.05, s1Z + 0.18),
+            new THREE.Vector3(s1X + 0.42, pHeight + 0.06, s1Z + 0.18),
+            new THREE.Vector3(s1X + 0.64, pHeight + 0.16, s1Z + 0.12),
+            new THREE.Vector3(s1X + 0.72, pHeight + 0.16, s1Z + 0.18),
+            new THREE.Vector3(s1X + 0.78, pHeight + 0.08, s1Z - 0.04),
+            new THREE.Vector3(s1X + 0.85, pHeight + 0.16, s1Z - 0.18),
+            new THREE.Vector3(s1X + 0.0, pHeight + 0.04, s1Z - 0.42),
+            new THREE.Vector3(s1X - 0.85, pHeight + 0.16, s1Z - 0.22)
         ];
         this.cables = new EnergyCables(cablePoints);
         this.scene.add(this.cables.getMesh());
 
         // =========================================================================
-        // SALA 02 (ESTE: X = +16, Z = 0): ALTA TENSIÓN & BOBINA DE TESLA
+        // SALA 02: ALTA TENSIÓN & BOBINA DE TESLA
         // =========================================================================
         this.teslaCoil = new TeslaCoil();
         const teslaMesh = this.teslaCoil.getMesh();
-        teslaMesh.position.set(16, pHeight, 0);
+        teslaMesh.position.set(-15, pHeight, 0);
         this.scene.add(teslaMesh);
 
         // =========================================================================
-        // SALA 03 (NORTE: X = 0, Z = -15): ENERGÍA EÓLICA & DÍNAMO FARADAY
+        // SALA 03: ENERGÍA EÓLICA & DÍNAMO FARADAY
         // =========================================================================
         this.windTurbine = new WindTurbineExhibit();
         const windMesh = this.windTurbine.getMesh();
-        windMesh.position.set(0, pHeight, -15);
+        windMesh.position.set(-15, pHeight, -10);
         this.scene.add(windMesh);
 
         // =========================================================================
-        // SALA 04 (NORESTE: X = 12, Z = -12): ENERGÍA SOLAR FOTOVOLTAICA
+        // SALA 04: ENERGÍA SOLAR FOTOVOLTAICA
         // =========================================================================
         this.solarPanel = new SolarPanelExhibit();
         const solarMesh = this.solarPanel.getMesh();
-        solarMesh.position.set(12, pHeight, -12);
+        solarMesh.position.set(-15, pHeight, -20);
         this.scene.add(solarMesh);
 
         // =========================================================================
-        // SALA 05 (NOROESTE: X = -12, Z = -12): GENERADOR ELECTROSTÁTICO VAN DE GRAAFF
+        // SALA 05: GENERADOR ELECTROSTÁTICO VAN DE GRAAFF
         // =========================================================================
         this.vanDeGraaff = new VanDeGraaffExhibit();
         const vanDeGraaffMesh = this.vanDeGraaff.getMesh();
-        vanDeGraaffMesh.position.set(-12, pHeight, -12);
+        vanDeGraaffMesh.position.set(15, pHeight, 10);
         this.scene.add(vanDeGraaffMesh);
 
         // =========================================================================
-        // SALA 06 (SUR: X = 0, Z = 14): ENERGÍA MECÁNICA & CUNA DE NEWTON
+        // SALA 06: ENERGÍA MECÁNICA & CUNA DE NEWTON
         // =========================================================================
         this.cradle = new NewtonsCradle();
         const cradleMesh = this.cradle.getMesh();
-        cradleMesh.position.set(0, pHeight, 14);
+        cradleMesh.position.set(15, pHeight, 0);
         cradleMesh.scale.set(0.18, 0.18, 0.18);
         this.scene.add(cradleMesh);
 
         // =========================================================================
-        // SALA 07 (SURESTE: X = 12, Z = 10): DÍNAMO MANUAL CON MANIVELA
+        // SALA 07: DÍNAMO MANUAL CON MANIVELA
         // =========================================================================
         this.dynamoExhibit = new DynamoExhibit();
         const dynamoMesh = this.dynamoExhibit.getMesh();
-        dynamoMesh.position.set(12, pHeight, 10);
+        dynamoMesh.position.set(15, pHeight, -10);
         this.scene.add(dynamoMesh);
 
         // =========================================================================
-        // GALERÍA HISTÓRICA (SUR PROFUNDO: X = 0, Z = 24): PRISMA ÓPTICO
+        // GALERÍA HISTÓRICA: PRISMA ÓPTICO
         // =========================================================================
         this.optics = new OpticsExhibit();
         const opticsMesh = this.optics.getMesh();
-        opticsMesh.position.set(0, pHeight, 24);
+        opticsMesh.position.set(0, pHeight, -35);
         opticsMesh.scale.set(1.0, 1.0, 1.0);
         this.scene.add(opticsMesh);
 
@@ -403,8 +404,8 @@ export class World {
         const solarInteractable: Omit<Interactable, 'object'> = {
             id: 4,
             title: "Sala 04: Panel Solar Fotovoltaico",
-            tag: "☀️ DE LUZ SOLAR A MOVIMIENTO (SOLAR)",
-            description: "¡La luz del sol viaja en paquetitos diminutos llamados fotones! Cuando chocan contra la placa azul de silicio, golpean a los electrones como pelotitas de pool y los hacen correr hacia el motor para girar la hélice del avión.",
+            tag: "☀️ DE LUZ SOLAR A BATERÍAS (SOLAR)",
+            description: "¡La luz viaja en paquetitos diminutos llamados fotones! Cuando chocan contra la placa azul de silicio, empujan a los electrones y generan electricidad que carga las baterías de litio.",
             badge: "🏅 +100 XP · Medalla Solar",
             getModeText: () => `INCIDENCIA: ${this.solarPanel.getCurrentModeInfo().name.toUpperCase()}`,
             quiz: quizSolar,
@@ -618,14 +619,14 @@ export class World {
         // ROBOT GUÍA MEL-BOT (ATRIO CENTRAL - ID: 99)
         // -------------------------------------------------------------
         const museumRooms = [
-            { id: 1, name: "Sala 01: Pila de Papa", center: new THREE.Vector3(-15, 0, 0), pedestalPos: new THREE.Vector3(-13.5, 1.75, 1.2) },
-            { id: 2, name: "Sala 02: Bobina de Tesla", center: new THREE.Vector3(16, 0, 0), pedestalPos: new THREE.Vector3(14.2, 1.75, 1.2) },
-            { id: 3, name: "Sala 03: Aerogenerador", center: new THREE.Vector3(0, 0, -15), pedestalPos: new THREE.Vector3(-1.2, 1.75, -13.2) },
-            { id: 4, name: "Sala 04: Panel Solar", center: new THREE.Vector3(12, 0, -12), pedestalPos: new THREE.Vector3(10.5, 1.75, -10.5) },
-            { id: 5, name: "Sala 05: Generador Van de Graaff", center: new THREE.Vector3(-12, 0, -12), pedestalPos: new THREE.Vector3(-10.5, 1.75, -10.5) },
-            { id: 6, name: "Sala 06: Cuna de Newton", center: new THREE.Vector3(0, 0, 14), pedestalPos: new THREE.Vector3(1.2, 1.75, 12.5) },
-            { id: 7, name: "Sala 07: Dínamo Manual", center: new THREE.Vector3(12, 0, 10), pedestalPos: new THREE.Vector3(10.5, 1.75, 8.5) },
-            { id: 8, name: "Galería Óptica (Conmemorativa)", center: new THREE.Vector3(0, 0, 24), pedestalPos: new THREE.Vector3(0, 1.75, 22.0) }
+            { id: 1, name: "Sala 01: Pila de Papa", center: new THREE.Vector3(-15, 0, 10), pedestalPos: new THREE.Vector3(-13.5, 1.75, 10) },
+            { id: 2, name: "Sala 02: Bobina de Tesla", center: new THREE.Vector3(-15, 0, 0), pedestalPos: new THREE.Vector3(-13.5, 1.75, 0) },
+            { id: 3, name: "Sala 03: Aerogenerador", center: new THREE.Vector3(-15, 0, -10), pedestalPos: new THREE.Vector3(-13.5, 1.75, -10) },
+            { id: 4, name: "Sala 04: Panel Solar", center: new THREE.Vector3(-15, 0, -20), pedestalPos: new THREE.Vector3(-13.5, 1.75, -20) },
+            { id: 5, name: "Sala 05: Generador Van de Graaff", center: new THREE.Vector3(15, 0, 10), pedestalPos: new THREE.Vector3(13.5, 1.75, 10) },
+            { id: 6, name: "Sala 06: Cuna de Newton", center: new THREE.Vector3(15, 0, 0), pedestalPos: new THREE.Vector3(13.5, 1.75, 0) },
+            { id: 7, name: "Sala 07: Dínamo Manual", center: new THREE.Vector3(15, 0, -10), pedestalPos: new THREE.Vector3(13.5, 1.75, -10) },
+            { id: 8, name: "Galería Óptica (Conmemorativa)", center: new THREE.Vector3(0, 0, -35), pedestalPos: new THREE.Vector3(0, 1.75, -33.0) }
         ];
 
         const getCurrentPlayerRoom = (pos: THREE.Vector3) => {
@@ -675,7 +676,7 @@ export class World {
                 let btn1Label = '¡Sí, vamos!';
                 let btn2Label = 'Ver Mapa';
                 let btn1Action = () => {
-                    this.robotGuide.startGuiding(nextRoom.id, nextRoom.name, nextRoom.pedestalPos, true);
+                    this.robotGuide.startGuiding(nextRoom.id, nextRoom.name, nextRoom.pedestalPos);
                     this.hud.showAchievementToast('¡Mel-Bot te Guía! 🚀', `Seguí a Mel-Bot volando hacia la ${nextRoom.name}`, '🤖');
                 };
 
@@ -710,7 +711,7 @@ export class World {
             onChallenge: () => {
                 const currentRoom = getCurrentPlayerRoom(this.lastPlayerPos);
                 const nextRoom = getNextIncompleteRoom(currentRoom ? currentRoom.id : undefined);
-                this.robotGuide.startGuiding(nextRoom.id, nextRoom.name, nextRoom.pedestalPos, true);
+                this.robotGuide.startGuiding(nextRoom.id, nextRoom.name, nextRoom.pedestalPos);
                 this.hud.showAchievementToast('¡SÍGUEME! 🚀', `¡Mel-Bot vuela guiándote a la ${nextRoom.name}!`, '🚀');
             }
         };
@@ -734,14 +735,14 @@ export class World {
             let closestIdx = -1;
 
             const roomCenters = [
-                { x: -15, z: 0 },   // 0: Papa
-                { x: 16, z: 0 },    // 1: Tesla
-                { x: 0, z: -15 },   // 2: Eólica
-                { x: 12, z: -12 },  // 3: Solar
-                { x: -12, z: -12 }, // 4: Van de Graaff
-                { x: 0, z: 14 },    // 5: Newton
-                { x: 12, z: 10 },   // 6: Dínamo
-                { x: 0, z: 24 }     // 7: Óptica
+                { x: -15, z: 10 },   // 0: Papa
+                { x: -15, z: 0 },    // 1: Tesla
+                { x: -15, z: -10 },   // 2: Eólica
+                { x: -15, z: -20 },  // 3: Solar
+                { x: 15, z: 10 }, // 4: Van de Graaff
+                { x: 15, z: 0 },    // 5: Newton
+                { x: 15, z: -10 },   // 6: Dínamo
+                { x: 0, z: -35 }     // 7: Óptica
             ];
 
             for (let i = 0; i < roomCenters.length; i++) {

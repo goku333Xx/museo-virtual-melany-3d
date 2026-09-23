@@ -262,74 +262,31 @@ export class MuseumRoom {
             metalness: 0.8
         });
 
-        // 1. Pasarela Eje Norte-Sur (De Z = -16 a Z = +26, longitud 44m)
-        const nsRunway = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 44), runwayMat);
+        // 1. Hallway Eje Norte-Sur (De Z = -40 a Z = 25, longitud 65m)
+        const nsRunway = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 65), runwayMat);
         nsRunway.rotation.x = -Math.PI / 2;
-        nsRunway.position.set(0, 0.005, 5);
+        nsRunway.position.set(0, 0.005, -7.5);
         nsRunway.receiveShadow = true;
         this.group.add(nsRunway);
 
-        // Guías de latón eje Norte-Sur
-        const nsGuideGeom = new THREE.BoxGeometry(0.04, 0.01, 44);
+        // Guías de latón
+        const nsGuideGeom = new THREE.BoxGeometry(0.04, 0.01, 65);
         const nsLeftGuide = new THREE.Mesh(nsGuideGeom, brassMat);
-        nsLeftGuide.position.set(-1.2, 0.008, 5);
+        nsLeftGuide.position.set(-1.8, 0.008, -7.5);
         const nsRightGuide = new THREE.Mesh(nsGuideGeom, brassMat);
-        nsRightGuide.position.set(1.2, 0.008, 5);
+        nsRightGuide.position.set(1.8, 0.008, -7.5);
         this.group.add(nsLeftGuide, nsRightGuide);
-
-        // 2. Pasarela Eje Este-Oeste (De X = -16 a X = +16, longitud 34m)
-        const ewRunway = new THREE.Mesh(new THREE.PlaneGeometry(34, 2.4), runwayMat);
-        ewRunway.rotation.x = -Math.PI / 2;
-        ewRunway.position.set(0, 0.005, 0);
-        ewRunway.receiveShadow = true;
-        this.group.add(ewRunway);
-
-        // Guías de latón eje Este-Oeste
-        const ewGuideGeom = new THREE.BoxGeometry(34, 0.01, 0.04);
-        const ewTopGuide = new THREE.Mesh(ewGuideGeom, brassMat);
-        ewTopGuide.position.set(0, 0.008, -1.2);
-        const ewBotGuide = new THREE.Mesh(ewGuideGeom, brassMat);
-        ewBotGuide.position.set(0, 0.008, 1.2);
-        this.group.add(ewTopGuide, ewBotGuide);
-
-        // 3. Pasarelas Diagonales hacia Noreste (Solar) y Noroeste (Van de Graaff)
-        const diagLen = 17;
-        const diagGeom = new THREE.PlaneGeometry(2.0, diagLen);
-
-        // Hacia Noreste (Solar: 12, -12)
-        const neRunway = new THREE.Mesh(diagGeom, runwayMat);
-        neRunway.rotation.x = -Math.PI / 2;
-        neRunway.rotation.z = -Math.PI / 4;
-        neRunway.position.set(6, 0.005, -6);
-        neRunway.receiveShadow = true;
-        this.group.add(neRunway);
-
-        // Hacia Noroeste (Van de Graaff: -12, -12)
-        const nwRunway = new THREE.Mesh(diagGeom, runwayMat);
-        nwRunway.rotation.x = -Math.PI / 2;
-        nwRunway.rotation.z = Math.PI / 4;
-        nwRunway.position.set(-6, 0.005, -6);
-        nwRunway.receiveShadow = true;
-        this.group.add(nwRunway);
-
-        // Hacia Sureste (Dínamo Manual: 12, 10)
-        const seRunway = new THREE.Mesh(diagGeom, runwayMat);
-        seRunway.rotation.x = -Math.PI / 2;
-        seRunway.rotation.z = Math.PI / 4;
-        seRunway.position.set(6, 0.005, 5);
-        seRunway.receiveShadow = true;
-        this.group.add(seRunway);
 
         // 4. Círculos de demarcación bajo los 8 pedestales
         const stationZones: [number, number, number][] = [
-            [-15, 0, 0x4ade80],   // Sala 1: Pila de Papa (Verde)
-            [16, 0, 0x38bdf8],    // Sala 2: Bobina de Tesla (Azul/Cian)
-            [0, -15, 0x00f0ff],   // Sala 3: Aerogenerador (Cian)
-            [12, -12, 0xfde047],  // Sala 4: Panel Solar (Dorado)
-            [-12, -12, 0xc084fc], // Sala 5: Van de Graaff (Violeta)
-            [0, 14, 0xf59e0b],    // Sala 6: Cuna de Newton (Ámbar)
-            [12, 10, 0xf97316],   // Sala 7: Dínamo Manual con Manivela (Naranja)
-            [0, 24, 0xd946ef]     // Galería: Prisma Óptico (Magenta)
+            [-15, 10, 0x4ade80],   // Sala 1
+            [-15, 0, 0x38bdf8],    // Sala 2
+            [-15, -10, 0x00f0ff],  // Sala 3
+            [-15, -20, 0xfde047],  // Sala 4
+            [15, 10, 0xc084fc],    // Sala 5
+            [15, 0, 0xf59e0b],     // Sala 6
+            [15, -10, 0xf97316],   // Sala 7
+            [0, -35, 0xd946ef]     // Galería
         ];
 
         const ringGeom = new THREE.RingGeometry(2.1, 2.2, 48);
@@ -350,81 +307,22 @@ export class MuseumRoom {
     // --- NÚCLEO HOLOGRÁFICO DEL ATRIO CENTRAL ---
     private buildCentralAtriumBeacon() {
         const beaconGroup = new THREE.Group();
-        beaconGroup.position.set(0, 0, 0);
+        beaconGroup.position.set(0, 0, 15);
 
-        // Medallón central en mármol con estrella de los vientos en latón
-        const centerDisc = new THREE.Mesh(
-            new THREE.CylinderGeometry(2.4, 2.4, 0.015, 48),
-            new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.3, metalness: 0.7 })
-        );
-        centerDisc.position.y = 0.008;
-        beaconGroup.add(centerDisc);
-
-        const brassRing = new THREE.Mesh(
-            new THREE.TorusGeometry(2.3, 0.03, 16, 48),
-            new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.9, roughness: 0.2 })
-        );
-        brassRing.rotation.x = Math.PI / 2;
-        brassRing.position.y = 0.018;
-        beaconGroup.add(brassRing);
-
-        // Estrella de orientación náutica/científica en el piso
-        const starMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.6 });
-        for (let i = 0; i < 4; i++) {
-            const starPoint = new THREE.Mesh(new THREE.ConeGeometry(0.2, 1.8, 4), starMat);
-            starPoint.rotation.x = Math.PI / 2;
-            starPoint.rotation.z = (i * Math.PI) / 2;
-            starPoint.position.y = 0.019;
-            beaconGroup.add(starPoint);
-        }
-
-        // Base monumental de bronce y mármol (reemplaza los anillos sci-fi)
-        const directoryBaseGeo = new THREE.CylinderGeometry(0.7, 0.9, 1.2, 32);
-        const directoryBaseMat = new THREE.MeshStandardMaterial({
-            color: 0x1e293b,
-            roughness: 0.3,
-            metalness: 0.2
-        });
-        const directoryBase = new THREE.Mesh(directoryBaseGeo, directoryBaseMat);
-        directoryBase.position.y = 0.6;
-        beaconGroup.add(directoryBase);
-        this.collidables.push(directoryBase);
-
-        const topCapGeo = new THREE.CylinderGeometry(0.75, 0.75, 0.05, 32);
-        const topCapMat = new THREE.MeshStandardMaterial({
-            color: 0xd4af37,
-            roughness: 0.2,
-            metalness: 0.9
-        });
-        const topCap = new THREE.Mesh(topCapGeo, topCapMat);
-        topCap.position.y = 1.2 + 0.025;
-        beaconGroup.add(topCap);
-
-        // 4 Bancos de madera rectangulares en formación cuadrada
-        const benchGeom = new THREE.BoxGeometry(2.4, 0.45, 0.6);
-        const benchMat = new THREE.MeshStandardMaterial({
-            color: 0x5c4033, // Madera clásica
+        // Base rectangular de madera
+        const baseGeom = new THREE.BoxGeometry(2.4, 0.45, 2.4);
+        const baseMat = new THREE.MeshStandardMaterial({
+            color: 0x5c4033,
             roughness: 0.8,
             metalness: 0.05
         });
-
-        const benchDist = 3.2;
-        const benchConfigs = [
-            { x: 0, z: -benchDist, rotY: 0 },
-            { x: 0, z: benchDist, rotY: 0 },
-            { x: -benchDist, z: 0, rotY: Math.PI / 2 },
-            { x: benchDist, z: 0, rotY: Math.PI / 2 }
-        ];
-
-        benchConfigs.forEach(bc => {
-            const bench = new THREE.Mesh(benchGeom, benchMat);
-            bench.position.set(bc.x, 0.225, bc.z);
-            bench.rotation.y = bc.rotY;
-            bench.castShadow = true;
-            bench.receiveShadow = true;
-            beaconGroup.add(bench);
-            this.collidables.push(bench);
-        });
+        
+        const base = new THREE.Mesh(baseGeom, baseMat);
+        base.position.set(0, 0.225, 0);
+        base.castShadow = true;
+        base.receiveShadow = true;
+        beaconGroup.add(base);
+        this.collidables.push(base);
 
         this.group.add(beaconGroup);
     }
@@ -432,14 +330,14 @@ export class MuseumRoom {
     // --- ARCOS ARQUITECTÓNICOS Y LETREROS DE LAS SALAS ---
     private buildRoomPortals() {
         const portalConfigs = [
-            { pos: [-7.5, 0], rotY: Math.PI / 2, title: "SALA 01: PILA DE PAPA", sub: "Química a Eléctrica · Jugo Ácido", color: "#4ade80" },
-            { pos: [7.5, 0], rotY: -Math.PI / 2, title: "SALA 02: BOBINA DE TESLA", sub: "Alta Tensión · Electricidad sin Cables", color: "#38bdf8" },
-            { pos: [0, -7.5], rotY: 0, title: "SALA 03: AEROGENERADOR", sub: "Energía del Viento · Imanes y Mini Ciudad", color: "#00f0ff" },
-            { pos: [5.5, -5.5], rotY: -Math.PI / 4, title: "SALA 04: ENERGÍA SOLAR", sub: "Fotones y Luz · Motor del Avión", color: "#fde047" },
-            { pos: [-5.5, -5.5], rotY: Math.PI / 4, title: "SALA 05: GENERADOR ELECTROSTÁTICO", sub: "Fricción y Cargas · Cintas Voladoras", color: "#c084fc" },
-            { pos: [0, 7.5], rotY: Math.PI, title: "SALA 06: CUNA DE NEWTON", sub: "Energía de Choque · Olas Invisibles", color: "#f59e0b" },
-            { pos: [5.5, 4.8], rotY: -3 * Math.PI / 4, title: "SALA 07: DÍNAMO MANUAL", sub: "Fuerza Muscular a Luz · Manivela y Bombilla", color: "#f97316" },
-            { pos: [0, 19.0], rotY: Math.PI, title: "GALERÍA ESPECIAL: PRISMA ÓPTICO", sub: "El Secreto del Arcoíris · Newton", color: "#d946ef" }
+            { pos: [-5, 10], rotY: Math.PI / 2, title: "SALA 01: PILA DE PAPA", sub: "Química a Eléctrica · Jugo Ácido", color: "#4ade80" },
+            { pos: [-5, 0], rotY: Math.PI / 2, title: "SALA 02: BOBINA DE TESLA", sub: "Alta Tensión · Electricidad sin Cables", color: "#38bdf8" },
+            { pos: [-5, -10], rotY: Math.PI / 2, title: "SALA 03: AEROGENERADOR", sub: "Energía del Viento · Imanes y Mini Ciudad", color: "#00f0ff" },
+            { pos: [-5, -20], rotY: Math.PI / 2, title: "SALA 04: ENERGÍA SOLAR", sub: "Fotones y Luz · Motor del Avión", color: "#fde047" },
+            { pos: [5, 10], rotY: -Math.PI / 2, title: "SALA 05: GENERADOR ELECTROSTÁTICO", sub: "Fricción y Cargas · Cintas Voladoras", color: "#c084fc" },
+            { pos: [5, 0], rotY: -Math.PI / 2, title: "SALA 06: CUNA DE NEWTON", sub: "Energía de Choque · Olas Invisibles", color: "#f59e0b" },
+            { pos: [5, -10], rotY: -Math.PI / 2, title: "SALA 07: DÍNAMO MANUAL", sub: "Fuerza Muscular a Luz · Manivela y Bombilla", color: "#f97316" },
+            { pos: [0, -25], rotY: 0, title: "GALERÍA ESPECIAL: PRISMA ÓPTICO", sub: "El Secreto del Arcoíris · Newton", color: "#d946ef" }
         ];
 
         const archMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.85, roughness: 0.3 });
@@ -451,29 +349,24 @@ export class MuseumRoom {
             portal.position.set(cfg.pos[0], 0, cfg.pos[1]);
             portal.rotation.y = cfg.rotY;
 
-            // Poste Izquierdo
             const postL = new THREE.Mesh(postGeom, archMat);
             postL.position.set(-1.6, 1.9, 0);
             portal.add(postL);
 
-            // Poste Derecho
             const postR = new THREE.Mesh(postGeom, archMat);
             postR.position.set(1.6, 1.9, 0);
             portal.add(postR);
 
-            // Dintel superior
             const lintel = new THREE.Mesh(lintelGeom, archMat);
             lintel.position.set(0, 3.8, 0);
             portal.add(lintel);
 
-            // Cartel luminoso con letrero de la sala
             const signTex = this.generateSignTexture(cfg.title, cfg.sub, cfg.color);
             const signMat = new THREE.MeshBasicMaterial({ map: signTex, transparent: true });
             const sign = new THREE.Mesh(new THREE.PlaneGeometry(2.8, 0.7), signMat);
             sign.position.set(0, 3.3, 0.05);
             portal.add(sign);
 
-            // Respaldo del cartel para verse también al volver
             const signBack = new THREE.Mesh(new THREE.PlaneGeometry(2.8, 0.7), signMat);
             signBack.position.set(0, 3.3, -0.05);
             signBack.rotation.y = Math.PI;
@@ -504,7 +397,6 @@ export class MuseumRoom {
 
         const wallHeight = 4.5;
 
-        // Función para levantar muros reales con molduras doradas e iluminación perimetral
         const createWall = (minX: number, maxX: number, minZ: number, maxZ: number) => {
             const w = Math.max(0.12, maxX - minX);
             const d = Math.max(0.12, maxZ - minZ);
@@ -519,12 +411,10 @@ export class MuseumRoom {
             this.group.add(wallMesh);
             this.collidables.push(wallMesh);
 
-            // Moldura en zócalo
             const baseMesh = new THREE.Mesh(new THREE.BoxGeometry(w + 0.04, 0.22, d + 0.04), trimMat);
             baseMesh.position.set(posX, 0.11, posZ);
             this.group.add(baseMesh);
 
-            // Moldura superior iluminada
             const topMesh = new THREE.Mesh(new THREE.BoxGeometry(w + 0.05, 0.18, d + 0.05), coveMat);
             topMesh.position.set(posX, wallHeight - 0.09, posZ);
             this.group.add(topMesh);
@@ -532,7 +422,6 @@ export class MuseumRoom {
             this.internalWallBoxes.push({ minX, maxX, minZ, maxZ });
         };
 
-        // Dintel superior sobre las puertas de 3.2m de ancho
         const createDoorLintel = (minX: number, maxX: number, minZ: number, maxZ: number) => {
             const w = Math.max(0.12, maxX - minX);
             const d = Math.max(0.12, maxZ - minZ);
@@ -551,90 +440,59 @@ export class MuseumRoom {
             this.group.add(topMesh);
         };
 
-        // 1. FACHADAS DEL ATRIO CENTRAL CON VANOS DE PUERTA (3.2m)
-        // Pared Oeste (Puerta Sala 1 en Z = [-1.6, 1.6])
-        createWall(-7.65, -7.35, -5.8, -1.6);
-        createDoorLintel(-7.65, -7.35, -1.6, 1.6);
-        createWall(-7.65, -7.35, 1.6, 5.8);
+        // Pasillo Central: Muros Este y Oeste, cortados por puertas (Z: -25 a 25)
+        // Muro Oeste del Pasillo (X = -5)
+        createWall(-5.15, -4.85, 11.6, 25);
+        createDoorLintel(-5.15, -4.85, 8.4, 11.6); // Sala 1
+        createWall(-5.15, -4.85, 1.6, 8.4);
+        createDoorLintel(-5.15, -4.85, -1.6, 1.6); // Sala 2
+        createWall(-5.15, -4.85, -8.4, -1.6);
+        createDoorLintel(-5.15, -4.85, -11.6, -8.4); // Sala 3
+        createWall(-5.15, -4.85, -18.4, -11.6);
+        createDoorLintel(-5.15, -4.85, -21.6, -18.4); // Sala 4
+        createWall(-5.15, -4.85, -25, -21.6);
 
-        // Pared Este (Puerta Sala 2 en Z = [-1.6, 1.6])
-        createWall(7.35, 7.65, -5.8, -1.6);
-        createDoorLintel(7.35, 7.65, -1.6, 1.6);
-        createWall(7.35, 7.65, 1.6, 4.0);
+        // Muro Este del Pasillo (X = 5)
+        createWall(4.85, 5.15, 11.6, 25);
+        createDoorLintel(4.85, 5.15, 8.4, 11.6); // Sala 5
+        createWall(4.85, 5.15, 1.6, 8.4);
+        createDoorLintel(4.85, 5.15, -1.6, 1.6); // Sala 6
+        createWall(4.85, 5.15, -8.4, -1.6);
+        createDoorLintel(4.85, 5.15, -11.6, -8.4); // Sala 7
+        createWall(4.85, 5.15, -25, -11.6);
+        
+        // Muro Norte del Pasillo (Galeria) (Z = -25)
+        createWall(-4.85, -1.6, -25.15, -24.85);
+        createDoorLintel(-1.6, 1.6, -25.15, -24.85); // Sala 8 (Galeria)
+        createWall(1.6, 4.85, -25.15, -24.85);
 
-        // Pared Norte (Puerta Sala 3 en X = [-1.6, 1.6])
-        createWall(-5.8, -1.6, -7.65, -7.35);
-        createDoorLintel(-1.6, 1.6, -7.65, -7.35);
-        createWall(1.6, 5.8, -7.65, -7.35);
+        // Paredes separadoras de salas (Lado Izquierdo, X: -25 a -5.15)
+        createWall(-25, -5.15, 4.85, 5.15); // Entre Sala 1 y 2
+        createWall(-25, -5.15, -5.15, -4.85); // Entre Sala 2 y 3
+        createWall(-25, -5.15, -15.15, -14.85); // Entre Sala 3 y 4
+        
+        // Paredes separadoras de salas (Lado Derecho, X: 5.15 a 25)
+        createWall(5.15, 25, 4.85, 5.15); // Entre Sala 5 y 6
+        createWall(5.15, 25, -5.15, -4.85); // Entre Sala 6 y 7
 
-        // Pared Sur (Puerta Sala 6 en X = [-1.6, 1.6])
-        createWall(-5.8, -1.6, 7.35, 7.65);
-        createDoorLintel(-1.6, 1.6, 7.35, 7.65);
-        createWall(1.6, 4.2, 7.35, 7.65);
-
-        // 2. PAREDES DIVISORIAS Y TRASERAS DE CADA SALA
-        // Sala 01: Pila de Papa (Oeste: X = -15, Z = 0)
-        createWall(-23.5, -7.5, -5.95, -5.65); // Muro Norte divisor con Sala 5
-        createWall(-23.5, -7.5, 5.65, 5.95);   // Muro Sur divisor
-        createWall(-23.65, -23.35, -5.8, 5.8); // Muro Trasero Oeste
-
-        // Sala 02: Bobina de Tesla (Este: X = 16, Z = 0)
-        createWall(7.5, 24.5, -5.95, -5.65); // Muro Norte divisor con Sala 4
-        createWall(7.5, 24.5, 5.0, 5.3);     // Muro Sur divisor con Sala 7
-        createWall(24.35, 24.65, -5.8, 5.0); // Muro Trasero Este
-
-        // Sala 03: Aerogenerador (Norte: X = 0, Z = -15)
-        createWall(-5.95, -5.65, -23.5, -7.5); // Muro Oeste divisor con Sala 5
-        createWall(5.65, 5.95, -23.5, -7.5);   // Muro Este divisor con Sala 4
-        createWall(-5.8, 5.8, -23.65, -23.35); // Muro Trasero Norte
-
-        // Sala 04: Panel Solar (Noreste: X = 12, Z = -12)
-        createWall(5.8, 20.5, -20.65, -20.35); // Muro Trasero Norte
-        createWall(20.35, 20.65, -20.5, -5.8); // Muro Trasero Este
-
-        // Sala 05: Generador Van de Graaff (Noroeste: X = -12, Z = -12)
-        createWall(-20.5, -5.8, -20.65, -20.35); // Muro Trasero Norte
-        createWall(-20.65, -20.35, -20.5, -5.8); // Muro Trasero Oeste
-
-        // Sala 06: Cuna de Newton (Sur: X = 0, Z = 14)
-        createWall(-5.95, -5.65, 7.5, 19.0); // Muro Oeste divisor
-        createWall(5.65, 5.95, 7.5, 19.0);   // Muro Este divisor
-        // Muro divisorio hacia Galería Especial con vano de puerta en X = [-1.6, 1.6]
-        createWall(-5.8, -1.6, 18.85, 19.15);
-        createDoorLintel(-1.6, 1.6, 18.85, 19.15);
-        createWall(1.6, 5.8, 18.85, 19.15);
-
-        // Sala 07: Dínamo Manual (Sureste: X = 12, Z = 10)
-        createWall(5.8, 20.5, 16.35, 16.65); // Muro Trasero Sur
-        createWall(20.35, 20.65, 5.2, 16.5);  // Muro Trasero Este
-        createWall(5.65, 5.95, 7.5, 16.5);   // Muro Oeste divisor con pasillo
-
-        // Galería Especial: Prisma Óptico (Sur Profundo: X = 0, Z = 24)
-        createWall(-5.95, -5.65, 19.0, 29.5); // Muro Oeste
-        createWall(5.65, 5.95, 19.0, 29.5);   // Muro Este
-        createWall(-5.8, 5.8, 29.35, 29.65);  // Muro Trasero Sur
-
-        // 3. ILUMINACIÓN BRILLANTE DE GALERÍA DE MUSEO PARA CADA SALA
         const roomConfigs = [
-            { x: -15, z: 0, color: 0x4ade80, name: "Sala 1: Papa" },
-            { x: 16, z: 0, color: 0x38bdf8, name: "Sala 2: Tesla" },
-            { x: 0, z: -15, color: 0x00f0ff, name: "Sala 3: Eólica" },
-            { x: 12, z: -12, color: 0xfde047, name: "Sala 4: Solar" },
-            { x: -12, z: -12, color: 0xc084fc, name: "Sala 5: Van de Graaff" },
-            { x: 0, z: 14, color: 0xf59e0b, name: "Sala 6: Newton" },
-            { x: 12, z: 10, color: 0xf97316, name: "Sala 7: Dínamo" },
-            { x: 0, z: 24, color: 0xd946ef, name: "Galería Óptica" }
+            { x: -15, z: 10, color: 0x4ade80, name: "Sala 1: Papa" },
+            { x: -15, z: 0, color: 0x38bdf8, name: "Sala 2: Tesla" },
+            { x: -15, z: -10, color: 0x00f0ff, name: "Sala 3: Eólica" },
+            { x: -15, z: -20, color: 0xfde047, name: "Sala 4: Solar" },
+            { x: 15, z: 10, color: 0xc084fc, name: "Sala 5: Van de Graaff" },
+            { x: 15, z: 0, color: 0xf59e0b, name: "Sala 6: Newton" },
+            { x: 15, z: -10, color: 0xf97316, name: "Sala 7: Dínamo" },
+            { x: 0, z: -35, color: 0xd946ef, name: "Galería Óptica" }
         ];
 
         roomConfigs.forEach((rc, idx) => {
             const isActive = idx === 0;
-            // Luz cenital cálida de galería (3200K) que inunda la sala
             const roomLight = new THREE.PointLight(0xfff7ed, 1.4, 18.0, 1.2);
             roomLight.position.set(rc.x, 4.2, rc.z);
             roomLight.visible = isActive;
             this.group.add(roomLight);
 
-            // Foco de acento con el color de la temática reflejado en el techo/pared
             const accentLight = new THREE.PointLight(rc.color, 0.8, 8.0, 2.0);
             accentLight.position.set(rc.x, 3.8, rc.z);
             accentLight.visible = isActive;
@@ -642,17 +500,14 @@ export class MuseumRoom {
 
             this.roomLights.push({ roomLight, accentLight });
 
-            // Apliques luminosos decorativos en las paredes de cada sala (costo cero de luces dinámicas)
             this.createWallSconce(rc.x - 3.5, 2.4, rc.z - 3.5, rc.color);
             this.createWallSconce(rc.x + 3.5, 2.4, rc.z + 3.5, rc.color);
         });
 
-        // Iluminación adicional del Atrio Central para que resplandezca cálido y acogedor (4 luces)
         const atriumPos = [
-            [-4, 4.4, -4],
-            [4, 4.4, -4],
-            [-4, 4.4, 4],
-            [4, 4.4, 4]
+            [0, 4.4, 15],
+            [0, 4.4, 0],
+            [0, 4.4, -15]
         ];
         atriumPos.forEach(pos => {
             const atriumLight = new THREE.PointLight(0xfffbeb, 0.8, 15.0, 1.3);
@@ -740,57 +595,16 @@ export class MuseumRoom {
         const beamGeomX = new THREE.BoxGeometry(width, 0.4, 0.4);
         const beamGeomZ = new THREE.BoxGeometry(0.4, 0.4, depth);
 
-        // Vigas transversales
         for (let x = -24; x <= 24; x += 12) {
             const beam = new THREE.Mesh(beamGeomZ, trussMat);
             beam.position.set(x, 14, 0);
             this.group.add(beam);
         }
 
-        // Vigas longitudinales
         for (let z = -24; z <= 24; z += 12) {
             const beam = new THREE.Mesh(beamGeomX, trussMat);
             beam.position.set(0, 14, z);
             this.group.add(beam);
-        }
-
-        // Glass ceiling panels between truss beams
-        const glassMat = new THREE.MeshStandardMaterial({
-            color: 0xffffff,
-            transparent: true,
-            opacity: 0.08,
-            roughness: 0.1,
-            metalness: 0.3,
-            side: THREE.DoubleSide
-        });
-        // 4 large skylight panels
-        const panelPositions = [
-            [-12, 0], [12, 0], [0, -12], [0, 12]
-        ];
-        for (const [px, pz] of panelPositions) {
-            const panel = new THREE.Mesh(
-                new THREE.PlaneGeometry(10, 10),
-                glassMat
-            );
-            panel.rotation.x = -Math.PI / 2;
-            panel.position.set(px, 13.85, pz);
-            panel.receiveShadow = false;
-            panel.castShadow = false;
-            this.group.add(panel);
-            // Skylight frame
-            const frameMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.3, metalness: 0.8 });
-            const frameGeo = new THREE.BoxGeometry(10.4, 0.15, 0.15);
-            for (let s = 0; s < 4; s++) {
-                const frame = new THREE.Mesh(frameGeo, frameMat);
-                frame.position.set(
-                    px + (s < 2 ? 0 : (s === 2 ? -5.1 : 5.1)),
-                    13.9,
-                    pz + (s < 2 ? (s === 0 ? -5.1 : 5.1) : 0)
-                );
-                if (s >= 2) frame.rotation.y = Math.PI / 2;
-                frame.castShadow = false;
-                this.group.add(frame);
-            }
         }
     }
 
@@ -800,7 +614,6 @@ export class MuseumRoom {
         const pedestalWidth = 2.4;
         const pedestalDepth = 2.4;
 
-        // Base de pedestal de granito oscuro pulido
         const baseGeom = new THREE.BoxGeometry(pedestalWidth, pedestalHeight, pedestalDepth);
         const baseMaterial = new THREE.MeshStandardMaterial({ 
             color: 0x334155, 
@@ -808,7 +621,6 @@ export class MuseumRoom {
             metalness: 0.25 
         });
 
-        // Ribete de latón arquitectónico en los bordes
         const borderMat = new THREE.MeshStandardMaterial({
             color: 0xc49b55,
             roughness: 0.3,
@@ -816,14 +628,14 @@ export class MuseumRoom {
         });
 
         const positions = [
-            [-15, 0],   // 1. Pila de Papa (Oeste)
-            [16, 0],    // 2. Bobina de Tesla (Este)
-            [0, -15],   // 3. Aerogenerador Faraday (Norte)
-            [12, -12],  // 4. Panel Solar & Motor (Noreste)
-            [-12, -12], // 5. Generador Van de Graaff (Noroeste)
-            [0, 14],    // 6. Cuna de Newton (Sur)
-            [12, 10],   // 7. Dínamo Manual con Manivela (Sureste)
-            [0, 24]     // 8. Alcoba Especial: Prisma Óptico (Sur Profundo)
+            [-15, 10],   // 1. Pila de Papa
+            [-15, 0],    // 2. Bobina de Tesla
+            [-15, -10],  // 3. Aerogenerador Faraday
+            [-15, -20],  // 4. Panel Solar & Motor
+            [15, 10],    // 5. Generador Van de Graaff
+            [15, 0],     // 6. Cuna de Newton
+            [15, -10],   // 7. Dínamo Manual con Manivela
+            [0, -35]     // 8. Alcoba Especial: Prisma Óptico
         ];
 
         positions.forEach((pos, idx) => {
@@ -835,7 +647,6 @@ export class MuseumRoom {
             pedestal.receiveShadow = true;
             pedestalGroup.add(pedestal);
 
-            // Borde superior de latón fino
             const edgeH = 0.02;
             const edgeW = 0.035;
 
@@ -856,7 +667,6 @@ export class MuseumRoom {
             this.collidables.push(pedestal);
             this.pedestalMeshes.push(pedestal);
 
-            // Halo suspendido de iluminación focal
             this.createFloatingHaloLight(pos[0], pos[1], idx * 2.1);
         });
     }
@@ -1079,12 +889,10 @@ export class MuseumRoom {
         pigeonCanvas.height = 32;
         const pigeonCtx = pigeonCanvas.getContext('2d')!;
         pigeonCtx.clearRect(0, 0, 64, 32);
-        // Simple bird silhouette - body
         pigeonCtx.fillStyle = '#6b7280';
         pigeonCtx.beginPath();
         pigeonCtx.ellipse(32, 18, 8, 5, 0, 0, Math.PI * 2);
         pigeonCtx.fill();
-        // Wings
         pigeonCtx.fillStyle = '#9ca3af';
         pigeonCtx.beginPath();
         pigeonCtx.moveTo(24, 16);
@@ -1107,20 +915,21 @@ export class MuseumRoom {
                     depthWrite: false
                 })
             );
-            const isPerched = i < 3; // 3 posadas, 3 volando
+            const isPerched = i < 3; 
             pigeon.scale.set(1.2, 0.6, 1);
             if (isPerched) {
-                // Posadas en el techo de vidrio
+                // Perched on interior ceiling trusses
                 pigeon.position.set(
                     -10 + i * 10 + Math.random() * 4,
-                    13.9,
+                    14.2,
                     -8 + Math.random() * 16
                 );
             } else {
+                // Flying inside the hallway
                 pigeon.position.set(
-                    (Math.random() - 0.5) * 50,
-                    16 + Math.random() * 12,
-                    (Math.random() - 0.5) * 50
+                    (Math.random() - 0.5) * 8,
+                    10 + Math.random() * 3,
+                    (Math.random() - 0.5) * 40
                 );
             }
             this.group.add(pigeon);
@@ -1129,7 +938,7 @@ export class MuseumRoom {
                 isPerched,
                 speed: isPerched ? 0 : 1.5 + Math.random() * 2,
                 angle: Math.random() * Math.PI * 2,
-                radius: 15 + Math.random() * 20,
+                radius: 2 + Math.random() * 3, // Smaller radius for inside hallway
                 baseY: pigeon.position.y,
                 wingPhase: Math.random() * Math.PI * 2
             });
@@ -1138,24 +947,22 @@ export class MuseumRoom {
 
     private buildViewingIndicators(): void {
         const roomData = [
-            { name: '🥔 PILA DE PAPA', pos: [-15, 0], viewDir: [1, 0], color: '#4ade80' },
-            { name: '⚡ BOBINA DE TESLA', pos: [16, 0], viewDir: [-1, 0], color: '#38bdf8' },
-            { name: '🌪️ AEROGENERADOR', pos: [0, -15], viewDir: [0, 1], color: '#00f0ff' },
-            { name: '☀️ PANEL SOLAR', pos: [12, -12], viewDir: [-0.7, 0.7], color: '#fde047' },
-            { name: '⚡ VAN DE GRAAFF', pos: [-12, -12], viewDir: [0.7, 0.7], color: '#c084fc' },
-            { name: '⚖️ CUNA DE NEWTON', pos: [0, 14], viewDir: [0, -1], color: '#f59e0b' },
-            { name: '⚙️ DÍNAMO MANUAL', pos: [12, 10], viewDir: [-0.7, -0.7], color: '#f97316' },
-            { name: '🌈 PRISMA ÓPTICO', pos: [0, 24], viewDir: [0, -1], color: '#d946ef' }
+            { name: '🥔 PILA DE PAPA', pos: [-15, 10], viewDir: [1, 0], color: '#4ade80' },
+            { name: '⚡ BOBINA DE TESLA', pos: [-15, 0], viewDir: [1, 0], color: '#38bdf8' },
+            { name: '🌪️ AEROGENERADOR', pos: [-15, -10], viewDir: [1, 0], color: '#00f0ff' },
+            { name: '☀️ PANEL SOLAR', pos: [-15, -20], viewDir: [1, 0], color: '#fde047' },
+            { name: '⚡ VAN DE GRAAFF', pos: [15, 10], viewDir: [-1, 0], color: '#c084fc' },
+            { name: '⚖️ CUNA DE NEWTON', pos: [15, 0], viewDir: [-1, 0], color: '#f59e0b' },
+            { name: '⚙️ DÍNAMO MANUAL', pos: [15, -10], viewDir: [-1, 0], color: '#f97316' },
+            { name: '🌈 PRISMA ÓPTICO', pos: [0, -35], viewDir: [0, 1], color: '#d946ef' }
         ];
 
         for (const room of roomData) {
-            // Floor arrow "OBSERVÁ DESDE ACÁ" - positioned in front of pedestal
             const arrowCanvas = document.createElement('canvas');
             arrowCanvas.width = 256;
             arrowCanvas.height = 128;
             const ctx = arrowCanvas.getContext('2d')!;
             ctx.clearRect(0, 0, 256, 128);
-            // Arrow chevron
             ctx.fillStyle = room.color;
             ctx.globalAlpha = 0.8;
             ctx.beginPath();
@@ -1168,7 +975,6 @@ export class MuseumRoom {
             ctx.lineTo(76, 50);
             ctx.closePath();
             ctx.fill();
-            // Text
             ctx.globalAlpha = 1;
             ctx.fillStyle = '#ffffff';
             ctx.font = 'bold 16px Inter, sans-serif';
@@ -1181,7 +987,6 @@ export class MuseumRoom {
                 new THREE.MeshBasicMaterial({ map: arrowTex, transparent: true, depthWrite: false, side: THREE.DoubleSide })
             );
             arrow.rotation.x = -Math.PI / 2;
-            // Place arrow 2.5m in front of pedestal (in viewing direction)
             arrow.position.set(
                 room.pos[0] + room.viewDir[0] * 2.5,
                 0.02,
@@ -1191,21 +996,17 @@ export class MuseumRoom {
             arrow.castShadow = false;
             this.group.add(arrow);
 
-            // Pedestal title plaque on front face
             const plaqueCanvas = document.createElement('canvas');
             plaqueCanvas.width = 512;
             plaqueCanvas.height = 128;
             const pCtx = plaqueCanvas.getContext('2d')!;
-            // Bronze background
             pCtx.fillStyle = '#92400e';
             pCtx.fillRect(0, 0, 512, 128);
             pCtx.fillStyle = '#b45309';
             pCtx.fillRect(4, 4, 504, 120);
-            // Gold border
             pCtx.strokeStyle = '#d4af37';
             pCtx.lineWidth = 3;
             pCtx.strokeRect(8, 8, 496, 112);
-            // Title text
             pCtx.fillStyle = '#fef3c7';
             pCtx.font = 'bold 32px Inter, sans-serif';
             pCtx.textAlign = 'center';
@@ -1218,7 +1019,6 @@ export class MuseumRoom {
                 new THREE.PlaneGeometry(1.6, 0.4),
                 new THREE.MeshBasicMaterial({ map: plaqueTex })
             );
-            // Place on front face of pedestal at Y=0.9 (middle of 1.2m pedestal)
             plaque.position.set(
                 room.pos[0] + room.viewDir[0] * 1.22,
                 0.9,
@@ -1232,14 +1032,14 @@ export class MuseumRoom {
 
     private buildDoorBarriers(): void {
         const doorData = [
-            { pos: [-7.5, 0], rotY: Math.PI / 2, room: 'SALA 01' },
-            { pos: [7.5, 0], rotY: -Math.PI / 2, room: 'SALA 02' },
-            { pos: [0, -7.5], rotY: 0, room: 'SALA 03' },
-            { pos: [5.5, -5.5], rotY: -Math.PI / 4, room: 'SALA 04' },
-            { pos: [-5.5, -5.5], rotY: Math.PI / 4, room: 'SALA 05' },
-            { pos: [0, 7.5], rotY: Math.PI, room: 'SALA 06' },
-            { pos: [5.5, 4.8], rotY: -3 * Math.PI / 4, room: 'SALA 07' },
-            { pos: [0, 19.0], rotY: Math.PI, room: 'GALERÍA' }
+            { pos: [-5, 10], rotY: Math.PI / 2, room: 'SALA 01' },
+            { pos: [-5, 0], rotY: Math.PI / 2, room: 'SALA 02' },
+            { pos: [-5, -10], rotY: Math.PI / 2, room: 'SALA 03' },
+            { pos: [-5, -20], rotY: Math.PI / 2, room: 'SALA 04' },
+            { pos: [5, 10], rotY: -Math.PI / 2, room: 'SALA 05' },
+            { pos: [5, 0], rotY: -Math.PI / 2, room: 'SALA 06' },
+            { pos: [5, -10], rotY: -Math.PI / 2, room: 'SALA 07' },
+            { pos: [0, -25], rotY: 0, room: 'GALERÍA' }
         ];
         const doorMat = new THREE.MeshStandardMaterial({
             color: 0x64748b,
@@ -1257,12 +1057,11 @@ export class MuseumRoom {
             door.rotation.y = d.rotY;
             door.castShadow = false;
             door.receiveShadow = false;
-            door.visible = false; // Will be controlled by World.ts
+            door.visible = false;
             door.name = `door-barrier-${d.room}`;
             this.group.add(door);
             this.doorBarriers.push(door);
 
-            // Lock sign on door
             const signCanvas = document.createElement('canvas');
             signCanvas.width = 256;
             signCanvas.height = 128;
@@ -1289,7 +1088,6 @@ export class MuseumRoom {
             );
             sign.position.set(0, 0.3, 0.08);
             door.add(sign);
-            // Duplicate sign on back face
             const signBack = sign.clone();
             signBack.rotation.y = Math.PI;
             signBack.position.z = -0.08;

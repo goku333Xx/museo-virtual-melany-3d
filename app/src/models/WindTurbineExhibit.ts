@@ -261,13 +261,15 @@ export class WindTurbineExhibit {
         // 3 aspas aerodinámicas de perfil alar (blancas con dobles franjas rojas en la punta)
         const bladeLen = 0.68;
         const bladeShape = new THREE.Shape();
+        // Extruimos en el eje Z, lo dibujamos en X-Y. 
+        // Para que se extienda a lo largo del radio (eje Y al rotarlo), lo dibujamos a lo largo del eje Y.
         bladeShape.moveTo(0, 0);
-        bladeShape.lineTo(bladeLen * 0.18, 0.040);
-        bladeShape.lineTo(bladeLen * 0.78, 0.024);
-        bladeShape.lineTo(bladeLen, 0.005);
-        bladeShape.lineTo(bladeLen, -0.005);
-        bladeShape.lineTo(bladeLen * 0.78, -0.016);
-        bladeShape.lineTo(bladeLen * 0.18, -0.020);
+        bladeShape.lineTo(0.040, bladeLen * 0.18);
+        bladeShape.lineTo(0.024, bladeLen * 0.78);
+        bladeShape.lineTo(0.005, bladeLen);
+        bladeShape.lineTo(-0.005, bladeLen);
+        bladeShape.lineTo(-0.016, bladeLen * 0.78);
+        bladeShape.lineTo(-0.020, bladeLen * 0.18);
         bladeShape.closePath();
 
         const bladeGeom = new THREE.ExtrudeGeometry(bladeShape, {
@@ -278,7 +280,8 @@ export class WindTurbineExhibit {
             bevelSize: 0.001,
             bevelThickness: 0.001
         });
-        bladeGeom.center();
+        // Desplazamos levemente para que nazcan justo del borde del buje
+        bladeGeom.translate(0, 0.06, -0.003);
 
         const bladeMat = new THREE.MeshStandardMaterial({
             color: 0xf8fafc,
@@ -293,18 +296,19 @@ export class WindTurbineExhibit {
             bladePivot.rotation.x = (i * Math.PI * 2) / 3;
 
             const blade = new THREE.Mesh(bladeGeom, bladeMat);
-            blade.position.set(0, bladeLen / 2 + 0.05, 0);
-            blade.rotation.y = 0.14; // Ángulo de ataque de 8°
+            blade.rotation.y = 0.14; // Ángulo de ataque aerodinámico (pitch)
             bladePivot.add(blade);
 
             // Franja de advertencia aeronáutica roja 1
-            const stripe1 = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.045, 0.024), redTipMat);
-            stripe1.position.set(0, bladeLen * 0.88, 0);
+            const stripe1 = new THREE.Mesh(new THREE.BoxGeometry(0.046, 0.024, 0.014), redTipMat);
+            stripe1.position.set(0, bladeLen * 0.88 + 0.06, 0);
+            stripe1.rotation.y = 0.14;
             bladePivot.add(stripe1);
 
             // Franja de advertencia aeronáutica roja 2 (punta extrema)
-            const stripe2 = new THREE.Mesh(new THREE.BoxGeometry(0.010, 0.040, 0.018), redTipMat);
-            stripe2.position.set(0, bladeLen + 0.025, 0);
+            const stripe2 = new THREE.Mesh(new THREE.BoxGeometry(0.024, 0.016, 0.010), redTipMat);
+            stripe2.position.set(0, bladeLen + 0.05, 0);
+            stripe2.rotation.y = 0.14;
             bladePivot.add(stripe2);
 
             this.rotorHub.add(bladePivot);
@@ -319,45 +323,76 @@ export class WindTurbineExhibit {
         const cityGroup = new THREE.Group();
         cityGroup.position.set(0.38, tableH, 0);
 
-        // Césped y parque alrededor de la subestación
+        // Césped y parque alrededor del pueblo
         const parkMat = new THREE.MeshStandardMaterial({ color: 0x1e3a2b, roughness: 0.9 });
         const park = new THREE.Mesh(new THREE.PlaneGeometry(1.25, 1.15), parkMat);
         park.rotation.x = -Math.PI / 2;
         park.position.y = 0.001;
         cityGroup.add(park);
 
-        // Calles asfaltadas
-        const streetMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 });
+        // Calles empedradas / caminos
+        const streetMat = new THREE.MeshStandardMaterial({ color: 0x292524, roughness: 0.9 });
         const street = new THREE.Mesh(new THREE.PlaneGeometry(1.18, 0.24), streetMat);
         street.rotation.x = -Math.PI / 2;
         street.position.set(0, 0.002, 0.12);
         cityGroup.add(street);
 
-        // 8 edificios urbanos de diversas alturas con ventanas que se iluminan
-        const buildingsData = [
-            { x: -0.38, z: -0.32, w: 0.18, d: 0.18, h: 0.42, color: 0x334155 },
-            { x: -0.16, z: -0.35, w: 0.16, d: 0.16, h: 0.58, color: 0x1e293b },
-            { x: 0.08, z: -0.34, w: 0.20, d: 0.18, h: 0.72, color: 0x0f172a }, // Rascacielos central
-            { x: 0.32, z: -0.32, w: 0.18, d: 0.16, h: 0.48, color: 0x1e293b },
-            { x: -0.36, z: 0.35, w: 0.16, d: 0.16, h: 0.32, color: 0x334155 },
-            { x: -0.12, z: 0.38, w: 0.20, d: 0.16, h: 0.38, color: 0x1e293b },
-            { x: 0.14, z: 0.36, w: 0.18, d: 0.18, h: 0.52, color: 0x0f172a },
-            { x: 0.36, z: 0.36, w: 0.16, d: 0.14, h: 0.28, color: 0x475569 }
+        // Pequeño pueblo de estilo low-poly con casitas
+        const houseGeom = new THREE.BoxGeometry(0.12, 0.10, 0.14);
+        const roofGeom = new THREE.ConeGeometry(0.11, 0.08, 4);
+        roofGeom.rotateY(Math.PI / 4);
+        const chimneyGeom = new THREE.BoxGeometry(0.02, 0.06, 0.02);
+
+        const townData = [
+            { x: -0.35, z: -0.30, rot: 0.2, color: 0xf1f5f9, roof: 0xef4444 }, // Blanco, techo rojo
+            { x: -0.15, z: -0.40, rot: -0.1, color: 0xbfdbfe, roof: 0x3b82f6 }, // Celestito
+            { x: 0.10,  z: -0.32, rot: 0.5, color: 0xfef08a, roof: 0xd97706 }, // Amarillito
+            { x: 0.35,  z: -0.35, rot: -0.3, color: 0xf1f5f9, roof: 0xef4444 },
+            { x: -0.30, z: 0.35, rot: 3.1, color: 0xa7f3d0, roof: 0x059669 }, // Verdecito
+            { x: -0.10, z: 0.42, rot: 2.8, color: 0xf1f5f9, roof: 0x64748b },
+            { x: 0.15,  z: 0.38, rot: 3.4, color: 0xfde047, roof: 0xd97706 },
+            { x: 0.35,  z: 0.30, rot: 2.9, color: 0xbfdbfe, roof: 0x3b82f6 }
         ];
 
-        buildingsData.forEach((b) => {
-            const bMat = new THREE.MeshStandardMaterial({
-                color: b.color,
-                metalness: 0.7,
-                roughness: 0.3,
+        townData.forEach((b) => {
+            const houseGroup = new THREE.Group();
+            houseGroup.position.set(b.x, 0.05, b.z);
+            houseGroup.rotation.y = b.rot;
+            
+            // Paredes
+            const wallMat = new THREE.MeshStandardMaterial({ color: b.color, roughness: 0.8 });
+            const walls = new THREE.Mesh(houseGeom, wallMat);
+            houseGroup.add(walls);
+
+            // Techo a dos aguas (simulado con cono de 4 lados)
+            const roofMat = new THREE.MeshStandardMaterial({ color: b.roof, roughness: 0.7 });
+            const roof = new THREE.Mesh(roofGeom, roofMat);
+            roof.position.y = 0.05 + 0.04;
+            houseGroup.add(roof);
+
+            // Chimenea
+            const chimney = new THREE.Mesh(chimneyGeom, new THREE.MeshStandardMaterial({ color: 0x78716c }));
+            chimney.position.set(0.04, 0.09, -0.03);
+            houseGroup.add(chimney);
+
+            // Ventanas brillantes (emissive)
+            const winMat = new THREE.MeshStandardMaterial({
+                color: 0x000000,
                 emissive: 0xfef08a,
                 emissiveIntensity: 0.4
             });
-            this.cityWindows.push(bMat);
+            this.cityWindows.push(winMat);
 
-            const bMesh = new THREE.Mesh(new THREE.BoxGeometry(b.w, b.h, b.d), bMat);
-            bMesh.position.set(b.x, b.h / 2, b.z);
-            cityGroup.add(bMesh);
+            const winGeom = new THREE.BoxGeometry(0.03, 0.03, 0.01);
+            // Ventana frontal
+            const win1 = new THREE.Mesh(winGeom, winMat);
+            win1.position.set(-0.02, 0.01, 0.07);
+            houseGroup.add(win1);
+            const win2 = new THREE.Mesh(winGeom, winMat);
+            win2.position.set(0.03, 0.01, 0.07);
+            houseGroup.add(win2);
+
+            cityGroup.add(houseGroup);
         });
 
         // Subestación transformadora eléctrica con transformador y aletas

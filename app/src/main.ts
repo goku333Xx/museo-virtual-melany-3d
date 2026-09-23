@@ -149,14 +149,14 @@ hud.onCloseModal = () => {
 // --- FÍSICAS DE ALTURA DINÁMICA & MESAS DE EXPERIMENTOS ---
 // Las mesas son de 2.4m x 2.4m, altura 1.2m
 const pedestals = [
-    { minX: -16.2, maxX: -13.8, minZ: -1.2, maxZ: 1.2, height: 1.2 },    // 1. Papa (Oeste)
-    { minX: 14.8, maxX: 17.2, minZ: -1.2, maxZ: 1.2, height: 1.2 },      // 2. Tesla (Este)
-    { minX: -1.2, maxX: 1.2, minZ: -16.2, maxZ: -13.8, height: 1.2 },    // 3. Eólica (Norte)
-    { minX: 10.8, maxX: 13.2, minZ: -13.2, maxZ: -10.8, height: 1.2 },   // 4. Solar (Noreste)
-    { minX: -13.2, maxX: -10.8, minZ: -13.2, maxZ: -10.8, height: 1.2 },  // 5. Van de Graaff (Noroeste)
-    { minX: -1.2, maxX: 1.2, minZ: 12.8, maxZ: 15.2, height: 1.2 },      // 6. Newton (Sur)
-    { minX: 10.8, maxX: 13.2, minZ: 8.8, maxZ: 11.2, height: 1.2 },      // 7. Dínamo (Sureste)
-    { minX: -1.2, maxX: 1.2, minZ: 22.8, maxZ: 25.2, height: 1.2 }       // 8. Prisma (Galería)
+    { minX: -16.2, maxX: -13.8, minZ: 8.8, maxZ: 11.2, height: 1.2 },    // 1. Papa (Oeste, Z=10)
+    { minX: -16.2, maxX: -13.8, minZ: -1.2, maxZ: 1.2, height: 1.2 },      // 2. Tesla (Oeste, Z=0)
+    { minX: -16.2, maxX: -13.8, minZ: -11.2, maxZ: -8.8, height: 1.2 },    // 3. Eólica (Oeste, Z=-10)
+    { minX: -16.2, maxX: -13.8, minZ: -21.2, maxZ: -18.8, height: 1.2 },   // 4. Solar (Oeste, Z=-20)
+    { minX: 13.8, maxX: 16.2, minZ: 8.8, maxZ: 11.2, height: 1.2 },  // 5. Van de Graaff (Este, Z=10)
+    { minX: 13.8, maxX: 16.2, minZ: -1.2, maxZ: 1.2, height: 1.2 },      // 6. Newton (Este, Z=0)
+    { minX: 13.8, maxX: 16.2, minZ: -11.2, maxZ: -8.8, height: 1.2 },      // 7. Dínamo (Este, Z=-10)
+    { minX: -1.2, maxX: 1.2, minZ: -36.2, maxZ: -33.8, height: 1.2 }       // 8. Prisma (Centro profundo, Z=-35)
 ];
 
 function getGroundHeight(x: number, z: number, currentCamY: number): number {

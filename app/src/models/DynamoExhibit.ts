@@ -27,8 +27,13 @@ export class DynamoExhibit {
     private bulbPointLight: THREE.PointLight;
     private bulbGlowSprite: THREE.Sprite;
 
-    // Componentes del Voltímetro Analógico
-    private voltmeterNeedle: THREE.Mesh;
+    // Componentes del Voltímetro Digital
+    private meterGroup!: THREE.Group;
+    private meterCanvas!: HTMLCanvasElement;
+    private meterCtx!: CanvasRenderingContext2D;
+    private meterTexture!: THREE.CanvasTexture;
+    private meterScreenMesh!: THREE.Mesh;
+    private lastMeterUpdateTime: number = 0;
 
     // Partículas de electrones y chispas
     private electronParticles: THREE.Mesh[] = [];
@@ -43,7 +48,6 @@ export class DynamoExhibit {
     private rotorAngle: number = 0;
     private gearRatio: number = 5.0; // 1 vuelta de manivela = 5 vueltas de rotor
     private currentVoltage: number = 0;
-    private needleAngle: number = -Math.PI / 4; // Aguja en 0V
 
     private currentMode: number = 0;
     private isSleeping = false;
@@ -265,54 +269,74 @@ export class DynamoExhibit {
         const statorGroup = new THREE.Group();
         statorGroup.position.set(0.20, 0.25, 0);
 
-        // Imán Permanente Polo Norte (Rojo Carmesí 'N')
+        // Carcasa de acero del estator
+        const casingGeom = new THREE.CylinderGeometry(0.18, 0.18, 0.22, 32, 1, true, 0, Math.PI * 2);
+        const casingMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.85, roughness: 0.4, side: THREE.DoubleSide });
+        const casing = new THREE.Mesh(casingGeom, casingMat);
+        casing.rotation.x = Math.PI / 2;
+        casing.position.set(-0.02, 0, 0);
+        statorGroup.add(casing);
+
+        // Imán Permanente Polo Norte (Rojo Carmesí 'N') - interior superior
         const magnetN = new THREE.Mesh(
-            new THREE.BoxGeometry(0.12, 0.24, 0.08),
+            new THREE.BoxGeometry(0.14, 0.04, 0.2),
             new THREE.MeshStandardMaterial({ color: 0xef4444, metalness: 0.6, roughness: 0.3 })
         );
-        magnetN.position.set(-0.02, 0.16, 0);
+        magnetN.position.set(-0.02, 0.14, 0);
         statorGroup.add(magnetN);
 
-        // Etiqueta 'N' blanca
-        const nMark = new THREE.Mesh(
-            new THREE.BoxGeometry(0.04, 0.04, 0.005),
-            new THREE.MeshBasicMaterial({ color: 0xffffff })
-        );
-        nMark.position.set(-0.02, 0.16, 0.042);
-        statorGroup.add(nMark);
-
-        // Imán Permanente Polo Sur (Azul Cobalto 'S')
+        // Imán Permanente Polo Sur (Azul Cobalto 'S') - interior inferior
         const magnetS = new THREE.Mesh(
-            new THREE.BoxGeometry(0.12, 0.24, 0.08),
+            new THREE.BoxGeometry(0.14, 0.04, 0.2),
             new THREE.MeshStandardMaterial({ color: 0x3b82f6, metalness: 0.6, roughness: 0.3 })
         );
-        magnetS.position.set(-0.02, -0.16, 0);
+        magnetS.position.set(-0.02, -0.14, 0);
         statorGroup.add(magnetS);
 
-        // Etiqueta 'S' blanca
-        const sMark = new THREE.Mesh(
-            new THREE.BoxGeometry(0.04, 0.04, 0.005),
-            new THREE.MeshBasicMaterial({ color: 0xffffff })
-        );
-        sMark.position.set(-0.02, -0.16, 0.042);
+        // Etiquetas
+        const nMark = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 0.005), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+        nMark.position.set(-0.02, 0.14, 0.101);
+        statorGroup.add(nMark);
+        const sMark = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 0.005), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+        sMark.position.set(-0.02, -0.14, 0.101);
         statorGroup.add(sMark);
 
         // Eje y armadura del rotor de cobre
         this.rotorArmatureGroup = new THREE.Group();
         this.rotorArmatureGroup.position.set(-0.02, 0, 0);
 
+        const ironCoreMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.8, roughness: 0.5 });
         const copperCoilMat = new THREE.MeshStandardMaterial({
             color: 0xb87333,
             metalness: 0.9,
             roughness: 0.25
         });
 
-        // 4 Polos del inducido envueltos en hilo de cobre esmaltado
-        for (let i = 0; i < 4; i++) {
-            const angle = (i / 4) * Math.PI * 2;
-            const poleCore = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.045, 0.18), copperCoilMat);
-            poleCore.rotation.z = angle;
-            this.rotorArmatureGroup.add(poleCore);
+        // Eje central de acero
+        const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.3, 16), ironCoreMat);
+        shaft.rotation.x = Math.PI / 2;
+        this.rotorArmatureGroup.add(shaft);
+
+        // 5 Polos del inducido (diseño realista de motor DC)
+        for (let i = 0; i < 5; i++) {
+            const angle = (i / 5) * Math.PI * 2;
+            const poleGroup = new THREE.Group();
+            poleGroup.rotation.z = angle;
+
+            // Núcleo de hierro laminado
+            const core = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.1, 0.18), ironCoreMat);
+            core.position.y = 0.05;
+
+            // Bobinado de hilo de cobre esmaltado
+            const coil = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.07, 0.17), copperCoilMat);
+            coil.position.y = 0.05;
+
+            // Expansión polar (cabeza del polo)
+            const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.015, 0.18), ironCoreMat);
+            shoe.position.y = 0.105;
+
+            poleGroup.add(core, coil, shoe);
+            this.rotorArmatureGroup.add(poleGroup);
         }
 
         // Colector de delgas y escobillas de grafito
@@ -458,71 +482,9 @@ export class DynamoExhibit {
         this.group.add(lampGroup);
 
         // =========================================================================
-        // 7. VOLTÍMETRO ANALÓGICO CALIBRADO (0 A 24V)
+        // 7. MULTÍMETRO DIGITAL UBICADO A LA DERECHA EN FRENTE DE LA BOMBILLA
         // =========================================================================
-        const meterGroup = new THREE.Group();
-        meterGroup.position.set(0.48, tableH + 0.02, 0.28);
-        meterGroup.rotation.y = -Math.PI / 10;
-
-        // Cuerpo cilíndrico de baquelita / bronce
-        const meterBody = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.12, 0.12, 0.07, 32),
-            new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8, roughness: 0.3 })
-        );
-        meterBody.rotation.x = Math.PI / 6; // Inclinado 30° hacia el jugador
-        meterGroup.add(meterBody);
-        this.interactableMeshes.push(meterBody);
-
-        // Bisel de latón
-        const meterBezel = new THREE.Mesh(
-            new THREE.TorusGeometry(0.12, 0.012, 16, 32),
-            new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.95, roughness: 0.15 })
-        );
-        meterBezel.rotation.x = Math.PI / 6;
-        meterBezel.position.y = 0.038;
-        meterGroup.add(meterBezel);
-
-        // Cuadrante esmaltado con escala
-        const dialCanvas = document.createElement('canvas');
-        dialCanvas.width = 256;
-        dialCanvas.height = 256;
-        const dCtx = dialCanvas.getContext('2d')!;
-        dCtx.fillStyle = '#f8fafc';
-        dCtx.fillRect(0, 0, 256, 256);
-        dCtx.strokeStyle = '#0f172a';
-        dCtx.lineWidth = 4;
-        dCtx.beginPath();
-        dCtx.arc(128, 140, 95, Math.PI * 0.75, Math.PI * 0.25, false);
-        dCtx.stroke();
-
-        // Ticks de voltaje
-        dCtx.fillStyle = '#0f172a';
-        dCtx.font = 'bold 22px sans-serif';
-        dCtx.textAlign = 'center';
-        dCtx.fillText('VOLTS DC', 128, 90);
-        dCtx.font = 'bold 16px sans-serif';
-        dCtx.fillText('0V', 60, 165);
-        dCtx.fillText('12V', 128, 60);
-        dCtx.fillText('24V', 200, 165);
-
-        const dialTex = new THREE.CanvasTexture(dialCanvas);
-        const dialPlane = new THREE.Mesh(
-            new THREE.CircleGeometry(0.11, 32),
-            new THREE.MeshBasicMaterial({ map: dialTex })
-        );
-        dialPlane.rotation.x = -Math.PI / 3;
-        dialPlane.position.set(0, 0.036, 0.02);
-        meterGroup.add(dialPlane);
-
-        // Aguja indicadora analógica
-        const needleGeom = new THREE.BoxGeometry(0.005, 0.09, 0.003);
-        const needleMat = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.5, roughness: 0.2 });
-        this.voltmeterNeedle = new THREE.Mesh(needleGeom, needleMat);
-        this.voltmeterNeedle.position.set(0, 0.038, 0.02);
-        this.voltmeterNeedle.rotation.x = -Math.PI / 3;
-        meterGroup.add(this.voltmeterNeedle);
-
-        this.group.add(meterGroup);
+        this.buildDigitalMultimeter(tableH);
 
         // =========================================================================
         // 8. CABLES CONDUCTORES CON ELECTRONES ANIMADOS
@@ -530,21 +492,23 @@ export class DynamoExhibit {
         const wireMatRed = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.4 });
         const wireMatBlack = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.4 });
 
+        // Ruta del cable rojo (V): desde escobilla positiva (0.18, 0.29, 0) a la bombilla y al multímetro
         this.electronCurve = new THREE.CatmullRomCurve3([
-            new THREE.Vector3(-0.06, tableH + 0.25, 0),
-            new THREE.Vector3(0.15, tableH + 0.05, 0.15),
-            new THREE.Vector3(0.40, tableH + 0.06, 0.25), // Al voltímetro
-            new THREE.Vector3(0.44, tableH + 0.05, -0.05), // A la bombilla
-            new THREE.Vector3(0.48, tableH + 0.12, -0.15)
+            new THREE.Vector3(0.18, tableH + 0.24, 0),
+            new THREE.Vector3(0.25, tableH + 0.02, 0.1),
+            new THREE.Vector3(0.40, tableH + 0.02, 0.05), // rodeo por detrás
+            new THREE.Vector3(0.48, tableH + 0.10, -0.15) // A la bombilla
         ]);
 
         const wirePos = new THREE.Mesh(new THREE.TubeGeometry(this.electronCurve, 32, 0.008, 8, false), wireMatRed);
         this.group.add(wirePos);
 
+        // Ruta del cable negro (COM): desde escobilla negativa (0.18, 0.21, 0) a la bombilla
         const wireNegCurve = new THREE.CatmullRomCurve3([
-            new THREE.Vector3(-0.06, tableH + 0.21, 0),
-            new THREE.Vector3(0.15, tableH + 0.04, -0.15),
-            new THREE.Vector3(0.48, tableH + 0.10, -0.15)
+            new THREE.Vector3(0.18, tableH + 0.16, 0),
+            new THREE.Vector3(0.28, tableH + 0.02, -0.2),
+            new THREE.Vector3(0.45, tableH + 0.02, -0.25),
+            new THREE.Vector3(0.48, tableH + 0.08, -0.15)
         ]);
         const wireNeg = new THREE.Mesh(new THREE.TubeGeometry(wireNegCurve, 24, 0.008, 8, false), wireMatBlack);
         this.group.add(wireNeg);
@@ -558,6 +522,193 @@ export class DynamoExhibit {
             this.electronParticles.push(eMesh);
             this.group.add(eMesh);
         }
+    }
+
+    private buildDigitalMultimeter(tableH: number) {
+        this.meterGroup = new THREE.Group();
+        this.meterGroup.position.set(0.48, tableH, 0.25);
+        this.meterGroup.rotation.y = -Math.PI / 5.2;
+
+        const matGeom = new THREE.BoxGeometry(0.36, 0.006, 0.32);
+        const matMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.9, metalness: 0.1 });
+        const labMat = new THREE.Mesh(matGeom, matMat);
+        labMat.position.set(0, 0.003, 0);
+        labMat.receiveShadow = true;
+        this.meterGroup.add(labMat);
+
+        const matRimGeom = new THREE.BoxGeometry(0.364, 0.002, 0.324);
+        const matRimMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.4 });
+        const matRim = new THREE.Mesh(matRimGeom, matRimMat);
+        matRim.position.set(0, 0.006, 0);
+        this.meterGroup.add(matRim);
+
+        const footGeom = new THREE.CylinderGeometry(0.014, 0.016, 0.016, 16);
+        const footMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.95, metalness: 0.05 });
+        const leftFrontFoot = new THREE.Mesh(footGeom, footMat);
+        leftFrontFoot.position.set(-0.10, 0.014, 0.07);
+        const rightFrontFoot = new THREE.Mesh(footGeom, footMat);
+        rightFrontFoot.position.set(0.10, 0.014, 0.07);
+        this.meterGroup.add(leftFrontFoot, rightFrontFoot);
+
+        const tiltGroup = new THREE.Group();
+        tiltGroup.position.set(0, 0.022, 0.07);
+        const tiltAngle = -Math.PI / 6.6;
+        tiltGroup.rotation.x = tiltAngle;
+
+        const caseWidth = 0.27;
+        const caseHeight = 0.37;
+        const caseDepth = 0.065;
+
+        const caseGeom = new THREE.BoxGeometry(caseWidth, caseHeight, caseDepth);
+        const caseMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.35, metalness: 0.2 });
+        const caseMesh = new THREE.Mesh(caseGeom, caseMat);
+        caseMesh.position.set(0, caseHeight / 2, 0);
+        caseMesh.castShadow = true;
+        tiltGroup.add(caseMesh);
+
+        const bumperGeom = new THREE.BoxGeometry(caseWidth + 0.016, caseHeight + 0.016, caseDepth - 0.008);
+        const bumperMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.85, metalness: 0.1 });
+        const bumperMesh = new THREE.Mesh(bumperGeom, bumperMat);
+        bumperMesh.position.set(0, caseHeight / 2, 0);
+        tiltGroup.add(bumperMesh);
+
+        this.meterCanvas = document.createElement('canvas');
+        this.meterCanvas.width = 512;
+        this.meterCanvas.height = 256;
+        this.meterCtx = this.meterCanvas.getContext('2d')!;
+        
+        this.meterTexture = new THREE.CanvasTexture(this.meterCanvas);
+        this.renderMeterScreen(0, 0);
+
+        const screenGeom = new THREE.PlaneGeometry(0.23, 0.13);
+        const screenMat = new THREE.MeshBasicMaterial({ map: this.meterTexture });
+        this.meterScreenMesh = new THREE.Mesh(screenGeom, screenMat);
+        this.meterScreenMesh.position.set(0, caseHeight / 2 + 0.08, caseDepth / 2 + 0.005);
+        tiltGroup.add(this.meterScreenMesh);
+
+        const knobGeom = new THREE.CylinderGeometry(0.044, 0.047, 0.024, 24);
+        const knobMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.4, metalness: 0.6 });
+        const knobMesh = new THREE.Mesh(knobGeom, knobMat);
+        knobMesh.rotation.x = Math.PI / 2;
+        knobMesh.position.set(0, caseHeight / 2 - 0.05, caseDepth / 2 + 0.013);
+        tiltGroup.add(knobMesh);
+
+        const pointerGeom = new THREE.BoxGeometry(0.008, 0.035, 0.004);
+        const pointerMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const pointerMesh = new THREE.Mesh(pointerGeom, pointerMat);
+        pointerMesh.position.set(0, 0.015, 0.014);
+        knobMesh.add(pointerMesh);
+
+        const jackGeom = new THREE.CylinderGeometry(0.009, 0.009, 0.016, 16);
+        jackGeom.rotateX(Math.PI / 2);
+
+        const jackBlack = new THREE.Mesh(jackGeom, new THREE.MeshBasicMaterial({ color: 0x111827 }));
+        jackBlack.position.set(-0.045, caseHeight / 2 - 0.135, caseDepth / 2 + 0.008);
+        const jackRed = new THREE.Mesh(jackGeom, new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+        jackRed.position.set(0.045, caseHeight / 2 - 0.135, caseDepth / 2 + 0.008);
+        tiltGroup.add(jackBlack, jackRed);
+
+        const standGeom = new THREE.CylinderGeometry(0.006, 0.006, 0.25, 12);
+        const standMat = new THREE.MeshStandardMaterial({ color: 0xd1d5db, metalness: 0.95, roughness: 0.1 });
+        
+        const leftLeg = new THREE.Mesh(standGeom, standMat);
+        leftLeg.position.set(-0.09, 0.11, -0.08);
+        leftLeg.rotation.x = 0.38;
+        tiltGroup.add(leftLeg);
+
+        const rightLeg = new THREE.Mesh(standGeom, standMat);
+        rightLeg.position.set(0.09, 0.11, -0.08);
+        rightLeg.rotation.x = 0.38;
+        tiltGroup.add(rightLeg);
+
+        const crossbarGeom = new THREE.CylinderGeometry(0.006, 0.006, 0.19, 12);
+        crossbarGeom.rotateZ(Math.PI / 2);
+        const crossbar = new THREE.Mesh(crossbarGeom, standMat);
+        crossbar.position.set(0, -0.01, -0.155);
+        tiltGroup.add(crossbar);
+
+        [-0.09, 0.09].forEach(px => {
+            const legFoot = new THREE.Mesh(new THREE.SphereGeometry(0.012, 12, 12), footMat);
+            legFoot.position.set(px, -0.01, -0.155);
+            tiltGroup.add(legFoot);
+        });
+
+        this.meterGroup.add(tiltGroup);
+        this.group.add(this.meterGroup);
+        this.interactableMeshes.push(caseMesh, this.meterScreenMesh);
+
+        // Sondas al multímetro
+        const blackCurve = new THREE.CatmullRomCurve3([
+            new THREE.Vector3(0.44, tableH + 0.08, 0.32),
+            new THREE.Vector3(0.42, tableH + 0.015, 0.30),
+            new THREE.Vector3(0.35, tableH + 0.015, -0.1),
+            new THREE.Vector3(0.25, tableH + 0.05, -0.15),
+            new THREE.Vector3(0.18, tableH + 0.16, 0)
+        ]);
+        const blackGeom = new THREE.TubeGeometry(blackCurve, 32, 0.006, 8, false);
+        const blackProbeWire = new THREE.Mesh(blackGeom, new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.6 }));
+        this.group.add(blackProbeWire);
+
+        const redCurve = new THREE.CatmullRomCurve3([
+            new THREE.Vector3(0.52, tableH + 0.08, 0.32),
+            new THREE.Vector3(0.50, tableH + 0.015, 0.28),
+            new THREE.Vector3(0.45, tableH + 0.015, 0.1),
+            new THREE.Vector3(0.3, tableH + 0.05, 0.1),
+            new THREE.Vector3(0.18, tableH + 0.24, 0)
+        ]);
+        const redGeom = new THREE.TubeGeometry(redCurve, 32, 0.006, 8, false);
+        const redProbeWire = new THREE.Mesh(redGeom, new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.6 }));
+        this.group.add(redProbeWire);
+    }
+
+    private renderMeterScreen(voltage: number, time: number) {
+        if (!this.meterCtx) return;
+        const ctx = this.meterCtx;
+        const w = this.meterCanvas.width;
+        const h = this.meterCanvas.height;
+        const isActive = voltage > 0.5;
+
+        ctx.fillStyle = isActive ? '#064e3b' : '#0f172a';
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.strokeStyle = isActive ? '#22c55e' : '#334155';
+        ctx.lineWidth = 6;
+        ctx.strokeRect(8, 8, w - 16, h - 16);
+
+        ctx.fillStyle = isActive ? '#a7f3d0' : '#64748b';
+        ctx.font = 'bold 28px monospace';
+        ctx.fillText('DC VOLTAJE [ESCALA 24V]', 24, 46);
+
+        if (isActive) {
+            const jitter = (Math.sin(time * 6) * 0.015) + (Math.cos(time * 11) * 0.008);
+            const val = (voltage + jitter).toFixed(2);
+            ctx.fillStyle = '#4ade80';
+            ctx.shadowColor = '#22c55e';
+            ctx.shadowBlur = 16;
+            ctx.font = 'bold 88px monospace';
+            ctx.fillText(`${val} V`, 48, 140);
+        } else {
+            ctx.fillStyle = '#475569';
+            ctx.shadowBlur = 0;
+            ctx.font = 'bold 88px monospace';
+            ctx.fillText(`0.00 V`, 48, 140);
+        }
+
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = isActive ? 'rgba(74, 222, 128, 0.4)' : 'rgba(71, 85, 105, 0.2)';
+        ctx.fillRect(24, 180, w - 48, 22);
+
+        if (isActive) {
+            const barW = (w - 48) * (Math.min(voltage, 24) / 24);
+            ctx.fillStyle = '#22c55e';
+            ctx.fillRect(24, 180, barW, 22);
+        }
+
+        ctx.fillStyle = isActive ? '#86efac' : '#64748b';
+        ctx.font = 'bold 18px monospace';
+        ctx.fillText('0V -------------------------------------------------------- 24V', 28, 226);
+
+        this.meterTexture.needsUpdate = true;
     }
 
     public update(_time: number, delta: number = 0.016): void {
@@ -589,11 +740,12 @@ export class DynamoExhibit {
         const targetVolt = (this.currentRpm / 300) * 24.0;
         this.currentVoltage += (targetVolt - this.currentVoltage) * Math.min(1.0, delta * 4.0);
 
-        // Aguja del voltímetro (de -45° en 0V a +45° en 24V) con ligero temblor analógico
-        const needleTarget = -Math.PI / 4 + (this.currentVoltage / 24.0) * (Math.PI / 2);
-        const needleJitter = this.currentVoltage > 1.0 ? (Math.random() - 0.5) * 0.04 : 0;
-        this.needleAngle += (needleTarget - this.needleAngle) * Math.min(1.0, delta * 8.0);
-        this.voltmeterNeedle.rotation.z = -(this.needleAngle + needleJitter);
+        if (_time - this.lastMeterUpdateTime > 0.1) {
+            this.renderMeterScreen(this.currentVoltage, _time);
+            this.lastMeterUpdateTime = _time;
+        }
+
+
 
         // Actualización lumínica de la Lámpara Edison (Efecto Joule)
         const filamentMat = this.bulbFilament.material as THREE.MeshStandardMaterial;

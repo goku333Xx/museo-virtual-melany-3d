@@ -467,7 +467,7 @@ export class RobotGuide {
         this.renderEyes('happy');
     }
 
-    public startGuiding(roomId: number, roomName: string, destination: THREE.Vector3, directFlight: boolean = false) {
+    public startGuiding(roomId: number, roomName: string, destination: THREE.Vector3) {
         SoundSynthesizer.getInstance().playSuccess();
         this.state = RobotState.GUIDING;
         this.targetRoomId = roomId;
@@ -481,16 +481,14 @@ export class RobotGuide {
         // Construir waypoints de vuelo cinemático inteligente:
         this.waypoints = [];
         const currentPos = this.group.position;
-        const distDirect = currentPos.distanceTo(destination);
-
-        // Si ya está cerca de la sala o es vuelo directo, va directo al pedestal sin pasar por el atrio central
-        if (directFlight || distDirect < 10.0) {
-            this.waypoints.push(new THREE.Vector3(destination.x, 1.75, destination.z));
-        } else {
-            // Pasa por un punto intermedio elevado en el atrio antes de entrar por la puerta
-            this.waypoints.push(new THREE.Vector3(currentPos.x * 0.4, 2.2, currentPos.z * 0.4));
-            this.waypoints.push(new THREE.Vector3(destination.x, 1.75, destination.z));
-        }
+        
+        // Waypoint 1: Move to X=0 (Center hallway) at current Z.
+        this.waypoints.push(new THREE.Vector3(0, 1.75, currentPos.z));
+        // Waypoint 2: Move along X=0 to the target room's Z coordinate.
+        this.waypoints.push(new THREE.Vector3(0, 1.75, destination.z));
+        // Waypoint 3: Move along X to the target room's X coordinate.
+        this.waypoints.push(new THREE.Vector3(destination.x, 1.75, destination.z));
+        
         this.currentWaypointIdx = 0;
     }
 

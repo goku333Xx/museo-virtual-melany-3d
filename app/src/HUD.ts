@@ -201,7 +201,7 @@ export class HUD {
 
         this.quizContinueBtn.onclick = () => {
             this.closeQuiz();
-            if (this.completedMissions.size === 6 && !this.celebrationTriggered) {
+            if (this.completedMissions.size === 7 && !this.celebrationTriggered) {
                 this.triggerGrandCelebration();
             }
         };

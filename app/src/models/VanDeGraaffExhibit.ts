@@ -79,17 +79,34 @@ export class VanDeGraaffExhibit {
         // 2. BASE MOTORIZADA DEL GENERADOR (X = -0.25)
         const genX = -0.25;
         const baseH = 0.22;
+        const motorGroup = new THREE.Group();
+        motorGroup.position.set(genX, tableH + baseH / 2, 0);
+        
+        // Base de hierro del motor
         const baseGeom = new THREE.CylinderGeometry(0.24, 0.28, baseH, 32);
-        const baseMat = new THREE.MeshStandardMaterial({
-            color: 0x1e293b,
-            metalness: 0.85,
-            roughness: 0.25
-        });
+        const baseMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.85, roughness: 0.25 });
         const base = new THREE.Mesh(baseGeom, baseMat);
-        base.position.set(genX, tableH + baseH / 2, 0);
         base.castShadow = true;
-        this.group.add(base);
+        motorGroup.add(base);
         this.interactableMeshes.push(base);
+
+        // Estator acanalado del motor
+        const motorBodyGeom = new THREE.CylinderGeometry(0.18, 0.18, 0.15, 32);
+        const motorBodyMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.9, roughness: 0.4 });
+        const motorBody = new THREE.Mesh(motorBodyGeom, motorBodyMat);
+        motorBody.position.y = baseH / 2 + 0.075;
+        motorGroup.add(motorBody);
+        
+        // Aletas de refrigeración
+        const finGeom = new THREE.TorusGeometry(0.19, 0.005, 8, 32);
+        for(let i=0; i<6; i++) {
+            const fin = new THREE.Mesh(finGeom, motorBodyMat);
+            fin.rotation.x = Math.PI/2;
+            fin.position.y = baseH/2 + 0.03 + i*0.02;
+            motorGroup.add(fin);
+        }
+
+        this.group.add(motorGroup);
 
         // Placa técnica de peligro: Alto Voltaje
         const plaque = new THREE.Mesh(
@@ -101,7 +118,7 @@ export class VanDeGraaffExhibit {
 
         // 3. COLUMNA AISLANTE DE METACRILATO TRANSPARENTE
         const columnH = 0.82;
-        const columnY = tableH + baseH + columnH / 2;
+        const columnY = tableH + baseH + 0.15 + columnH / 2; // Ajustado por la altura del motor
         const column = new THREE.Mesh(
             new THREE.CylinderGeometry(0.12, 0.12, columnH, 32),
             new THREE.MeshStandardMaterial({
@@ -118,16 +135,36 @@ export class VanDeGraaffExhibit {
         // 4. CORREA DE CAUCHO INTERIOR QUE TRANSPORTA CARGA
         const beltGeom = new THREE.BoxGeometry(0.08, columnH - 0.04, 0.01);
         const beltCanvas = document.createElement('canvas');
-        beltCanvas.width = 64;
-        beltCanvas.height = 64;
+        beltCanvas.width = 128;
+        beltCanvas.height = 128;
         const bCtx = beltCanvas.getContext('2d')!;
-        bCtx.fillStyle = '#d97706';
-        bCtx.fillRect(0, 0, 64, 64);
-        bCtx.strokeStyle = '#b45309';
+        
+        // Gradiente radial para simular volumen y tensión en la correa
+        const beltGrad = bCtx.createLinearGradient(0, 0, 128, 0);
+        beltGrad.addColorStop(0, '#78350f'); // Borde oscuro
+        beltGrad.addColorStop(0.2, '#d97706');
+        beltGrad.addColorStop(0.5, '#f59e0b'); // Centro brillante (tensión)
+        beltGrad.addColorStop(0.8, '#d97706');
+        beltGrad.addColorStop(1, '#78350f');
+        bCtx.fillStyle = beltGrad;
+        bCtx.fillRect(0, 0, 128, 128);
+        
+        // Textura nervada tipo correa industrial
+        bCtx.strokeStyle = 'rgba(0,0,0,0.3)';
         bCtx.lineWidth = 4;
+        for(let i=0; i<128; i+=16) {
+            bCtx.beginPath();
+            bCtx.moveTo(0, i);
+            bCtx.lineTo(128, i);
+            bCtx.stroke();
+        }
+        
+        // Símbolos de flujo de electrones (triángulos)
+        bCtx.fillStyle = 'rgba(255,255,255,0.7)';
         bCtx.beginPath();
-        bCtx.moveTo(16, 48); bCtx.lineTo(32, 16); bCtx.lineTo(48, 48);
-        bCtx.stroke();
+        bCtx.moveTo(48, 80); bCtx.lineTo(64, 48); bCtx.lineTo(80, 80);
+        bCtx.fill();
+
         const beltTex = new THREE.CanvasTexture(beltCanvas);
         beltTex.wrapS = THREE.RepeatWrapping;
         beltTex.wrapT = THREE.RepeatWrapping;
@@ -135,8 +172,8 @@ export class VanDeGraaffExhibit {
 
         const beltMat = new THREE.MeshStandardMaterial({
             map: beltTex,
-            roughness: 0.8,
-            metalness: 0.1
+            roughness: 0.7,
+            metalness: 0.2
         });
         this.beltMesh = new THREE.Mesh(beltGeom, beltMat);
         this.beltMesh.position.set(genX, columnY, 0);
@@ -146,15 +183,15 @@ export class VanDeGraaffExhibit {
         const rollerMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9 });
         const rollerBot = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.09, 16), rollerMat);
         rollerBot.rotation.z = Math.PI / 2;
-        rollerBot.position.set(genX, tableH + baseH + 0.03, 0);
+        rollerBot.position.set(genX, tableH + baseH + 0.15 + 0.03, 0);
         const rollerTop = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.09, 16), rollerMat);
         rollerTop.rotation.z = Math.PI / 2;
-        rollerTop.position.set(genX, tableH + baseH + columnH - 0.03, 0);
+        rollerTop.position.set(genX, tableH + baseH + 0.15 + columnH - 0.03, 0);
         this.group.add(rollerBot, rollerTop);
 
         // 5. CÚPULA DE ALTO VOLTAJE DE ALUMINIO ESPEJADO
         const domeRadius = 0.28;
-        const domeY = tableH + baseH + columnH + domeRadius * 0.75;
+        const domeY = tableH + baseH + 0.15 + columnH + domeRadius * 0.75;
 
         const domeGeom = new THREE.SphereGeometry(domeRadius, 48, 48);
         const domeMat = new THREE.MeshStandardMaterial({
@@ -225,7 +262,7 @@ export class VanDeGraaffExhibit {
         this.group.add(groundWire);
 
         
-        // 7.5 MINI HEAD WITH STANDING HAIR
+        // 7.5 KAWAII ROBOT WITH STANDING HAIR
         this.headGroup = new THREE.Group();
         this.headGroup.position.set(genX - 0.45, domeY - 0.1, 0);
         
@@ -236,17 +273,34 @@ export class VanDeGraaffExhibit {
         stick.position.set(0, -0.3, 0);
         this.headGroup.add(stick);
 
-        const headSphere = new THREE.Mesh(
-            new THREE.SphereGeometry(0.12, 16, 16),
-            new THREE.MeshStandardMaterial({ color: 0xfcbca1 })
+        const robotHead = new THREE.Mesh(
+            new THREE.SphereGeometry(0.13, 32, 32),
+            new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.9, roughness: 0.2 })
         );
-        this.headGroup.add(headSphere);
+        this.headGroup.add(robotHead);
+        
+        const visor = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.12, 0.12, 0.08, 32, 1, false, Math.PI/2 - 0.5, 1.0),
+            new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.8, roughness: 0.2 })
+        );
+        visor.rotation.y = Math.PI / 2;
+        this.headGroup.add(visor);
 
-        const hairMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
-        const numHairs = 15;
+        const eyeGeom = new THREE.CircleGeometry(0.02, 16);
+        const eyeMat = new THREE.MeshBasicMaterial({ color: 0x0ea5e9 });
+        const eyeL = new THREE.Mesh(eyeGeom, eyeMat);
+        eyeL.position.set(-0.04, 0, 0.118);
+        eyeL.rotation.y = -0.2;
+        const eyeR = new THREE.Mesh(eyeGeom, eyeMat);
+        eyeR.position.set(0.04, 0, 0.118);
+        eyeR.rotation.y = 0.2;
+        this.headGroup.add(eyeL, eyeR);
+
+        const hairMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 1.0, roughness: 0.1 });
+        const numHairs = 50;
         for(let i=0; i<numHairs; i++) {
-            const hairGeo = new THREE.CylinderGeometry(0.003, 0.002, 0.06, 4);
-            hairGeo.translate(0, 0.03, 0);
+            const hairGeo = new THREE.CylinderGeometry(0.0015, 0.0015, 0.1, 4);
+            hairGeo.translate(0, 0.05, 0);
             const hair = new THREE.Mesh(hairGeo, hairMat);
             
             const pivot = new THREE.Group();
@@ -254,7 +308,7 @@ export class VanDeGraaffExhibit {
             const theta = Math.random() * Math.PI * 2;
             
             pivot.rotation.set(phi, theta, 0);
-            pivot.position.setFromSphericalCoords(0.12, phi, theta);
+            pivot.position.setFromSphericalCoords(0.13, phi, theta);
             
             hair.rotation.x = Math.PI / 2; // Hanging down initially
             
@@ -318,7 +372,7 @@ export class VanDeGraaffExhibit {
         if (this.currentMode === 1) {
             const genX = -0.25;
             const wandX = 0.35;
-            const domeY = 1.15;
+            const domeY = 1.30;
 
             const startX = genX + 0.28;
             const startY = domeY;
