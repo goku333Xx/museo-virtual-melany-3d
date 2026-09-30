@@ -21,9 +21,13 @@
 //        resultados     ¿Qué observamos / medimos?
 //        conclusion     ¿Qué aprendimos?
 //   video          → Video del experimento. Dos opciones:
-//        a) Archivo propio: copiarlo a app/public/videos/ y poner
+//        a) OneDrive / SharePoint de la escuela: en OneDrive, sobre el video,
+//           "Insertar" (Embed) → copiar el código completo <iframe ...> y pegarlo
+//           entre comillas. También sirve el enlace de "Compartir" configurado
+//           como "Cualquier persona con el vínculo".
+//        b) Archivo propio: copiarlo a app/public/videos/ y poner
 //           'videos/sala-01.mp4'. Formato MP4 (H.264 + AAC), menos de 50 MB.
-//        b) Enlace de YouTube: 'https://www.youtube.com/watch?v=XXXXXXXXXXX'
+//           Es la única opción que se reproduce directamente en la pared.
 //        Vacío ('') muestra "Video próximamente".
 //   simulacion     → Qué se ve en el centro de la sala.
 //        'pendiente' muestra una vitrina "Simulación en preparación".
@@ -76,7 +80,7 @@ export const SALAS: SalaConfig[] = [
     {
         curso: '7mo A',
         grupo: 'Grupo 1',
-        integrantes: ['Integrante 1', 'Integrante 2', 'Integrante 3', 'Integrante 4'],
+        integrantes: ['Catalina Romano Palmero', 'Agostina Leo', 'Renzo Luciano Monti', 'Santiago Rafael Rago'],
         experimento: 'Experimento del Grupo 1',
         transformacion: 'Energía ? → Energía ?',
         icono: '🔬',
@@ -89,7 +93,7 @@ export const SALAS: SalaConfig[] = [
     {
         curso: '7mo A',
         grupo: 'Grupo 2',
-        integrantes: ['Integrante 1', 'Integrante 2', 'Integrante 3', 'Integrante 4'],
+        integrantes: ['Josefina Dolber', 'Joaquina Montalti', 'Santino Pitteri', 'Henry Leandro Mamani Castanón'],
         experimento: 'Experimento del Grupo 2',
         transformacion: 'Energía ? → Energía ?',
         icono: '🔬',
@@ -102,7 +106,7 @@ export const SALAS: SalaConfig[] = [
     {
         curso: '7mo A',
         grupo: 'Grupo 3',
-        integrantes: ['Integrante 1', 'Integrante 2', 'Integrante 3', 'Integrante 4'],
+        integrantes: ['Catalina García López', 'Enzo Santino Polisicchio', 'Thiago Valiante'],
         experimento: 'Experimento del Grupo 3',
         transformacion: 'Energía ? → Energía ?',
         icono: '🔬',
@@ -115,7 +119,7 @@ export const SALAS: SalaConfig[] = [
     {
         curso: '7mo A',
         grupo: 'Grupo 4',
-        integrantes: ['Integrante 1', 'Integrante 2', 'Integrante 3', 'Integrante 4'],
+        integrantes: ["Agostina Bianca D'Amico Snaiderman", 'Martina Urrutia Vela', 'Santiago Ángel Antelo'],
         experimento: 'Experimento del Grupo 4',
         transformacion: 'Energía ? → Energía ?',
         icono: '🔬',
@@ -129,7 +133,7 @@ export const SALAS: SalaConfig[] = [
     {
         curso: '7mo B',
         grupo: 'Grupo 1',
-        integrantes: ['Integrante 1', 'Integrante 2', 'Integrante 3', 'Integrante 4'],
+        integrantes: ['Catalina Ciccolo', 'Agustina Jazmín Piris', 'Viviana Hu', 'Cloe Alvarez'],
         experimento: 'Experimento del Grupo 1',
         transformacion: 'Energía ? → Energía ?',
         icono: '🔬',
@@ -142,7 +146,7 @@ export const SALAS: SalaConfig[] = [
     {
         curso: '7mo B',
         grupo: 'Grupo 2',
-        integrantes: ['Integrante 1', 'Integrante 2', 'Integrante 3', 'Integrante 4'],
+        integrantes: ['Tomás Mombelli de la Fuente', 'Benicio Rodríguez', 'Santino Nicolás Jauregui', 'Joaquín Arpe'],
         experimento: 'Experimento del Grupo 2',
         transformacion: 'Energía ? → Energía ?',
         icono: '🔬',
@@ -155,7 +159,7 @@ export const SALAS: SalaConfig[] = [
     {
         curso: '7mo B',
         grupo: 'Grupo 3',
-        integrantes: ['Integrante 1', 'Integrante 2', 'Integrante 3', 'Integrante 4'],
+        integrantes: ['Agustina Soto Balzaretti', 'Ana Schoijet', 'Kristina Elizabeth Mendoza Añez', 'Sabrina Azul Sariaga'],
         experimento: 'Experimento del Grupo 3',
         transformacion: 'Energía ? → Energía ?',
         icono: '🔬',
@@ -168,7 +172,7 @@ export const SALAS: SalaConfig[] = [
     {
         curso: '7mo B',
         grupo: 'Grupo 4',
-        integrantes: ['Integrante 1', 'Integrante 2', 'Integrante 3', 'Integrante 4'],
+        integrantes: ['Joaquín Pugliese', 'Platón Iakovlev', 'Bautista González Bileni', 'Julián Agustín Witowski'],
         experimento: 'Experimento del Grupo 4',
         transformacion: 'Energía ? → Energía ?',
         icono: '🔬',
@@ -181,7 +185,7 @@ export const SALAS: SalaConfig[] = [
     {
         curso: '7mo B',
         grupo: 'Grupo 5',
-        integrantes: ['Integrante 1', 'Integrante 2', 'Integrante 3', 'Integrante 4'],
+        integrantes: ['Sebastián Ignacio Pou', 'Jerónimo Iennaccaro', 'Nicolás Scublinsky Castelli', 'Felipe Zurano'],
         experimento: 'Experimento del Grupo 5',
         transformacion: 'Energía ? → Energía ?',
         icono: '🔬',
@@ -194,7 +198,7 @@ export const SALAS: SalaConfig[] = [
     {
         curso: '7mo B',
         grupo: 'Grupo 6',
-        integrantes: ['Integrante 1', 'Integrante 2', 'Integrante 3', 'Integrante 4'],
+        integrantes: ['Helena Arriola Cornejo', 'Renata Lizarraga', 'Aurelia Farkas'],
         experimento: 'Experimento del Grupo 6',
         transformacion: 'Energía ? → Energía ?',
         icono: '🔬',

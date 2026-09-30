@@ -1805,3 +1805,57 @@ html, body {
   .sala-modal-card { padding: 16px; }
   .sala-investigacion { font-size: 14px; }
 }
+
+/* ===== Pantalla inicial: grupos por curso dentro del recuadro ===== */
+.cursos-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0 auto 22px;
+  max-width: 100%;
+}
+.curso-block {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.45);
+  min-width: 0;
+}
+.curso-label {
+  flex: none;
+  width: 118px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  color: #c9a86a;
+}
+.curso-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+.curso-chip {
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  background: rgba(56, 189, 248, 0.08);
+  color: #e2e8f0;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+@media (max-width: 480px) {
+  .curso-block { flex-direction: column; align-items: flex-start; }
+  .curso-label { width: auto; }
+}
+.sala-video-alt {
+  margin: 10px 0 0;
+  text-align: center;
+  font-size: 13px;
+}
+.sala-video-alt a { color: #c9a86a; }

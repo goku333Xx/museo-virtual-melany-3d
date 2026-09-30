@@ -1,13 +1,26 @@
 Videos de las salas del Museo Virtual 7mo
 =========================================
 
-1. Copiá acá el video de tu grupo con un nombre simple, por ejemplo: sala-01.mp4
-2. En app/src/salas.config.ts, en el bloque de tu sala, poné:  video: 'videos/sala-01.mp4',
+Opción A (recomendada): OneDrive / SharePoint de la escuela
+-----------------------------------------------------------
+1. En OneDrive, sobre el video: "Insertar" (Embed) y copiar el código <iframe ...>.
+   Si no aparece "Insertar", usar "Compartir" → "Cualquier persona con el vínculo"
+   y copiar el vínculo.
+2. En app/src/salas.config.ts, en el bloque de la sala, pegarlo entre comillas:
+     video: '<iframe src="https://..." ...></iframe>',
+   o bien
+     video: 'https://...sharepoint.com/...',
+3. En el museo, [E] frente a la pantalla abre el video en grande con su reproductor.
+   Si OneDrive no deja mostrarlo (por ejemplo, porque pide iniciar sesión), aparece
+   un enlace para abrirlo en una pestaña nueva.
 
-Recomendaciones para que se vea y se escuche bien:
-- Formato MP4 con video H.264 y audio AAC (el que exportan casi todos los celulares y editores).
+IMPORTANTE: si el video está compartido solo con cuentas de la escuela, quien visite
+el museo va a tener que iniciar sesión con su cuenta escolar para verlo.
+
+Opción B: archivo dentro del museo (se reproduce en la pared)
+-------------------------------------------------------------
+1. Copiar acá el video con un nombre simple, por ejemplo: sala-01.mp4
+2. En salas.config.ts:  video: 'videos/sala-01.mp4',
+- Formato MP4 con video H.264 y audio AAC.
 - Menos de 50 MB (GitHub no acepta archivos de más de 100 MB).
-- 720p alcanza; normalizá el volumen al editar para que no quede bajito.
-
-Si el video es muy pesado, subilo a YouTube (puede ser "No listado") y poné el enlace:
-  video: 'https://www.youtube.com/watch?v=XXXXXXXXXXX',
+- OJO: el repositorio y la página son públicos; el archivo queda visible para cualquiera.

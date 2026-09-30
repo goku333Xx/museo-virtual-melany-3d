@@ -18,9 +18,13 @@ if (counterBadge) counterBadge.textContent = `0/${SALAS.length}`;
 
 const featuresRow = document.querySelector('#start-screen .features-row');
 if (featuresRow) {
-    featuresRow.innerHTML = SALAS.map((s, i) =>
-        `<div class="feat-box glass-pill"><span>${escapeHtml(s.icono)}</span> ${String(i + 1).padStart(2, '0')} · ${escapeHtml(s.curso)}</div>`
-    ).join('');
+    // Una fila por curso, con un chip por grupo (se acomodan dentro del recuadro)
+    featuresRow.className = 'cursos-grid';
+    featuresRow.innerHTML = (['7mo A', '7mo B'] as const).map(curso => {
+        const grupos = SALAS.filter(s => s.curso === curso);
+        return `<div class="curso-block"><span class="curso-label">${curso} · ${grupos.length} grupos</span>` +
+            `<div class="curso-chips">${grupos.map(s => `<span class="curso-chip">${escapeHtml(s.grupo)}</span>`).join('')}</div></div>`;
+    }).join('');
 }
 
 // Mapa: salas agrupadas por curso

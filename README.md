@@ -9,7 +9,7 @@ Cada sala tiene:
 - **Placa de bronce al costado de la puerta** con los integrantes.
 - **Simulación en el centro** (por ahora, una vitrina "Simulación en preparación"; se arma a partir de fotos del experimento).
 - **Cuatro paneles "Cómo investigamos"**: pregunta e hipótesis, materiales, procedimiento, resultados y conclusión. Con [E] se leen completos en pantalla grande.
-- **Pantalla de video** en el muro del fondo: [E] reproduce/pausa en la pared y [R] lo abre en grande con volumen y pantalla completa. Mientras suena, los efectos del museo se silencian.
+- **Pantalla de video** en el muro del fondo: [E] reproduce/pausa en la pared y [R] lo abre en grande con volumen y pantalla completa. Los videos de OneDrive se abren en grande con su reproductor. Mientras suena, los efectos del museo se silencian.
 
 ---
 
@@ -25,7 +25,7 @@ Todo se edita en [`app/src/salas.config.ts`](app/src/salas.config.ts). Cada grup
 | `transformacion` | Subtítulo (ej: `Química → Eléctrica`) |
 | `icono` | Emoji del experimento |
 | `investigacion` | Los 4 paneles y la ventana "Cómo investigamos" |
-| `video` | `'videos/sala-01.mp4'` (archivo en `app/public/videos/`) o un enlace de YouTube |
+| `video` | Código «Insertar» o vínculo de OneDrive/SharePoint, o `'videos/sala-01.mp4'` (archivo en `app/public/videos/`) |
 | `simulacion` | `'pendiente'` mientras se arma la simulación 3D |
 | `colorPared` / `colorAcento` | Pintura de la sala y detalles |
 

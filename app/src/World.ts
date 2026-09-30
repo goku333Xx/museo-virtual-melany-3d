@@ -147,7 +147,7 @@ export class World {
                     : 'Mirá cómo el grupo llevó adelante el experimento. Se escucha mejor con auriculares.',
                 badge: `🏛️ ${grupo}`,
                 getModeText: () => video.statusText(),
-                actionE: video.kind === 'archivo' ? '▶ [E] Reproducir / Pausar' : '▶ [E] Ver video',
+                actionE: video.kind === 'archivo' ? '▶ [E] Reproducir / Pausar' : '▶ [E] Ver video en grande',
                 actionR: '🔍 [R] Ver en grande',
                 onInteract: () => {
                     this.hud.setCardModePill(video.toggle());

@@ -845,12 +845,13 @@ export class MuseumRoom {
         ctx.fillText(this.spaced('INTEGRANTES'), W / 2, 226);
 
         const names = sala.integrantes.slice(0, 10);
-        const size = names.length > 7 ? 30 : 36;
-        const step = names.length > 7 ? 44 : 54;
-        ctx.font = `400 ${size}px Georgia, "Times New Roman", serif`;
-        let y = 290;
+        const size = names.length > 7 ? 30 : names.length > 5 ? 36 : 44;
+        const step = names.length > 7 ? 44 : names.length > 5 ? 54 : 70;
+        let y = 300;
         for (const n of names) {
-            ctx.fillText(this.fitText(ctx, n, W - 90), W / 2, y);
+            // Los nombres largos se achican en vez de cortarse
+            this.shrinkFont(ctx, n, 400, size, 24, 'Georgia, "Times New Roman", serif', W - 80);
+            ctx.fillText(this.fitText(ctx, n, W - 80), W / 2, y);
             y += step;
         }
 
