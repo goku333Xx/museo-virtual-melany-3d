@@ -5,7 +5,7 @@ import { InteractionSystem } from './InteractionSystem';
 import { HUD } from './HUD';
 
 import { SoundSynthesizer } from './SoundSynthesizer';
-import { SALAS, NOMBRE_MUSEO } from './salas.config';
+import { SALAS, NOMBRE_MUSEO, GALERIA_CENTRO, grupoSala, numeroSala, salaLayout } from './salas.config';
 
 // --- TEXTOS DEL MUSEO Y DE CADA SALA (desde salas.config.ts) ---
 const escapeHtml = (s: string) => s.replace(/[&<>"']/g, ch => `&#${ch.charCodeAt(0)};`);
@@ -13,21 +13,55 @@ document.title = `${NOMBRE_MUSEO} | Transformaciones de la Energía`;
 document.querySelectorAll<HTMLElement>('[data-museo-nombre]').forEach(el => {
     el.textContent = el.dataset.museoNombre === 'upper' ? NOMBRE_MUSEO.toUpperCase() : NOMBRE_MUSEO;
 });
-document.querySelectorAll<HTMLElement>('#mission-body .task-title').forEach((el, i) => {
-    if (SALAS[i]) el.textContent = SALAS[i].titulo;
-});
+const counterBadge = document.getElementById('mission-counter-badge');
+if (counterBadge) counterBadge.textContent = `0/${SALAS.length}`;
+
 const featuresRow = document.querySelector('#start-screen .features-row');
 if (featuresRow) {
-    featuresRow.innerHTML = SALAS.map(s =>
-        `<div class="feat-box glass-pill"><span>${escapeHtml(s.icono)}</span> ${escapeHtml(s.titulo)}</div>`
+    featuresRow.innerHTML = SALAS.map((s, i) =>
+        `<div class="feat-box glass-pill"><span>${escapeHtml(s.icono)}</span> ${String(i + 1).padStart(2, '0')} · ${escapeHtml(s.curso)}</div>`
     ).join('');
 }
+
+// Mapa: salas agrupadas por curso
 const mapList = document.getElementById('map-sala-list');
 if (mapList) {
-    mapList.innerHTML = SALAS.map((s, i) =>
-        `<div class="map-node glass-pill" style="padding: 14px; justify-content: center; font-size: 15px; border-color: ${escapeHtml(s.colorAcento)};">` +
-        `${i + 1}. ${escapeHtml(s.icono)} ${escapeHtml(s.titulo)} <small style="opacity:.7; margin-left:8px;">${escapeHtml(s.grupo)} · ${i < 4 ? 'Oeste' : 'Este'}</small></div>`
-    ).join('<div style="text-align: center; color: var(--cyan);">↓</div>');
+    const item = (i: number) => {
+        const s = SALAS[i];
+        return `<div class="map-node glass-pill" style="padding: 12px; justify-content: space-between; font-size: 14px; border-color: ${escapeHtml(s.colorAcento)};">` +
+            `<span>${numeroSala(i)} · ${escapeHtml(s.icono)} ${escapeHtml(s.experimento)}</span>` +
+            `<small style="opacity:.75;">${escapeHtml(s.grupo)} · ${salaLayout(i).side < 0 ? 'ala oeste' : 'ala este'}</small></div>`;
+    };
+    const cursos = ['7mo A', '7mo B'] as const;
+    mapList.innerHTML = cursos.map(curso => {
+        const idx = SALAS.map((s, i) => (s.curso === curso ? i : -1)).filter(i => i >= 0);
+        return `<h3 class="map-curso">${curso} · ${idx.length} salas</h3>` + idx.map(item).join('');
+    }).join('');
+}
+
+// Diario: una pestaña por sala con la investigación del grupo
+const journalTabs = document.getElementById('journal-tabs');
+const journalContent = document.getElementById('journal-content');
+if (journalTabs && journalContent) {
+    journalTabs.innerHTML = SALAS.map((s, i) =>
+        `<button class="glass-pill journal-tab${i === 0 ? ' active' : ''}" data-tab="tab-sala-${i + 1}" style="cursor: pointer;">${escapeHtml(s.icono)} ${numeroSala(i)}</button>`
+    ).join('');
+    journalContent.innerHTML = SALAS.map((s, i) => {
+        const inv = s.investigacion;
+        const li = (xs: string[]) => xs.map(x => `<li>${escapeHtml(x)}</li>`).join('');
+        return `<div class="journal-content-tab${i === 0 ? '' : ' hidden'}" id="tab-sala-${i + 1}"${i === 0 ? '' : ' style="display:none"'}>
+            <div class="sala-investigacion">
+                <p class="sala-inv-meta">${numeroSala(i)} · ${escapeHtml(grupoSala(i))} · ${escapeHtml(s.transformacion)}</p>
+                <h2 style="margin: 0 0 12px;">${escapeHtml(s.icono)} ${escapeHtml(s.experimento)}</h2>
+                <section><h3>La pregunta</h3><p>${escapeHtml(inv.pregunta)}</p></section>
+                <section><h3>Hipótesis</h3><p>${escapeHtml(inv.hipotesis)}</p></section>
+                <section><h3>Materiales</h3><ul>${li(inv.materiales)}</ul></section>
+                <section><h3>Procedimiento</h3><ol>${li(inv.procedimiento)}</ol></section>
+                <section><h3>Resultados</h3><p>${escapeHtml(inv.resultados)}</p></section>
+                <section><h3>Conclusión</h3><p>${escapeHtml(inv.conclusion)}</p></section>
+                <section class="sala-inv-integrantes"><h3>Integrantes</h3><p>${s.integrantes.map(escapeHtml).join(' · ')}</p></section>
+            </div></div>`;
+    }).join('');
 }
 
 // --- ELEMENTOS DEL DOM ---
@@ -185,15 +219,9 @@ hud.onCloseModal = () => {
 // --- FÍSICAS DE ALTURA DINÁMICA & MESAS DE EXPERIMENTOS ---
 // Las mesas son de 2.4m x 2.4m, altura 1.2m
 const pedestals = [
-    { minX: -16.2, maxX: -13.8, minZ: 8.8, maxZ: 11.2, height: 1.2 },    // 1. Papa (Oeste, Z=10)
-    { minX: -16.2, maxX: -13.8, minZ: -1.2, maxZ: 1.2, height: 1.2 },      // 2. Tesla (Oeste, Z=0)
-    { minX: -16.2, maxX: -13.8, minZ: -11.2, maxZ: -8.8, height: 1.2 },    // 3. Eólica (Oeste, Z=-10)
-    { minX: -16.2, maxX: -13.8, minZ: -21.2, maxZ: -18.8, height: 1.2 },   // 4. Solar (Oeste, Z=-20)
-    { minX: 13.8, maxX: 16.2, minZ: 8.8, maxZ: 11.2, height: 1.2 },  // 5. Van de Graaff (Este, Z=10)
-    { minX: 13.8, maxX: 16.2, minZ: -1.2, maxZ: 1.2, height: 1.2 },      // 6. Newton (Este, Z=0)
-    { minX: 13.8, maxX: 16.2, minZ: -11.2, maxZ: -8.8, height: 1.2 },      // 7. Dínamo (Este, Z=-10)
-    { minX: -1.2, maxX: 1.2, minZ: -36.2, maxZ: -33.8, height: 1.2 }       // 8. Prisma (Centro profundo, Z=-35)
-];
+    ...SALAS.map((_s, i) => ({ x: salaLayout(i).centerX, z: salaLayout(i).zc })),
+    GALERIA_CENTRO
+].map(p => ({ minX: p.x - 1.2, maxX: p.x + 1.2, minZ: p.z - 1.2, maxZ: p.z + 1.2, height: 1.2 }));
 
 function getGroundHeight(x: number, z: number, currentCamY: number): number {
     for (let i = 0; i < pedestals.length; i++) {

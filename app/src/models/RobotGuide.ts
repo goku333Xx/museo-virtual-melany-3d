@@ -603,23 +603,15 @@ export class RobotGuide {
     }
 
     private refreshTips(): void {
-        if (this.isMobile) {
-            this.tips = [
-                `🤖 Mel-Bot: ¡Hola ${this.studentName}! Tocá el botón [⚡ INTERACTUAR] para probar los experimentos y [🚀 Pedir Guía] si querés que te lleve a una sala.`,
-                `🤖 Mel-Bot: ¡Mirá el multímetro de las papas! Marca 1.94V reales de las 2 papas en serie sumando energía.`,
-                `🤖 Mel-Bot: En la Bobina de Tesla, la energía viaja invisible por el aire y enciende el tubo fluorescente.`,
-                `🤖 Mel-Bot: En la maqueta eólica, el viento hace girar imanes de fuerza para iluminar toda la ciudad.`,
-                `🤖 Mel-Bot: ¡Buscá los 8 Orbes Cuánticos flotando en el museo para ganar +25 XP en cada uno!`
-            ];
-        } else {
-            this.tips = [
-                `🤖 Mel-Bot: ¡Hola ${this.studentName}! Presioná [E] para probar los experimentos y tocame para que te guíe volando a la siguiente sala.`,
-                `🤖 Mel-Bot: ¡Mirá el multímetro de las papas! Marca 1.94V reales de las 2 papas en serie sumando energía.`,
-                `🤖 Mel-Bot: En la Bobina de Tesla, la energía viaja invisible por el aire y enciende el tubo fluorescente sin cables.`,
-                `🤖 Mel-Bot: En la maqueta eólica, el viento hace girar imanes de fuerza para iluminar toda la ciudad.`,
-                `🤖 Mel-Bot: ¡Buscá los 8 Orbes Cuánticos flotando en el museo para ganar +25 XP en cada uno!`
-            ];
-        }
+        const e = this.isMobile ? '[⚡ INTERACTUAR]' : '[E]';
+        const r = this.isMobile ? '[🚀 Pedir Guía]' : '[R]';
+        this.tips = [
+            `🤖 Mel-Bot: ¡Hola ${this.studentName}! Son 10 salas: 4 de 7mo A y 6 de 7mo B. Tocame y te llevo volando a la próxima.`,
+            `🤖 Mel-Bot: En cada sala, mirá la pantalla del fondo y tocá ${e} para ver el video del experimento.`,
+            `🤖 Mel-Bot: Los paneles de las paredes cuentan cómo investigó cada grupo: pregunta, materiales, pasos y conclusión.`,
+            `🤖 Mel-Bot: Al lado de cada puerta hay una placa con los integrantes del grupo. ¡Buscá la tuya!`,
+            `🤖 Mel-Bot: Frente a un video, ${r} lo abre en grande con volumen y pantalla completa.`
+        ];
     }
 
     public update(time: number, playerPos: THREE.Vector3, delta: number = 0.016): void {
@@ -746,7 +738,7 @@ export class RobotGuide {
                 if (this.isTargetCompleted) {
                     this.updateSpeechBubble('¡Ya completaste esta sala! Vamos a la siguiente.', '#fde047');
                 } else {
-                    this.updateSpeechBubble('¡Hacé el experimento y tocá Desafío!', '#fde047');
+                    this.updateSpeechBubble('¡Mirá el video y leé la investigación!', '#fde047');
                 }
             }
 

@@ -1,0 +1,13 @@
+Videos de las salas del Museo Virtual 7mo
+=========================================
+
+1. Copiá acá el video de tu grupo con un nombre simple, por ejemplo: sala-01.mp4
+2. En app/src/salas.config.ts, en el bloque de tu sala, poné:  video: 'videos/sala-01.mp4',
+
+Recomendaciones para que se vea y se escuche bien:
+- Formato MP4 con video H.264 y audio AAC (el que exportan casi todos los celulares y editores).
+- Menos de 50 MB (GitHub no acepta archivos de más de 100 MB).
+- 720p alcanza; normalizá el volumen al editar para que no quede bajito.
+
+Si el video es muy pesado, subilo a YouTube (puede ser "No listado") y poné el enlace:
+  video: 'https://www.youtube.com/watch?v=XXXXXXXXXXX',

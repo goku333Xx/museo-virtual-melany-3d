@@ -21,6 +21,12 @@ export class SoundSynthesizer {
         return this.isMuted;
     }
 
+    // Silencia los efectos mientras suena el video de una sala
+    private isDucked: boolean = false;
+    public setDucked(ducked: boolean): void {
+        this.isDucked = ducked;
+    }
+
     public init(): void {
         if (!this.ctx && (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)) {
             const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
@@ -33,7 +39,7 @@ export class SoundSynthesizer {
 
     // 1. Clic mecánico de interruptor industrial
     public playSwitchClick(isOn: boolean): void {
-        if (this.isMuted) return;
+        if (this.isMuted || this.isDucked) return;
         this.init();
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
@@ -56,7 +62,7 @@ export class SoundSynthesizer {
 
     // 2. Conmutación láser y pulso electromagnético
     public playLaserCycle(modeId: number): void {
-        if (this.isMuted) return;
+        if (this.isMuted || this.isDucked) return;
         this.init();
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
@@ -82,7 +88,7 @@ export class SoundSynthesizer {
 
     // 3. Impacto metálico de esferas de Newton
     public playNewtonClack(intensity: number = 1.0): void {
-        if (this.isMuted) return;
+        if (this.isMuted || this.isDucked) return;
         this.init();
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
@@ -110,7 +116,7 @@ export class SoundSynthesizer {
 
     // 4. Fanfarria de acierto y éxito en Quiz
     public playSuccess(): void {
-        if (this.isMuted) return;
+        if (this.isMuted || this.isDucked) return;
         this.init();
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
@@ -137,7 +143,7 @@ export class SoundSynthesizer {
 
     // 5. Tono suave para reintento de quiz (no punitivo)
     public playWrong(): void {
-        if (this.isMuted) return;
+        if (this.isMuted || this.isDucked) return;
         this.init();
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
@@ -161,7 +167,7 @@ export class SoundSynthesizer {
 
     // 6. Gran Fanfarria Final de Victoria Cósmica
     public playCelebrationFanfare(): void {
-        if (this.isMuted) return;
+        if (this.isMuted || this.isDucked) return;
         this.init();
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
@@ -189,7 +195,7 @@ export class SoundSynthesizer {
 
     // 7. Pasos suaves sobre suelo de mármol del museo
     public playFootstep(): void {
-        if (this.isMuted) return;
+        if (this.isMuted || this.isDucked) return;
         this.init();
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
@@ -219,7 +225,7 @@ export class SoundSynthesizer {
 
     // 8. Campanita celestial al recolectar un orbe de energía secreto
     public playCollectSparkle(): void {
-        if (this.isMuted) return;
+        if (this.isMuted || this.isDucked) return;
         this.init();
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
@@ -247,7 +253,7 @@ export class SoundSynthesizer {
 
     // 9. Chirrido cibernético amigable de Mel-Bot (NPC Guía)
     public playRobotChirp(): void {
-        if (this.isMuted) return;
+        if (this.isMuted || this.isDucked) return;
         this.init();
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
@@ -275,7 +281,7 @@ export class SoundSynthesizer {
 
     // 10. Descarga eléctrica de arco de plasma (Bobina de Tesla)
     public playTeslaZap(intensity: number = 1.0): void {
-        if (this.isMuted) return;
+        if (this.isMuted || this.isDucked) return;
         this.init();
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
@@ -298,7 +304,7 @@ export class SoundSynthesizer {
 
     // 11. Zumbido de Aerogenerador Eólico y Dínamo Faraday
     public playWindTurbine(speed: number = 1.0): void {
-        if (this.isMuted) return;
+        if (this.isMuted || this.isDucked) return;
         this.init();
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
@@ -336,7 +342,7 @@ export class SoundSynthesizer {
 
     // 12. Fotones Solares y Aceleración de Motor DC
     public playSolarPhotons(intensity: number = 1.0): void {
-        if (this.isMuted) return;
+        if (this.isMuted || this.isDucked) return;
         this.init();
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
@@ -377,7 +383,7 @@ export class SoundSynthesizer {
 
     // 13. Chispa Electrostática de Van de Graaff (150.000 V)
     public playElectrostaticSpark(): void {
-        if (this.isMuted) return;
+        if (this.isMuted || this.isDucked) return;
         this.init();
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
@@ -400,7 +406,7 @@ export class SoundSynthesizer {
 
     // 14. Giro de Manivela del Dínamo Mecánico y Lámpara Edison
     public playDynamoCrank(rpmRatio: number = 0.5): void {
-        if (this.isMuted) return;
+        if (this.isMuted || this.isDucked) return;
         this.init();
         if (!this.ctx) return;
         const now = this.ctx.currentTime;

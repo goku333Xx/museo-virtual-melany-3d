@@ -1,5 +1,7 @@
 import { SoundSynthesizer } from './SoundSynthesizer';
-import { SALAS } from './salas.config';
+import { SALAS, salaLayout, GALERIA_CENTRO } from './salas.config';
+
+const TOTAL_SALAS = SALAS.length;
 
 export interface QuizData {
     id: number;
@@ -219,7 +221,7 @@ export class HUD {
 
         this.quizContinueBtn.onclick = () => {
             this.closeQuiz();
-            if (this.completedMissions.size === 8 && !this.celebrationTriggered) {
+            if (this.completedMissions.size === TOTAL_SALAS && !this.celebrationTriggered) {
                 this.triggerGrandCelebration();
             }
         };
@@ -420,7 +422,7 @@ export class HUD {
         this.touchExhibitActions.classList.remove('hidden');
 
         if (this.touchInteractLabel) {
-            this.touchInteractLabel.textContent = isRobot ? 'HABLAR' : (isDone ? 'MANIPULAR' : 'INTERACTUAR');
+            this.touchInteractLabel.textContent = isRobot ? 'HABLAR' : 'INTERACTUAR';
         }
 
         if (this.touchChallengeBtn && this.touchChallengeLabel) {
@@ -431,15 +433,15 @@ export class HUD {
                 this.touchChallengeBtn.classList.remove('done-pill');
                 if (xpChip) xpChip.style.display = 'none';
             } else if (isDone) {
-                this.touchChallengeLabel.textContent = 'Desafío Aprobado ⭐';
+                this.touchChallengeLabel.textContent = 'Ver más ✅';
                 this.touchChallengeBtn.classList.remove('challenge-glow-pill');
                 this.touchChallengeBtn.classList.add('done-pill');
                 if (xpChip) xpChip.style.display = 'none';
             } else {
-                this.touchChallengeLabel.textContent = 'Responder Desafío';
+                this.touchChallengeLabel.textContent = 'Ver más';
                 this.touchChallengeBtn.classList.add('challenge-glow-pill');
                 this.touchChallengeBtn.classList.remove('done-pill');
-                if (xpChip) xpChip.style.display = 'inline-block';
+                if (xpChip) xpChip.style.display = 'none';
             }
         }
     }
@@ -564,6 +566,50 @@ export class HUD {
         this.onCloseModal?.();
     }
 
+    // --- MODAL DE SALA: INVESTIGACIÓN COMPLETA O VIDEO EN GRANDE ---
+    private salaModalOnClose: (() => void) | null = null;
+    private salaModalKeyBound = false;
+
+    public openSalaModal(kicker: string, title: string, content: HTMLElement, onClose?: () => void) {
+        const modal = document.getElementById('sala-modal');
+        const body = document.getElementById('sala-modal-body');
+        if (!modal || !body) return;
+        if (!modal.classList.contains('hidden')) this.closeSalaModal();
+
+        (document.getElementById('sala-modal-kicker') as HTMLElement).textContent = kicker;
+        (document.getElementById('sala-modal-title') as HTMLElement).textContent = title;
+        body.innerHTML = '';
+        body.appendChild(content);
+        this.salaModalOnClose = onClose ?? null;
+
+        if (!this.salaModalKeyBound) {
+            this.salaModalKeyBound = true;
+            document.getElementById('sala-modal-close')?.addEventListener('click', () => this.closeSalaModal());
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && !modal.classList.contains('hidden')) this.closeSalaModal();
+            });
+        }
+
+        this.isModalOpen = true;
+        this.hideExhibitCard();
+        modal.classList.remove('hidden');
+        this.onOpenModal?.();
+        if (document.exitPointerLock) document.exitPointerLock();
+    }
+
+    public closeSalaModal() {
+        const modal = document.getElementById('sala-modal');
+        if (!modal || modal.classList.contains('hidden')) return;
+        modal.classList.add('hidden');
+        const cb = this.salaModalOnClose;
+        this.salaModalOnClose = null;
+        cb?.();
+        const body = document.getElementById('sala-modal-body');
+        if (body) body.innerHTML = '';
+        this.isModalOpen = false;
+        this.onCloseModal?.();
+    }
+
     // --- DIARIO DEL CIENTÍFICO (LIBRETA DE CAMPO) ---
     public openJournal() {
         if (!this.journalModal) return;
@@ -617,28 +663,22 @@ export class HUD {
         }, 4500);
     }
 
-    private readonly missionsData = [
-        { title: SALAS[0].titulo, desc: "Cerrá el circuito y mirá cómo viajan los electrones (~1.94V)" },
-        { title: SALAS[1].titulo, desc: "¡Magia pura! Pasá energía por el aire sin cables" },
-        { title: SALAS[2].titulo, desc: "Usá el viento para darle luz a toda la mini ciudad" },
-        { title: SALAS[3].titulo, desc: "Atrapá fotones y hacé que gire el motor del avión" },
-        { title: SALAS[4].titulo, desc: "Juntá 150.000V y mirá cómo levitan las cintas locas" },
-        { title: SALAS[5].titulo, desc: "Comprobá cómo la energía rebota de punta a punta" },
-        { title: SALAS[6].titulo, desc: "¡Transpirá un poco y encendé la lámpara a pura manivela!" },
-        { title: "Prisma Óptico", desc: "Separá la luz blanca y descubrí los colores escondidos" }
-    ];
+    private readonly missionsData = SALAS.map(s => ({
+        title: s.experimento,
+        desc: `${s.curso} · ${s.grupo}: mirá el video y leé la investigación`
+    }));
 
     public updateMissionPanel() {
         if (!this.missionBody) return;
 
         let currentMission = 1;
-        while (this.completedMissions.has(currentMission) && currentMission <= 8) {
+        while (this.completedMissions.has(currentMission) && currentMission <= TOTAL_SALAS) {
             currentMission++;
         }
 
         const headerTitle = document.querySelector('.mission-main-title') as HTMLElement;
         if (headerTitle) {
-            headerTitle.innerText = `MISIONES: ${this.completedMissions.size} / 8 COMPLETADAS`;
+            headerTitle.innerText = `SALAS VISITADAS: ${this.completedMissions.size} / ${TOTAL_SALAS}`;
         }
 
         // Hide eyebrow if needed to save space
@@ -651,7 +691,7 @@ export class HUD {
         const listContainer = document.createElement('div');
         listContainer.className = 'mission-list';
 
-        if (currentMission <= 8) {
+        if (currentMission <= TOTAL_SALAS) {
             // Current active mission
             const currData = this.missionsData[currentMission - 1];
             const currEl = document.createElement('div');
@@ -671,7 +711,7 @@ export class HUD {
             listContainer.appendChild(currEl);
 
             // Next mission (greyed out)
-            if (currentMission < 8) {
+            if (currentMission < TOTAL_SALAS) {
                 const nextData = this.missionsData[currentMission];
                 const nextEl = document.createElement('div');
                 nextEl.className = 'task locked-discovery';
@@ -682,10 +722,10 @@ export class HUD {
                 nextEl.style.borderRadius = '8px';
                 
                 nextEl.innerHTML = `
-                  <div class="dot" style="background: #334155; color: #94a3b8; font-size: 10px; display: flex; align-items: center; justify-content: center;">🔒</div>
+                  <div class="dot" style="background: #334155; color: #94a3b8; font-size: 10px; display: flex; align-items: center; justify-content: center;">➡️</div>
                   <div class="task-info">
                     <span class="task-title" style="color: #94a3b8; font-size: 13px;">${nextData.title}</span>
-                    <span class="task-status" style="color: #64748b; font-size: 11px;">Completá la anterior para desbloquear</span>
+                    <span class="task-status" style="color: #64748b; font-size: 11px;">Próxima sala</span>
                   </div>
                 `;
                 listContainer.appendChild(nextEl);
@@ -701,8 +741,8 @@ export class HUD {
              doneEl.innerHTML = `
                <div class="dot" style="background: #4ade80; color: #000; font-size: 12px; display: flex; align-items: center; justify-content: center;">⭐</div>
                <div class="task-info">
-                 <span class="task-title" style="color: #4ade80; font-size: 14px; font-weight: 800;">¡Expedición Completada!</span>
-                 <span class="task-status" style="color: #bbf7d0; font-size: 11px;">Has dominado todas las fuentes de energía.</span>
+                 <span class="task-title" style="color: #4ade80; font-size: 14px; font-weight: 800;">¡Recorrido completo!</span>
+                 <span class="task-status" style="color: #bbf7d0; font-size: 11px;">Visitaste las 10 salas de 7mo A y 7mo B.</span>
                </div>
              `;
              listContainer.appendChild(doneEl);
@@ -722,18 +762,9 @@ export class HUD {
         this.updateProgressText();
 
         // Notificación de logro con toast y sonido
-        const achievements: Record<number, { title: string; desc: string }> = {
-            1: { title: 'Pila de Papa: ¡Corriente Zarpada!', desc: '¡Cerraste el circuito y sacaste ~1.94V de unas simples papas!' },
-            2: { title: 'Bobina de Tesla: ¡Pura Magia!', desc: '¡Transmitiste energía inalámbrica por el aire como un campeón!' },
-            3: { title: 'Aerogenerador: ¡Alto Viento!', desc: '¡Le diste electricidad a la ciudad usando solo la fuerza del viento!' },
-            4: { title: 'Panel Solar: ¡Fotones al Ataque!', desc: '¡Transformaste la luz del sol para hacer girar la hélice!' },
-            5: { title: 'Van de Graaff: ¡Pelos de Punta!', desc: '¡Acumulaste tanta estática que hiciste levitar las cintas!' },
-            6: { title: 'Cuna de Newton: ¡Ping Pong de Energía!', desc: '¡Comprobaste cómo la energía viaja de lado a lado sin perderse!' },
-            7: { title: 'Dínamo Manual: ¡A Puro Músculo!', desc: '¡Transformaste tu propio esfuerzo en luz de verdad!' }
-        };
-
-        if (achievements[missionId]) {
-            this.showAchievementToast(achievements[missionId].title, achievements[missionId].desc, '🏅');
+        const sala = SALAS[missionId - 1];
+        if (sala) {
+            this.showAchievementToast(`Sala visitada: ${sala.experimento}`, `${sala.curso} · ${sala.grupo} · +100 XP`, '🏅');
         }
     }
 
@@ -741,11 +772,11 @@ export class HUD {
         this.xp += amount;
         this.scoreText.innerText = `⭐ ${this.xp} XP`;
 
-        if (this.xp >= 700) {
+        if (this.xp >= 1000) {
             this.rankText.innerText = 'Nivel 5: ¡Gran Maestro de la Energía!';
-        } else if (this.xp >= 500) {
+        } else if (this.xp >= 700) {
             this.rankText.innerText = 'Nivel 4: Ingeniero Súper Renovable';
-        } else if (this.xp >= 300) {
+        } else if (this.xp >= 400) {
             this.rankText.innerText = 'Nivel 3: Domador de Electrones';
         } else if (this.xp >= 100) {
             this.rankText.innerText = 'Nivel 2: Investigador Curioso';
@@ -780,17 +811,17 @@ export class HUD {
     private updateProgressText() {
         const count = this.completedMissions.size;
         if (this.progressText) {
-            this.progressText.innerText = count === 8 
+            this.progressText.innerText = count === TOTAL_SALAS 
                 ? '🏆 ¡EXPEDICIÓN COMPLETA! ¡Gran Maestro de la Energía!' 
-                : `Progreso: ${count} de 8 salas completadas`;
+                : `Progreso: ${count} de ${TOTAL_SALAS} salas visitadas`;
         }
         if (this.missionCounterBadge) {
-            this.missionCounterBadge.innerText = count === 8 ? '8/8 ⭐' : `${count}/8`;
-            if (count === 8) {
+            this.missionCounterBadge.innerText = count === TOTAL_SALAS ? `${TOTAL_SALAS}/${TOTAL_SALAS} ⭐` : `${count}/${TOTAL_SALAS}`;
+            if (count === TOTAL_SALAS) {
                 this.missionCounterBadge.parentElement?.classList.add('all-done');
             }
         }
-        if (count === 8 && !this.celebrationTriggered) {
+        if (count === TOTAL_SALAS && !this.celebrationTriggered) {
             this.triggerGrandCelebration();
         }
     }
@@ -1021,15 +1052,12 @@ export class HUD {
         this.ctx.lineWidth = 1.5;
         this.ctx.strokeRect(12, 12, width - 24, height - 24);
 
-        // 7 Estaciones de Energía + Prisma Conmemorativo (1:1)
-        this.drawExhibitDot(-15, 0, '#4ade80', this.completedMissions.has(1));   // Sala 1: Papa
-        this.drawExhibitDot(16, 0, '#38bdf8', this.completedMissions.has(2));    // Sala 2: Tesla
-        this.drawExhibitDot(0, -15, '#00f0ff', this.completedMissions.has(3));   // Sala 3: Eólica
-        this.drawExhibitDot(12, -12, '#fde047', this.completedMissions.has(4));  // Sala 4: Solar
-        this.drawExhibitDot(-12, -12, '#c084fc', this.completedMissions.has(5)); // Sala 5: Van de Graaff
-        this.drawExhibitDot(0, 14, '#f59e0b', this.completedMissions.has(6));    // Sala 6: Newton
-        this.drawExhibitDot(12, 10, '#f97316', this.completedMissions.has(7));   // Sala 7: Dínamo Manual
-        this.drawExhibitDot(0, 24, '#d946ef', true);                             // Galería Especial: Prisma
+        // Un punto por sala + galería especial
+        SALAS.forEach((s, i) => {
+            const l = salaLayout(i);
+            this.drawExhibitDot(l.centerX, l.zc, s.colorAcento, this.completedMissions.has(i + 1));
+        });
+        this.drawExhibitDot(GALERIA_CENTRO.x, GALERIA_CENTRO.z, '#d946ef', true);
 
         // Jugador
         const pX = ((playerX + this.roomWidth / 2) / this.roomWidth) * (width - 24) + 12;

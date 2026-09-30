@@ -1,19 +1,16 @@
 import * as THREE from 'three';
-import { SALAS, GALERIA, NOMBRE_MUSEO, numeroSala } from '../salas.config';
+import { SALAS, GALERIA, GALERIA_CENTRO, NOMBRE_MUSEO, SALA_PROFUNDIDAD, grupoSala, numeroSala, salaLayout } from '../salas.config';
 
-// Geometría de las salas (debe coincidir con los muros de buildEnclosedRooms)
-// side: -1 = ala oeste, 1 = ala este. exhibitZ = centro del pedestal.
-const SALA_LAYOUT = [
-    { side: -1, zMin: 5.15, zMax: 24.85, exhibitZ: 10 },
-    { side: -1, zMin: -4.85, zMax: 4.85, exhibitZ: 0 },
-    { side: -1, zMin: -14.85, zMax: -5.15, exhibitZ: -10 },
-    { side: -1, zMin: -24.85, zMax: -15.15, exhibitZ: -20 },
-    { side: 1, zMin: 5.15, zMax: 24.85, exhibitZ: 10 },
-    { side: 1, zMin: -4.85, zMax: 4.85, exhibitZ: 0 },
-    { side: 1, zMin: -24.85, zMax: -5.15, exhibitZ: -10 }
-];
 const WALL_HEIGHT = 6.0;
 const DOOR_HEIGHT = 3.8;
+
+export interface SalaParts {
+    screen: THREE.Mesh;
+    screenMat: THREE.MeshBasicMaterial;
+    poster: THREE.Texture;
+    panels: THREE.Mesh[];
+    plaque: THREE.Mesh;
+}
 
 export interface WallBox {
     minX: number;
@@ -32,7 +29,7 @@ export class MuseumRoom {
     private activeRoomIndex: number = 0;
     private clouds: Array<{sprite: THREE.Sprite; speed: number; originalX: number}> = [];
     private pigeons: Array<{sprite: THREE.Sprite; isPerched: boolean; speed: number; angle: number; radius: number; baseY: number; wingPhase: number}> = [];
-    private doorBarriers: THREE.Mesh[] = [];
+    private salaParts: SalaParts[] = SALAS.map(() => ({ panels: [] } as unknown as SalaParts));
 
     constructor() {
         this.group = new THREE.Group();
@@ -45,7 +42,6 @@ export class MuseumRoom {
         this.buildCeilingTruss();
         this.buildPedestals();
         this.buildViewingIndicators();
-        this.buildDoorBarriers();
         this.buildLightingAndDecor();
         this.createRealisticSky();
     }
@@ -234,7 +230,7 @@ export class MuseumRoom {
         this.group.add(pillarGroup);
     }
 
-    // --- PISOS DE MADERA EN LAS SALAS Y RECEPCIÓN ---
+    // --- PISOS DE MADERA EN LAS SALAS Y LA GALERÍA ---
     private buildFloorRunwayAndZones() {
         const parquet = this.createParquetTexture();
         const addWoodFloor = (minX: number, maxX: number, minZ: number, maxZ: number) => {
@@ -258,9 +254,10 @@ export class MuseumRoom {
             this.group.add(floor);
         };
 
-        SALA_LAYOUT.forEach(s => {
-            if (s.side < 0) addWoodFloor(-36, -5.15, s.zMin, s.zMax);
-            else addWoodFloor(5.15, 36, s.zMin, s.zMax);
+        SALAS.forEach((_s, i) => {
+            const l = salaLayout(i);
+            if (l.side < 0) addWoodFloor(-SALA_PROFUNDIDAD, -5.15, l.zMin, l.zMax);
+            else addWoodFloor(5.15, SALA_PROFUNDIDAD, l.zMin, l.zMax);
         });
         addWoodFloor(-36, 36, -36, -25.15); // Galería especial
     }
@@ -287,33 +284,17 @@ export class MuseumRoom {
         this.group.add(beaconGroup);
     }
 
-    // --- CARTELES DE ENTRADA SOBRE CADA PUERTA ---
+    // --- CARTEL SOBRE CADA PUERTA Y PLACA DE INTEGRANTES AL COSTADO ---
     private buildRoomPortals() {
         const frameMat = new THREE.MeshStandardMaterial({ color: 0x2f2a26, roughness: 0.55, metalness: 0.1 });
         const jambGeom = new THREE.BoxGeometry(0.12, DOOR_HEIGHT, 0.42);
         const headGeom = new THREE.BoxGeometry(3.44, 0.12, 0.42);
 
-        const portals: { x: number; z: number; rotY: number; kicker: string; title: string; sub: string; accent: string }[] = [];
-        SALA_LAYOUT.forEach((s, i) => {
-            const sala = SALAS[i];
-            portals.push({
-                x: s.side * 5,
-                z: s.exhibitZ,
-                rotY: s.side < 0 ? Math.PI / 2 : -Math.PI / 2,
-                kicker: `${numeroSala(i).toUpperCase()} · ${sala.grupo.toUpperCase()}`,
-                title: sala.titulo,
-                sub: sala.transformacion,
-                accent: sala.colorAcento
-            });
-        });
-        portals.push({ x: 0, z: -25, rotY: 0, kicker: 'GALERÍA ESPECIAL', title: GALERIA.titulo, sub: GALERIA.subtitulo, accent: GALERIA.colorAcento });
-
-        portals.forEach(p => {
+        const addPortal = (x: number, z: number, rotY: number, kicker: string, title: string, sub: string, accent: string) => {
             const portal = new THREE.Group();
-            portal.position.set(p.x, 0, p.z);
-            portal.rotation.y = p.rotY;
+            portal.position.set(x, 0, z);
+            portal.rotation.y = rotY;
 
-            // Marco de puerta oscuro, fino
             const jambL = new THREE.Mesh(jambGeom, frameMat);
             jambL.position.set(-1.66, DOOR_HEIGHT / 2, 0);
             const jambR = new THREE.Mesh(jambGeom, frameMat);
@@ -322,19 +303,43 @@ export class MuseumRoom {
             head.position.set(0, DOOR_HEIGHT + 0.06, 0);
             portal.add(jambL, jambR, head);
 
-            // Rótulo en vinilo sobre el dintel (se ve desde ambos lados)
-            const tex = this.generateSignTexture(p.kicker, p.title, p.sub, p.accent);
+            // Nombre del experimento sobre el dintel (se ve desde ambos lados)
+            const tex = this.generateSignTexture(kicker, title, sub, accent);
             const signMat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false });
-            const signGeom = new THREE.PlaneGeometry(4.0, 1.25);
+            const signGeom = new THREE.PlaneGeometry(4.6, 1.44);
             const front = new THREE.Mesh(signGeom, signMat);
-            front.position.set(0, DOOR_HEIGHT + 0.95, 0.17);
+            front.position.set(0, DOOR_HEIGHT + 1.02, 0.17);
             const back = new THREE.Mesh(signGeom, signMat);
-            back.position.set(0, DOOR_HEIGHT + 0.95, -0.17);
+            back.position.set(0, DOOR_HEIGHT + 1.02, -0.17);
             back.rotation.y = Math.PI;
             portal.add(front, back);
 
             this.group.add(portal);
+        };
+
+        SALAS.forEach((sala, i) => {
+            const l = salaLayout(i);
+            const rotY = l.side < 0 ? Math.PI / 2 : -Math.PI / 2;
+            addPortal(
+                l.side * 5, l.zc, rotY,
+                `${numeroSala(i).toUpperCase()} · ${sala.curso.toUpperCase()} · ${sala.grupo.toUpperCase()}`,
+                sala.experimento,
+                sala.transformacion,
+                sala.colorAcento
+            );
+
+            // Placa de bronce con los integrantes, en el muro del pasillo junto a la puerta
+            const plaque = new THREE.Mesh(
+                new THREE.PlaneGeometry(1.0, 1.3),
+                new THREE.MeshBasicMaterial({ map: this.generatePlaqueTexture(i) })
+            );
+            plaque.position.set(l.side * 4.83, 1.6, l.zc - 2.55);
+            plaque.rotation.y = l.side < 0 ? Math.PI / 2 : -Math.PI / 2;
+            this.group.add(plaque);
+            this.salaParts[i].plaque = plaque;
         });
+
+        addPortal(0, -25, 0, 'GALERÍA ESPECIAL', GALERIA.titulo, GALERIA.subtitulo, GALERIA.colorAcento);
 
         // Nombre del museo en lo alto del muro norte, visible desde el hall
         const titleTex = this.generateMuseumTitleTexture();
@@ -346,7 +351,7 @@ export class MuseumRoom {
         this.group.add(title);
     }
 
-    // --- SALAS CERRADAS CON CIELORRASO, PINTURA POR GRUPO Y CARTELAS ---
+    // --- 10 SALAS CERRADAS: MUROS, CIELORRASO, PINTURA, VIDEO Y PANELES ---
     private buildEnclosedRooms() {
         const wallMat = new THREE.MeshStandardMaterial({
             color: 0xf5f3ef,
@@ -390,42 +395,38 @@ export class MuseumRoom {
             this.group.add(lintelMesh);
         };
 
-        // Pasillo Central: Muros Este y Oeste, cortados por puertas (Z: -25 a 25)
-        // Muro Oeste del Pasillo (X = -5)
-        createWall(-5.15, -4.85, 11.6, 25);
-        createDoorLintel(-5.15, -4.85, 8.4, 11.6); // Sala 1
-        createWall(-5.15, -4.85, 1.6, 8.4);
-        createDoorLintel(-5.15, -4.85, -1.6, 1.6); // Sala 2
-        createWall(-5.15, -4.85, -8.4, -1.6);
-        createDoorLintel(-5.15, -4.85, -11.6, -8.4); // Sala 3
-        createWall(-5.15, -4.85, -18.4, -11.6);
-        createDoorLintel(-5.15, -4.85, -21.6, -18.4); // Sala 4
-        createWall(-5.15, -4.85, -25, -21.6);
+        const D = SALA_PROFUNDIDAD;
+        const doorZs = [...new Set(SALAS.map((_s, i) => salaLayout(i).zc))].sort((a, b) => b - a);
 
-        // Muro Este del Pasillo (X = 5)
-        createWall(4.85, 5.15, 11.6, 25);
-        createDoorLintel(4.85, 5.15, 8.4, 11.6); // Sala 5
-        createWall(4.85, 5.15, 1.6, 8.4);
-        createDoorLintel(4.85, 5.15, -1.6, 1.6); // Sala 6
-        createWall(4.85, 5.15, -8.4, -1.6);
-        createDoorLintel(4.85, 5.15, -11.6, -8.4); // Sala 7
-        createWall(4.85, 5.15, -25, -11.6);
+        for (const side of [-1, 1]) {
+            // Muro del pasillo con una puerta por sala (Z: 25 a -25)
+            const x0 = side < 0 ? -5.15 : 4.85;
+            const x1 = x0 + 0.3;
+            let z = 25;
+            for (const zc of doorZs) {
+                createWall(x0, x1, zc + 1.6, z);
+                createDoorLintel(x0, x1, zc - 1.6, zc + 1.6);
+                z = zc - 1.6;
+            }
+            createWall(x0, x1, -25, z);
 
-        // Muro Norte del Pasillo (Galeria) (Z = -25)
+            // Muro del fondo de las salas
+            const bx0 = side < 0 ? -D - 0.15 : D - 0.15;
+            createWall(bx0, bx0 + 0.3, -25, 25);
+
+            // Separadores entre salas
+            const sx0 = side < 0 ? -D - 0.15 : 5.15;
+            const sx1 = side < 0 ? -5.15 : D + 0.15;
+            for (const sz of [15, 5, -5, -15]) createWall(sx0, sx1, sz - 0.15, sz + 0.15);
+
+            // Muro frontal (cierra también el espacio de servicio detrás de las salas)
+            createWall(side < 0 ? -36 : 5.15, side < 0 ? -5.15 : 36, 24.85, 25.15);
+        }
+
+        // Muro Norte del Pasillo (Galería) (Z = -25)
         createWall(-36, -1.6, -25.15, -24.85);
-        createDoorLintel(-1.6, 1.6, -25.15, -24.85); // Sala 8 (Galeria)
+        createDoorLintel(-1.6, 1.6, -25.15, -24.85);
         createWall(1.6, 36, -25.15, -24.85);
-
-        // Paredes separadoras de salas (Lado Izquierdo, X: -36 a -5.15)
-        createWall(-36, -5.15, 24.85, 25.15); // Pared frontal de Sala 1
-        createWall(-36, -5.15, 4.85, 5.15); // Entre Sala 1 y 2
-        createWall(-36, -5.15, -5.15, -4.85); // Entre Sala 2 y 3
-        createWall(-36, -5.15, -15.15, -14.85); // Entre Sala 3 y 4
-
-        // Paredes separadoras de salas (Lado Derecho, X: 5.15 a 36)
-        createWall(5.15, 36, 24.85, 25.15); // Pared frontal de Sala 5
-        createWall(5.15, 36, 4.85, 5.15); // Entre Sala 5 y 6
-        createWall(5.15, 36, -5.15, -4.85); // Entre Sala 6 y 7
 
         // Cielorrasos: salas y galería cerradas; el hall central queda abierto al lucernario
         const ceilingMat = new THREE.MeshStandardMaterial({ color: 0xf2f0ec, roughness: 0.95, metalness: 0.0, side: THREE.DoubleSide });
@@ -435,23 +436,22 @@ export class MuseumRoom {
             ceiling.position.set((minX + maxX) / 2, wallHeight, (minZ + maxZ) / 2);
             this.group.add(ceiling);
         };
-        addCeiling(-36, -4.85, -25.15, 25.15);
-        addCeiling(4.85, 36, -25.15, 25.15);
+        addCeiling(-D - 0.15, -4.85, -25.15, 25.15);
+        addCeiling(4.85, D + 0.15, -25.15, 25.15);
         addCeiling(-36, 36, -36, -24.85);
 
-        // Pintura, cartela, banco y rieles de luz de cada sala (datos de salas.config.ts)
-        SALA_LAYOUT.forEach((s, i) => this.decorateSala(i, s.side, s.zMin, s.zMax, s.exhibitZ));
+        SALAS.forEach((_s, i) => this.decorateSala(i));
         this.decorateGaleria();
 
         // Luces de sala: solo la activa se enciende (ver setActiveRoom)
         const roomConfigs = [
-            ...SALA_LAYOUT.map(s => ({ x: s.side * 15, z: s.exhibitZ })),
-            { x: 0, z: -35 }
+            ...SALAS.map((_s, i) => ({ x: salaLayout(i).centerX, z: salaLayout(i).zc })),
+            { x: GALERIA_CENTRO.x, z: GALERIA_CENTRO.z }
         ];
 
         roomConfigs.forEach((rc, idx) => {
             const isActive = idx === 0;
-            const roomLight = new THREE.PointLight(0xfff4e5, 1.5, 20.0, 1.2);
+            const roomLight = new THREE.PointLight(0xfff4e5, 1.5, 18.0, 1.2);
             roomLight.position.set(rc.x, wallHeight - 0.4, rc.z);
             roomLight.visible = isActive;
             this.group.add(roomLight);
@@ -476,8 +476,9 @@ export class MuseumRoom {
         });
     }
 
-    private decorateSala(i: number, side: number, zMin: number, zMax: number, exhibitZ: number) {
+    private decorateSala(i: number) {
         const sala = SALAS[i];
+        const { side, zc, zMin, zMax } = salaLayout(i);
         const paintMat = new THREE.MeshStandardMaterial({
             color: new THREE.Color(sala.colorPared),
             roughness: 0.92,
@@ -487,14 +488,15 @@ export class MuseumRoom {
             polygonOffsetUnits: -1
         });
         const depth = zMax - zMin;
-        const zMid = (zMin + zMax) / 2;
-        const innerX = side * 5.15;   // cara interior del muro del pasillo
-        const outerX = side * 36;     // cara interior del muro perimetral
+        const innerX = side * 5.15;                        // cara interior del muro del pasillo
+        const outerX = side * (SALA_PROFUNDIDAD - 0.15);   // cara interior del muro del fondo
         const width = Math.abs(outerX - innerX);
         const xMid = (innerX + outerX) / 2;
         const paintH = WALL_HEIGHT - 0.14;
         const paintY = 0.14 + paintH / 2;
         const off = 0.01;
+        const backRot = side < 0 ? Math.PI / 2 : -Math.PI / 2;   // mira hacia el pasillo
+        const doorRot = -backRot;                                 // mira hacia el fondo
 
         const paint = (w: number, h: number, x: number, y: number, z: number, rotY: number) => {
             const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), paintMat);
@@ -503,46 +505,71 @@ export class MuseumRoom {
             this.group.add(m);
         };
 
-        // Muro del fondo (perimetral) y muros laterales, pintados con el color del grupo
-        paint(depth, paintH, outerX - side * off, paintY, zMid, side < 0 ? Math.PI / 2 : -Math.PI / 2);
+        // Muro del fondo y muros laterales, pintados con el color del grupo
+        paint(depth, paintH, outerX - side * off, paintY, zc, backRot);
         paint(width, paintH, xMid, paintY, zMin + off, 0);
         paint(width, paintH, xMid, paintY, zMax - off, Math.PI);
 
         // Muro de la puerta (dos tramos + dintel)
-        const faceRot = side < 0 ? -Math.PI / 2 : Math.PI / 2;
-        const doorMin = exhibitZ - 1.6;
-        const doorMax = exhibitZ + 1.6;
         const doorX = innerX + side * off;
-        const seg1 = doorMin - zMin;
-        const seg2 = zMax - doorMax;
-        if (seg1 > 0.05) paint(seg1, paintH, doorX, paintY, zMin + seg1 / 2, faceRot);
-        if (seg2 > 0.05) paint(seg2, paintH, doorX, paintY, doorMax + seg2 / 2, faceRot);
-        paint(3.2, WALL_HEIGHT - DOOR_HEIGHT, doorX, DOOR_HEIGHT + (WALL_HEIGHT - DOOR_HEIGHT) / 2, exhibitZ, faceRot);
+        const seg = (depth - 3.2) / 2;
+        paint(seg, paintH, doorX, paintY, zMin + seg / 2, doorRot);
+        paint(seg, paintH, doorX, paintY, zMax - seg / 2, doorRot);
+        paint(3.2, WALL_HEIGHT - DOOR_HEIGHT, doorX, DOOR_HEIGHT + (WALL_HEIGHT - DOOR_HEIGHT) / 2, zc, doorRot);
 
-        // Título grande en vinilo sobre el muro del fondo
-        const titleTex = this.generateWallTitleTexture(sala.titulo, sala.transformacion, sala.colorAcento);
+        // Nombre del experimento en vinilo, sobre la pantalla del muro del fondo
+        const titleTex = this.generateWallTitleTexture(sala.experimento, sala.transformacion, sala.colorAcento);
         const title = new THREE.Mesh(
-            new THREE.PlaneGeometry(9, 2.25),
+            new THREE.PlaneGeometry(7, 1.75),
             new THREE.MeshBasicMaterial({ map: titleTex, transparent: true, depthWrite: false })
         );
-        title.position.set(outerX - side * 0.03, 3.9, exhibitZ);
-        title.rotation.y = side < 0 ? Math.PI / 2 : -Math.PI / 2;
+        title.position.set(outerX - side * 0.03, 4.6, zc);
+        title.rotation.y = backRot;
         this.group.add(title);
 
-        // Cartela del grupo, junto a la entrada, en el muro lateral
-        const panelTex = this.generateCartelaTexture(i);
-        const panel = new THREE.Mesh(
-            new THREE.PlaneGeometry(2.4, 1.8),
-            new THREE.MeshBasicMaterial({ map: panelTex })
+        // Pantalla de video en el muro del fondo
+        const screenGroup = new THREE.Group();
+        screenGroup.position.set(outerX - side * 0.06, 2.3, zc);
+        screenGroup.rotation.y = backRot;
+        const bezel = new THREE.Mesh(
+            new THREE.BoxGeometry(4.64, 2.7, 0.08),
+            new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.4, metalness: 0.3 })
         );
-        panel.position.set(side * 9.2, 1.75, zMin + 0.03);
-        this.group.add(panel);
+        screenGroup.add(bezel);
+        const screenMat = new THREE.MeshBasicMaterial({ map: this.generateScreenPoster(i), toneMapped: false });
+        const screen = new THREE.Mesh(new THREE.PlaneGeometry(4.4, 2.475), screenMat);
+        screen.position.z = 0.045;
+        screenGroup.add(screen);
+        this.group.add(screenGroup);
+        this.salaParts[i].screen = screen;
+        this.salaParts[i].screenMat = screenMat;
 
-        // Banco de museo mirando al experimento
-        this.createBench(side * 23, exhibitZ, Math.PI / 2);
+        // Paneles "Cómo investigamos": dos en cada muro lateral
+        // Recorrido: muro izquierdo (cerca → lejos) y luego muro derecho (lejos → cerca)
+        const left = side < 0 ? { wallZ: zMax - 0.03, rotY: Math.PI } : { wallZ: zMin + 0.03, rotY: 0 };
+        const right = side < 0 ? { wallZ: zMin + 0.03, rotY: 0 } : { wallZ: zMax - 0.03, rotY: Math.PI };
+        const panelDefs = [
+            { ...left, x: side * 9.3, k: 0 },
+            { ...left, x: side * 16.6, k: 1 },
+            { ...right, x: side * 16.6, k: 2 },
+            { ...right, x: side * 9.3, k: 3 }
+        ];
+        for (const p of panelDefs) {
+            const panel = new THREE.Mesh(
+                new THREE.PlaneGeometry(2.6, 1.95),
+                new THREE.MeshBasicMaterial({ map: this.generatePanelTexture(i, p.k) })
+            );
+            panel.position.set(p.x, 1.75, p.wallZ);
+            panel.rotation.y = p.rotY;
+            this.group.add(panel);
+            this.salaParts[i].panels.push(panel);
+        }
 
-        // Riel de iluminación en el cielorraso con proyectores
-        this.createTrackLight(side * 15, exhibitZ, 10);
+        // Banco frente a la pantalla
+        this.createBench(side * 18.2, zc, Math.PI / 2);
+
+        // Riel de iluminación sobre el experimento central
+        this.createTrackLight(salaLayout(i).centerX, zc, 6);
     }
 
     private decorateGaleria() {
@@ -599,7 +626,7 @@ export class MuseumRoom {
         this.internalWallBoxes.push({ minX: x - hx, maxX: x + hx, minZ: z - hz, maxZ: z + hz });
     }
 
-    // Riel negro con proyectores orientables (solo geometría: la luz real es el SpotLight de la sala)
+    // Riel negro con proyectores (solo geometría: la luz real es el SpotLight de la sala)
     private createTrackLight(x: number, z: number, length: number) {
         const railMat = new THREE.MeshStandardMaterial({ color: 0x1c1c1c, roughness: 0.5, metalness: 0.5 });
         const lensMat = new THREE.MeshStandardMaterial({ color: 0xfff6e0, emissive: 0xfff1d0, emissiveIntensity: 1.2 });
@@ -610,7 +637,7 @@ export class MuseumRoom {
         const headGeom = new THREE.CylinderGeometry(0.07, 0.09, 0.26, 12);
         const lensGeom = new THREE.CircleGeometry(0.07, 12);
         const stemGeom = new THREE.CylinderGeometry(0.012, 0.012, 0.18, 6);
-        const n = 5;
+        const n = 4;
         for (let k = 0; k < n; k++) {
             const hz = z - length / 2 + (k + 0.5) * (length / n);
             const fixture = new THREE.Group();
@@ -719,6 +746,7 @@ export class MuseumRoom {
 
         ctx.font = '500 92px Georgia, "Times New Roman", serif';
         ctx.fillStyle = '#2b2622';
+        this.shrinkFont(ctx, title, 500, 92, 48, 'Georgia, "Times New Roman", serif', 980);
         ctx.fillText(this.fitText(ctx, title, 980), 512, 160);
 
         ctx.fillStyle = this.darken(accent);
@@ -768,6 +796,7 @@ export class MuseumRoom {
         ctx.textBaseline = 'middle';
         ctx.font = '500 104px Georgia, "Times New Roman", serif';
         ctx.fillStyle = '#f7f3ec';
+        this.shrinkFont(ctx, title, 500, 104, 52, 'Georgia, "Times New Roman", serif', 1000);
         ctx.fillText(this.fitText(ctx, title, 1000), 512, 100);
         ctx.font = 'italic 44px Georgia, "Times New Roman", serif';
         ctx.fillStyle = accent;
@@ -778,11 +807,65 @@ export class MuseumRoom {
         return tex;
     }
 
-    // Cartela de sala: texto curatorial + grupo e integrantes
-    private generateCartelaTexture(i: number): THREE.CanvasTexture {
+    // Placa de bronce con los integrantes del grupo (al costado de la puerta)
+    private generatePlaqueTexture(i: number): THREE.CanvasTexture {
         const sala = SALAS[i];
-        const W = 960;
-        const H = 720;
+        const W = 600;
+        const H = 780;
+        const canvas = document.createElement('canvas');
+        canvas.width = W;
+        canvas.height = H;
+        const ctx = canvas.getContext('2d')!;
+
+        const grad = ctx.createLinearGradient(0, 0, W, H);
+        grad.addColorStop(0, '#8a6a3a');
+        grad.addColorStop(0.5, '#a88450');
+        grad.addColorStop(1, '#6f5430');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, W, H);
+        ctx.strokeStyle = 'rgba(40, 28, 12, 0.7)';
+        ctx.lineWidth = 6;
+        ctx.strokeRect(18, 18, W - 36, H - 36);
+        // Tornillos
+        ctx.fillStyle = '#4a3820';
+        [[40, 40], [W - 40, 40], [40, H - 40], [W - 40, H - 40]].forEach(([x, y]) => {
+            ctx.beginPath(); ctx.arc(x, y, 9, 0, Math.PI * 2); ctx.fill();
+        });
+
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#f6ead2';
+        ctx.font = '600 26px "Inter", system-ui, sans-serif';
+        ctx.fillText(this.spaced(numeroSala(i).toUpperCase()), W / 2, 96);
+        ctx.font = '500 44px Georgia, "Times New Roman", serif';
+        ctx.fillText(this.fitText(ctx, `${sala.curso} · ${sala.grupo}`, W - 90), W / 2, 152);
+        ctx.fillStyle = 'rgba(246, 234, 210, 0.6)';
+        ctx.fillRect(W / 2 - 60, 180, 120, 2);
+        ctx.fillStyle = '#f6ead2';
+        ctx.font = '600 22px "Inter", system-ui, sans-serif';
+        ctx.fillText(this.spaced('INTEGRANTES'), W / 2, 226);
+
+        const names = sala.integrantes.slice(0, 10);
+        const size = names.length > 7 ? 30 : 36;
+        const step = names.length > 7 ? 44 : 54;
+        ctx.font = `400 ${size}px Georgia, "Times New Roman", serif`;
+        let y = 290;
+        for (const n of names) {
+            ctx.fillText(this.fitText(ctx, n, W - 90), W / 2, y);
+            y += step;
+        }
+
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.anisotropy = 4;
+        return tex;
+    }
+
+    // Panel "Cómo investigamos" (k: 0 pregunta, 1 materiales, 2 procedimiento, 3 resultados)
+    private generatePanelTexture(i: number, k: number): THREE.CanvasTexture {
+        const sala = SALAS[i];
+        const inv = sala.investigacion;
+        const W = 1040;
+        const H = 780;
         const canvas = document.createElement('canvas');
         canvas.width = W;
         canvas.height = H;
@@ -791,47 +874,119 @@ export class MuseumRoom {
         ctx.fillStyle = '#f7f4ee';
         ctx.fillRect(0, 0, W, H);
         ctx.fillStyle = sala.colorPared;
-        ctx.fillRect(0, 0, 14, H);
+        ctx.fillRect(0, 0, W, 14);
 
-        const left = 64;
-        const maxW = W - left - 56;
+        const titles = ['La pregunta', 'Materiales', 'Procedimiento', 'Resultados y conclusión'];
+        const left = 60;
+        const maxW = W - 120;
         ctx.textAlign = 'left';
-        ctx.textBaseline = 'alphabetic';
 
         ctx.font = '600 24px "Inter", system-ui, sans-serif';
         ctx.fillStyle = this.darken(sala.colorAcento);
-        ctx.fillText(this.spaced(`${numeroSala(i).toUpperCase()} · ${sala.grupo.toUpperCase()}`), left, 78);
-
-        ctx.font = '500 60px Georgia, "Times New Roman", serif';
+        ctx.fillText(this.spaced(`CÓMO INVESTIGAMOS · ${k + 1} DE 4`), left, 74);
+        ctx.font = '500 58px Georgia, "Times New Roman", serif';
         ctx.fillStyle = '#231f1c';
-        ctx.fillText(`${sala.icono} ${this.fitText(ctx, sala.titulo, maxW - 70)}`, left, 150);
-
-        ctx.font = 'italic 30px Georgia, "Times New Roman", serif';
-        ctx.fillStyle = '#5a524b';
-        ctx.fillText(this.fitText(ctx, sala.transformacion, maxW), left, 198);
-
+        ctx.fillText(titles[k], left, 144);
         ctx.fillStyle = '#cfc6b8';
-        ctx.fillRect(left, 226, 120, 2);
+        ctx.fillRect(left, 170, 120, 2);
 
-        ctx.font = '400 29px Georgia, "Times New Roman", serif';
-        ctx.fillStyle = '#3a342f';
-        let y = 282;
-        for (const line of this.wrapText(ctx, sala.texto, maxW).slice(0, 7)) {
-            ctx.fillText(line, left, y);
-            y += 42;
+        const bodyTop = 226;
+        const bottom = H - 84;
+        let y = bodyTop;
+        const para = (label: string | null, text: string) => {
+            if (label) {
+                ctx.font = '600 22px "Inter", system-ui, sans-serif';
+                ctx.fillStyle = '#7a6f64';
+                ctx.fillText(this.spaced(label.toUpperCase()), left, y);
+                y += 38;
+            }
+            ctx.font = '400 30px Georgia, "Times New Roman", serif';
+            ctx.fillStyle = '#3a342f';
+            for (const line of this.wrapText(ctx, text, maxW)) {
+                if (y > bottom) return;
+                ctx.fillText(line, left, y);
+                y += 42;
+            }
+            y += 18;
+        };
+        const list = (items: string[], numbered: boolean) => {
+            ctx.font = '400 30px Georgia, "Times New Roman", serif';
+            ctx.fillStyle = '#3a342f';
+            items.forEach((item, n) => {
+                const bullet = numbered ? `${n + 1}.` : '•';
+                const lines = this.wrapText(ctx, item, maxW - 50);
+                lines.forEach((line, li) => {
+                    if (y > bottom) return;
+                    if (li === 0) ctx.fillText(bullet, left, y);
+                    ctx.fillText(line, left + 50, y);
+                    y += 42;
+                });
+                y += 6;
+            });
+        };
+
+        if (k === 0) {
+            para(null, inv.pregunta);
+            para('Hipótesis', inv.hipotesis);
+        } else if (k === 1) {
+            list(inv.materiales, false);
+        } else if (k === 2) {
+            list(inv.procedimiento, true);
+        } else {
+            para('Resultados', inv.resultados);
+            para('Conclusión', inv.conclusion);
         }
 
-        ctx.font = '600 20px "Inter", system-ui, sans-serif';
-        ctx.fillStyle = '#7a6f64';
-        ctx.fillText(this.spaced('INTEGRANTES'), left, H - 110);
-        ctx.font = '400 26px "Inter", system-ui, sans-serif';
-        ctx.fillStyle = '#3a342f';
-        const names = this.wrapText(ctx, sala.integrantes.join(' · '), maxW).slice(0, 2);
-        names.forEach((line, k) => ctx.fillText(line, left, H - 72 + k * 34));
+        ctx.font = '500 22px "Inter", system-ui, sans-serif';
+        ctx.fillStyle = '#8a8076';
+        ctx.fillText('Tocá [E] para leer la investigación completa', left, H - 36);
 
         const tex = new THREE.CanvasTexture(canvas);
         tex.colorSpace = THREE.SRGBColorSpace;
         tex.anisotropy = 4;
+        return tex;
+    }
+
+    // Imagen de la pantalla cuando el video no se está reproduciendo
+    private generateScreenPoster(i: number): THREE.CanvasTexture {
+        const sala = SALAS[i];
+        const W = 1280;
+        const H = 720;
+        const canvas = document.createElement('canvas');
+        canvas.width = W;
+        canvas.height = H;
+        const ctx = canvas.getContext('2d')!;
+
+        const grad = ctx.createLinearGradient(0, 0, 0, H);
+        grad.addColorStop(0, '#1b1b1f');
+        grad.addColorStop(1, '#0b0b0d');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, W, H);
+
+        const hasVideo = sala.video.trim() !== '';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = hasVideo ? 'rgba(255,255,255,0.92)' : 'rgba(255,255,255,0.35)';
+        ctx.beginPath();
+        ctx.arc(W / 2, H / 2 - 60, 90, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#141417';
+        ctx.beginPath();
+        ctx.moveTo(W / 2 - 30, H / 2 - 110);
+        ctx.lineTo(W / 2 - 30, H / 2 - 10);
+        ctx.lineTo(W / 2 + 52, H / 2 - 60);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#f4efe6';
+        ctx.font = '500 56px Georgia, "Times New Roman", serif';
+        ctx.fillText(this.fitText(ctx, sala.experimento, W - 120), W / 2, H / 2 + 110);
+        ctx.font = '500 32px "Inter", system-ui, sans-serif';
+        ctx.fillStyle = hasVideo ? sala.colorAcento : '#8a8580';
+        ctx.fillText(hasVideo ? 'Tocá [E] para reproducir el video' : 'Video próximamente', W / 2, H / 2 + 170);
+
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        this.salaParts[i].poster = tex;
         return tex;
     }
 
@@ -850,6 +1005,15 @@ export class MuseumRoom {
         }
         if (line) lines.push(line);
         return lines;
+    }
+
+    /** Achica la fuente hasta que el texto entre en maxW (sin bajar de minSize) */
+    private shrinkFont(ctx: CanvasRenderingContext2D, text: string, weight: number, size: number, minSize: number, family: string, maxW: number): void {
+        ctx.font = `${weight} ${size}px ${family}`;
+        while (size > minSize && ctx.measureText(text).width > maxW) {
+            size -= 2;
+            ctx.font = `${weight} ${size}px ${family}`;
+        }
     }
 
     private fitText(ctx: CanvasRenderingContext2D, text: string, maxW: number): string {
@@ -914,14 +1078,8 @@ export class MuseumRoom {
         const revealGeom = new THREE.BoxGeometry(pedestalWidth - 0.06, 0.06, pedestalDepth - 0.06);
 
         const positions = [
-            [-15, 10],   // 1. Pila de Papa
-            [-15, 0],    // 2. Bobina de Tesla
-            [-15, -10],  // 3. Aerogenerador Faraday
-            [-15, -20],  // 4. Panel Solar & Motor
-            [15, 10],    // 5. Generador Van de Graaff
-            [15, 0],     // 6. Cuna de Newton
-            [15, -10],   // 7. Dínamo Manual con Manivela
-            [0, -35]     // 8. Alcoba Especial: Prisma Óptico
+            ...SALAS.map((_s, i) => [salaLayout(i).centerX, salaLayout(i).zc]),
+            [GALERIA_CENTRO.x, GALERIA_CENTRO.z]
         ];
 
         positions.forEach(pos => {
@@ -1222,13 +1380,16 @@ export class MuseumRoom {
 
     private buildViewingIndicators(): void {
         const roomData = [
-            ...SALA_LAYOUT.map((s, i) => ({
-                name: `${SALAS[i].icono} ${SALAS[i].titulo}`,
-                sub: `${numeroSala(i)} · ${SALAS[i].grupo}`,
-                pos: [s.side * 15, s.exhibitZ],
-                viewDir: [-s.side, 0]
-            })),
-            { name: `${GALERIA.icono} ${GALERIA.titulo}`, sub: 'Galería especial', pos: [0, -35], viewDir: [0, 1] }
+            ...SALAS.map((sala, i) => {
+                const l = salaLayout(i);
+                return {
+                    name: `${sala.icono} ${sala.experimento}`,
+                    sub: `${numeroSala(i)} · ${grupoSala(i)}`,
+                    pos: [l.centerX, l.zc],
+                    viewDir: [-l.side, 0]
+                };
+            }),
+            { name: `${GALERIA.icono} ${GALERIA.titulo}`, sub: 'Galería especial', pos: [GALERIA_CENTRO.x, GALERIA_CENTRO.z], viewDir: [0, 1] }
         ];
 
         for (const room of roomData) {
@@ -1281,8 +1442,8 @@ export class MuseumRoom {
             pCtx.fillText(this.fitText(pCtx, room.name, 470), 22, 50);
             pCtx.font = '400 19px Inter, sans-serif';
             pCtx.fillStyle = '#6b625a';
-            pCtx.fillText(room.sub, 22, 84);
-            pCtx.fillText('Tocá [E] para experimentar', 22, 110);
+            pCtx.fillText(this.fitText(pCtx, room.sub, 470), 22, 84);
+            pCtx.fillText('Tocá [E] para interactuar', 22, 110);
             const plaqueTex = new THREE.CanvasTexture(plaqueCanvas);
             plaqueTex.colorSpace = THREE.SRGBColorSpace;
             const plaque = new THREE.Mesh(
@@ -1300,73 +1461,14 @@ export class MuseumRoom {
         }
     }
 
-    private buildDoorBarriers(): void {
-        const doorData = [
-            { pos: [-5, 10], rotY: Math.PI / 2, room: 'SALA 01' },
-            { pos: [-5, 0], rotY: Math.PI / 2, room: 'SALA 02' },
-            { pos: [-5, -10], rotY: Math.PI / 2, room: 'SALA 03' },
-            { pos: [-5, -20], rotY: Math.PI / 2, room: 'SALA 04' },
-            { pos: [5, 10], rotY: -Math.PI / 2, room: 'SALA 05' },
-            { pos: [5, 0], rotY: -Math.PI / 2, room: 'SALA 06' },
-            { pos: [5, -10], rotY: -Math.PI / 2, room: 'SALA 07' },
-            { pos: [0, -25], rotY: 0, room: 'GALERÍA' }
-        ];
-        const doorMat = new THREE.MeshStandardMaterial({
-            color: 0x64748b,
-            roughness: 0.6,
-            metalness: 0.3,
-            transparent: true,
-            opacity: 0.85
-        });
-        for (const d of doorData) {
-            const door = new THREE.Mesh(
-                new THREE.BoxGeometry(3.0, 3.6, 0.12),
-                doorMat.clone()
-            );
-            door.position.set(d.pos[0], 1.9, d.pos[1]);
-            door.rotation.y = d.rotY;
-            door.castShadow = false;
-            door.receiveShadow = false;
-            door.visible = false;
-            door.name = `door-barrier-${d.room}`;
-            this.group.add(door);
-            this.doorBarriers.push(door);
-
-            const signCanvas = document.createElement('canvas');
-            signCanvas.width = 256;
-            signCanvas.height = 128;
-            const sCtx = signCanvas.getContext('2d')!;
-            sCtx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-            sCtx.fillRect(0, 0, 256, 128);
-            sCtx.strokeStyle = '#f59e0b';
-            sCtx.lineWidth = 3;
-            sCtx.strokeRect(4, 4, 248, 120);
-            sCtx.fillStyle = '#fde047';
-            sCtx.font = 'bold 36px Inter, sans-serif';
-            sCtx.textAlign = 'center';
-            sCtx.fillText('🔒', 128, 50);
-            sCtx.font = 'bold 16px Inter, sans-serif';
-            sCtx.fillStyle = '#f1f5f9';
-            sCtx.fillText('SALA BLOQUEADA', 128, 80);
-            sCtx.font = '12px Inter, sans-serif';
-            sCtx.fillStyle = '#94a3b8';
-            sCtx.fillText('Completá la sala anterior', 128, 105);
-            const signTex = new THREE.CanvasTexture(signCanvas);
-            const sign = new THREE.Mesh(
-                new THREE.PlaneGeometry(1.4, 0.7),
-                new THREE.MeshBasicMaterial({ map: signTex, transparent: true, depthWrite: false })
-            );
-            sign.position.set(0, 0.3, 0.09);
-            door.add(sign);
-            const signBack = sign.clone();
-            signBack.rotation.y = Math.PI;
-            signBack.position.z = -0.09;
-            door.add(signBack);
-        }
+    // Las salas ya no se bloquean: todas las puertas quedan abiertas
+    public getDoorBarriers(): THREE.Mesh[] {
+        return [];
     }
 
-    public getDoorBarriers(): THREE.Mesh[] {
-        return this.doorBarriers;
+    /** Pantalla, paneles y placa de cada sala (para interacción y video) */
+    public getSalaParts(): SalaParts[] {
+        return this.salaParts;
     }
 
     public getMesh(): THREE.Group {

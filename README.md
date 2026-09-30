@@ -2,59 +2,46 @@
 
 Un museo educativo 3D de exploración en primera persona sobre las transformaciones de la energía, desarrollado íntegramente en el navegador con **Three.js**, **TypeScript** y **Vite**.
 
-La ambientación imita un museo real: hall central con piso de piedra y lucernario, salas cerradas con cielorraso, piso de parquet, paredes pintadas, rieles de iluminación, bancos, rótulos sobre cada puerta, cartelas de sala y etiquetas en los plintos. Incluye un **sistema de progresión por salas** y un **robot Mel-Bot guía** que acompaña al visitante.
+El museo tiene **10 salas, una por grupo**: 4 de **7mo A** (ala oeste) y 6 de **7mo B** (salas 5 a 10). La ambientación imita un museo real: hall central con piso de piedra y lucernario, salas cerradas con cielorraso, piso de parquet, paredes pintadas, rieles de iluminación y bancos. Un **robot Mel-Bot guía** acompaña al visitante.
+
+Cada sala tiene:
+- **Cartel sobre la puerta** con el nombre del experimento, el curso y el grupo.
+- **Placa de bronce al costado de la puerta** con los integrantes.
+- **Simulación en el centro** (por ahora, una vitrina "Simulación en preparación"; se arma a partir de fotos del experimento).
+- **Cuatro paneles "Cómo investigamos"**: pregunta e hipótesis, materiales, procedimiento, resultados y conclusión. Con [E] se leen completos en pantalla grande.
+- **Pantalla de video** en el muro del fondo: [E] reproduce/pausa en la pared y [R] lo abre en grande con volumen y pantalla completa. Mientras suena, los efectos del museo se silencian.
 
 ---
 
-## 🎨 Cada grupo caracteriza su sala
+## 🎨 Cómo personalizar una sala
 
-Cada una de las 7 salas pertenece a un grupo de 7mo. Para personalizarla, **editá solo el bloque de tu grupo** en [`app/src/salas.config.ts`](app/src/salas.config.ts):
+Todo se edita en [`app/src/salas.config.ts`](app/src/salas.config.ts). Cada grupo toca **solo su bloque**:
 
 | Campo | Qué cambia en el museo |
 |---|---|
-| `grupo` | Nombre del grupo en el rótulo de la puerta, la cartela y la etiqueta |
-| `integrantes` | Lista de nombres en la cartela de la sala |
-| `titulo` | Nombre de la sala en carteles, mapa, misiones y pantalla de inicio |
-| `transformacion` | La transformación de energía (ej: `Química → Eléctrica`) |
-| `icono` | Emoji de la sala |
-| `texto` | Texto de la cartela de pared (2 a 4 oraciones) |
-| `colorPared` | Color con el que se pintan las paredes de la sala |
-| `colorAcento` | Color de detalles (subtítulos y líneas) |
+| `curso` / `grupo` | Cartel de la puerta, placa, mapa y diario |
+| `integrantes` | Placa al costado de la puerta |
+| `experimento` | Cartel sobre la puerta, título del muro, mapa y misiones |
+| `transformacion` | Subtítulo (ej: `Química → Eléctrica`) |
+| `icono` | Emoji del experimento |
+| `investigacion` | Los 4 paneles y la ventana "Cómo investigamos" |
+| `video` | `'videos/sala-01.mp4'` (archivo en `app/public/videos/`) o un enlace de YouTube |
+| `simulacion` | `'pendiente'` mientras se arma la simulación 3D |
+| `colorPared` / `colorAcento` | Pintura de la sala y detalles |
 
-El nombre del museo se cambia en `NOMBRE_MUSEO`, en el mismo archivo.
+Instrucciones para los videos: [`app/public/videos/LEEME.txt`](app/public/videos/LEEME.txt).
 
 ---
 
-## 🚀 Características Principales
+## 🚀 Recorrido y controles
 
-### 🔬 1. Estaciones Científicas Interactivas con Física y Química Real
-- **🥔 Pila Electroquímica de 4 Papas en Serie**:
-  - Reacción redox real de zinc (ánodo) y cobre (cátodo).
-  - Circuito serie que suma **~1.96V** reales para superar la barrera de conducción del LED.
-  - Multímetro digital en diagonal frontal con pantalla LCD retroiluminada y sondas roja/negra con pinzas cocodrilo realistas.
-  - Simulación de flujo de electrones a lo largo del cableado.
-- **🌈 Banco Óptico y Prisma Flint de Alta Refracción**:
-  - Prisma equilátero de cristal óptico de gran escala sobre etapa goniométrica micrométrica.
-  - Colimador láser industrial a la izquierda y pantalla esmerilada de laboratorio a la derecha.
-  - Descomposición espectral continua con colores vivos y saturados (Rojo, Naranja, Amarillo, Verde, Cian, Azul, Violeta) sin sobreexposición ni blanqueo.
-  - Modos alternables con **[E]**: Luz Blanca, Láser Verde (532 nm), Láser Rojo (650 nm) y Láser Apagado.
-- **⚖️ Cuna de Newton y Conservación del Momento**:
-  - Simulación de choques elásticos y conservación de $p = m \cdot v$ y $E_k = \frac{1}{2} m v^2$.
-  - 4 modos mecánicos alternables con **[E]**: 1 Esfera, 2 Esferas simétricas, Péndulo sincrónico y Caos doble.
-  - Sonido de impacto cinético espacializado según la cercanía del jugador.
-
-### 🎮 2. Interacción Desacoplada y Ergonomía Libre de Frustración
-- **Doble canal de interacción**:
-  - ⚡ **[E] Probar Experimento**: Manipular libremente la física, el circuito o la luz sin exámenes ni límites.
-  - 📝 **[R] Responder Desafío (+100 XP)**: Activar la trivia pedagógica con diseño neón dorado pulsante cuando el alumno se sienta listo.
-- **Atajos ergonómicos**: Opciones [A], [B], [C] o teclas [1], [2], [3] con retroalimentación instantánea, partículas de dopamina y sonido procedural.
-- **Liberación automática del mouse**: Al abrir cualquier ventana (Quiz, Diario del Científico, Victoria), el cursor se libera instantáneamente sin requerir pulsar `Escape`.
-- **Detección inteligente de controles**: Los joysticks y botones táctiles solo aparecen en dispositivos táctiles móviles; en PC con mouse y teclado la pantalla permanece limpia.
-
-### 🧑‍🔬 3. Personalización y Guía Inteligente
-- Registro de nombre del alumno en la pantalla de bienvenida.
-- **Mel-Bot**: Asistente robótico que acompaña al estudiante por el museo, saludándolo por su nombre y brindándole datos curiosos sobre cada experimento.
-- **Diario de Campo Científico [J]**: Cuaderno de notas con fórmulas, historia científica (Newton 1666, Volta 1800) y explicaciones paso a paso.
+- **Moverse**: WASD o flechas (Shift para correr). En celular, joystick y arrastre para mirar.
+- **[E]**: interactuar con lo que mirás (simulación, video, paneles, placa, Mel-Bot).
+- **[R]**: ver más (investigación completa o video en grande; con Mel-Bot, pedir guía).
+- **[J]**: Diario de la visita, con la investigación de las 10 salas.
+- **Misiones**: una sala queda "visitada" al ver su video o leer su investigación. Al completar las 10 hay celebración final.
+- **Galería especial** al fondo del hall: prisma de Newton.
+- Los joysticks y botones táctiles solo aparecen en celulares y tablets.
 
 ---
 

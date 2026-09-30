@@ -135,12 +135,8 @@
       </div>
       <canvas id="minimapCanvas" width="180" height="180"></canvas>
       <div class="map-legend" style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 4px; font-size: 10px; margin-top: 6px;">
-        <span class="leg-item"><i style="background:#4ade80;"></i> Papa</span>
-        <span class="leg-item"><i style="background:#38bdf8;"></i> Tesla</span>
-        <span class="leg-item"><i style="background:#00f0ff;"></i> Eólica</span>
-        <span class="leg-item"><i style="background:#fde047;"></i> Solar</span>
-        <span class="leg-item"><i style="background:#c084fc;"></i> Estática</span>
-        <span class="leg-item"><i style="background:#f59e0b;"></i> Newton</span>
+        <span class="leg-item"><i style="background:#c9a86a;"></i> Sala</span>
+        <span class="leg-item"><i style="background:#4ade80;"></i> Visitada</span>
       </div>
     </div>
 
@@ -251,21 +247,11 @@
       <div class="glass-pill xp-badge" style="margin-bottom: 12px; font-size: 13px;">⭐ EXPEDICIÓN 100% COMPLETADA</div>
       <h1 id="victory-title" style="color: #ffffff; font-size: 24px; font-weight: 800; margin-bottom: 10px;">¡FELICITACIONES, CIENTÍFICO DE ÉLITE!</h1>
       <p style="color: var(--text-muted); font-size: 13px; line-height: 1.6; margin-bottom: 20px;">
-        Dominaste las transformaciones de la energía en el museo: la reacción redox de la <b>Pila de Papa</b>, el plasma en la <b>Bobina de Tesla</b>, la inducción eólica del <b>Aerogenerador</b>, los fotones del <b>Panel Solar</b>, la electrostática del <b>Van de Graaff</b>, los choques elásticos en la <b>Cuna de Newton</b> y la inducción con manivela del <b>Dínamo Manual</b>.
+        Recorriste las 10 salas del museo: los experimentos de los 4 grupos de <b>7mo A</b> y los 6 grupos de <b>7mo B</b> sobre las transformaciones de la energía.
       </p>
 
-      <div style="display: flex; justify-content: center; gap: 8px; margin-bottom: 24px; flex-wrap: wrap;">
-        <div class="glass-pill" style="border-color: #4ade80; color: #bbf7d0;">🥔 Medalla Química Redox</div>
-        <div class="glass-pill" style="border-color: #38bdf8; color: #bae6fd;">⚡ Medalla de Tesla</div>
-        <div class="glass-pill" style="border-color: #00f0ff; color: #cffafe;">🌬️ Medalla Eólica Faraday</div>
-        <div class="glass-pill" style="border-color: #facc15; color: #fef08a;">☀️ Medalla Solar Fotovoltaica</div>
-        <div class="glass-pill" style="border-color: #c084fc; color: #e9d5ff;">⚡ Medalla Van de Graaff</div>
-        <div class="glass-pill" style="border-color: #f97316; color: #ffedd5;">⚖️ Medalla Choque Elástico</div>
-        <div class="glass-pill" style="border-color: #fb923c; color: #ffedd5;">⚙️ Medalla del Dínamo</div>
-      </div>
-
       <div class="glass-pill rank-badge" style="font-size: 13px; padding: 8px 20px; margin-bottom: 24px; background: rgba(0, 240, 255, 0.15); display: inline-flex;">
-        RANGO MÁXIMO ALCANZADO: GRAN MAESTRO DE LA ENERGÍA ⭐ 700 XP
+        RANGO MÁXIMO ALCANZADO: GRAN MAESTRO DE LA ENERGÍA ⭐ 1000 XP
       </div>
 
       <div>
@@ -282,162 +268,27 @@
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
         <div style="display: flex; align-items: center; gap: 8px;">
           <span style="font-size: 24px;">📖</span>
-          <h2 style="font-size: 20px; font-weight: 800; color: #ffffff;">DIARIO DEL CIENTÍFICO</h2>
+          <h2 style="font-size: 20px; font-weight: 800; color: #ffffff;">DIARIO DE LA VISITA</h2>
         </div>
         <button id="journal-close-btn" class="glass-pill" style="cursor: pointer;">✕ Cerrar <span class="pc-only">[J]</span></button>
       </div>
 
-      <div style="display: flex; gap: 6px; margin-bottom: 18px; flex-wrap: wrap;">
-        <button class="glass-pill journal-tab active" data-tab="tab-potato" style="cursor: pointer;">🥔 Pila de Papa</button>
-        <button class="glass-pill journal-tab" data-tab="tab-tesla" style="cursor: pointer;">⚡ Bobina de Tesla</button>
-        <button class="glass-pill journal-tab" data-tab="tab-wind" style="cursor: pointer;">🌬️ Aerogenerador</button>
-        <button class="glass-pill journal-tab" data-tab="tab-solar" style="cursor: pointer;">☀️ Panel Solar</button>
-        <button class="glass-pill journal-tab" data-tab="tab-vande" style="cursor: pointer;">⚡ Van de Graaff</button>
-        <button class="glass-pill journal-tab" data-tab="tab-newton" style="cursor: pointer;">⚖️ Cuna de Newton</button>
-        <button class="glass-pill journal-tab" data-tab="tab-dynamo" style="cursor: pointer;">⚙️ Dínamo Manual</button>
-        <button class="glass-pill journal-tab" data-tab="tab-optics" style="cursor: pointer;">🌈 Galería Óptica</button>
-        <button class="glass-pill journal-tab" data-tab="tab-secrets" style="cursor: pointer; border-color: rgba(253, 224, 71, 0.4); color: #fde047;">🔮 Secretos de Energía</button>
-      </div>
+      <div id="journal-tabs" style="display: flex; gap: 6px; margin-bottom: 18px; flex-wrap: wrap;"></div>
+      <div id="journal-content"></div>
+    </div>
+  </div>
 
-      <!-- Tab 1: Papa -->
-      <div class="journal-content-tab" id="tab-potato">
-        <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
-          <span class="pill-concept-label">🔋 JUGOS ÁCIDOS Y ELECTRONES EN MOVIMIENTO</span>
-          <p>
-            El jugo natural de la papa contiene un líquido ácido. Al clavar una tira de <b>Zinc</b> y otra de <b>Cobre</b>, el jugo despierta y empuja a los electrones para que salgan corriendo por el cable desde el zinc hacia el cobre, como chicos saliendo al recreo.
-          </p>
+  <!-- Modal de Sala: investigación completa o video en grande -->
+  <div id="sala-modal" class="modal-overlay hidden" style="z-index: 190;" role="dialog" aria-modal="true" aria-labelledby="sala-modal-title">
+    <div class="panel sala-modal-card">
+      <div class="sala-modal-head">
+        <div>
+          <div id="sala-modal-kicker" class="sala-modal-kicker"></div>
+          <h2 id="sala-modal-title"></h2>
         </div>
-        <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
-          <span class="pill-concept-label">⚡ DOS PAPAS EN FILA SUMAN FUERZA (~1.94V)</span>
-          <p>
-            Una sola papa da un empujoncito de 0.9 Voltios, pero la lamparita LED verde necesita casi 2 Voltios para prender. Por eso conectamos <b>dos papas en fila con un cable</b>: ¡sus fuerzas se suman llegando a <b>~1.94V</b> y encienden la luz verde!
-          </p>
-        </div>
+        <button id="sala-modal-close" class="glass-pill" style="cursor: pointer;">✕ Cerrar <span class="pc-only">[Esc]</span></button>
       </div>
-
-      <!-- Tab 2: Tesla -->
-      <div class="journal-content-tab hidden" id="tab-tesla">
-        <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
-          <span class="pill-concept-label">⚡ ELECTRICIDAD INVISIBLE EN EL AIRE</span>
-          <p>
-            <b>Nikola Tesla</b> descubrió en 1891 cómo enviar energía sin cables. Esta bobina transforma la electricidad en ondas invisibles que viajan por el aire y despiertan el gas dentro del tubo fluorescente haciéndolo brillar flotando en el aire.
-          </p>
-        </div>
-        <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
-          <span class="pill-concept-label">🔮 RELÁMPAGOS MINIATURA Y PLASMA</span>
-          <p>
-            Cuando el voltaje es altísimo, la electricidad atraviesa el aire y crea caminos de fuego violeta llamados <b>plasma</b>. ¡Es el mismo fenómeno de los relámpagos que caen del cielo en una noche de tormenta!
-          </p>
-        </div>
-      </div>
-
-      <!-- Tab 3: Aerogenerador -->
-      <div class="journal-content-tab hidden" id="tab-wind">
-        <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
-          <span class="pill-concept-label">🌬️ EL VIENTO HACE GIRAR IMANES</span>
-          <p>
-            El viento empuja las aspas gigantes haciéndolas girar. Ese movimiento hace rotar <b>imanes de neodimio</b> dentro de bobinas de alambre de cobre. ¡Al moverse los imanes, empujan a millones de electrones por los cables para crear electricidad limpia!
-          </p>
-        </div>
-        <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
-          <span class="pill-concept-label">🏙️ LUZ LIMPIA PARA LA CIUDAD</span>
-          <p>
-            Esta energía no produce humo ni contamina el planeta. Cuando el molino gira rápido, el voltímetro marca <b>12 Voltios</b> e ilumina al instante las casas y faroles de la maqueta de la ciudad.
-          </p>
-        </div>
-      </div>
-
-      <!-- Tab 4: Panel Solar -->
-      <div class="journal-content-tab hidden" id="tab-solar">
-        <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
-          <span class="pill-concept-label">☀️ PAQUETITOS DE LUZ LLAMADOS FOTONES</span>
-          <p>
-            La luz del sol viaja por el espacio en forma de paquetitos de energía diminutos llamados <b>fotones</b>. Cuando chocan contra la placa azul de silicio, golpean a los electrones como pelotitas de pool y los hacen correr hacia el motor.
-          </p>
-        </div>
-        <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
-          <span class="pill-concept-label">🚁 DE LUZ SOLAR A MOVIMIENTO DE AVIÓN</span>
-          <p>
-            Esa corriente de electrones viaja directamente al motor del avioncito. Mientras la luz del foco apunte derecho al panel, la hélice gira a toda velocidad haciendo zumbar el aire.
-          </p>
-        </div>
-      </div>
-
-      <!-- Tab 5: Van de Graaff -->
-      <div class="journal-content-tab hidden" id="tab-vande">
-        <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
-          <span class="pill-concept-label">⚡ PELOS DE PUNTA Y FRICCIÓN</span>
-          <p>
-            ¿Alguna vez frotaste un globo en tu buzo de lana y se te pararon los pelos? El motor hace girar una cinta de goma que junta cargas eléctricas por fricción y las bombea hasta la gran esfera plateada.
-          </p>
-        </div>
-        <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
-          <span class="pill-concept-label">💥 ¡150.000 VOLTIOS Y CINTAS VOLADORAS!</span>
-          <p>
-            Todas las tiras de colores se llenan de la misma carga eléctrica (+). Como las cargas iguales se rechazan entre sí con fuerza como dos imanes del mismo polo, ¡las tiras flotan y se abren en el aire desafiando la gravedad!
-          </p>
-        </div>
-      </div>
-
-      <!-- Tab 6: Newton -->
-      <div class="journal-content-tab hidden" id="tab-newton">
-        <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
-          <span class="pill-concept-label">⚖️ LA ENERGÍA VIAJA COMO UNA OLA INVISIBLE</span>
-          <p>
-            <b>Isaac Newton</b> demostró que la energía nunca desaparece, solo viaja de un cuerpo a otro. Si levantás y soltás 2 bolas de acero, el golpe viaja zumbando a través de las del medio sin moverlas, y hace saltar a exactamente 2 bolas del otro lado.
-          </p>
-        </div>
-        <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
-          <span class="pill-concept-label">🔄 NADA SE PIERDE, TODO SE TRANSFORMA</span>
-          <p>
-            El golpe viaja como una onda invisible de acero a acero. La cantidad de movimiento y energía que entra por la izquierda es exactamente la misma que sale por la derecha.
-          </p>
-        </div>
-      </div>
-
-      <!-- Tab: Dínamo Manual -->
-      <div class="journal-content-tab hidden" id="tab-dynamo">
-        <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
-          <span class="pill-concept-label">⚙️ LA FUERZA DE TUS BRAZOS SE HACE LUZ</span>
-          <p>
-            Al girar la manivela, los engranajes transparentes multiplican <b>5 veces</b> tu velocidad de giro. Un rotor de cobre gira a toda marcha entre dos imanes permanentes y genera corriente eléctrica al instante.
-          </p>
-        </div>
-        <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
-          <span class="pill-concept-label">💡 EL FILAMENTO QUE BRILLA AL ROJO VIVO</span>
-          <p>
-            La electricidad viaja por los cables hacia la lámpara Edison. Dentro del vidrio, los electrones chocan contra un alambre finito de tungsteno, calentándolo a más de <b>2000°C</b> hasta emitir una hermosa luz dorada. ¡Cuanto más rápido girás, más brilla!
-          </p>
-        </div>
-      </div>
-
-      <!-- Tab: Óptica -->
-      <div class="journal-content-tab hidden" id="tab-optics">
-        <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
-          <span class="pill-concept-label">🌈 EL SECRETO DEL ARCOÍRIS DE NEWTON</span>
-          <p>
-            La luz blanca del sol o de una lámpara no es blanca de verdad: ¡tiene todos los colores del arcoíris mezclados! Al entrar al prisma de cristal triangular, cada color viaja a velocidad diferente y se separan en abanico mostrando rojo, verde, azul y violeta.
-          </p>
-        </div>
-        <div class="glass-pill pill-concept-box" style="margin-bottom: 12px;">
-          <span class="pill-concept-label">🎯 HAZ LÁSER DE COLOR PURO</span>
-          <p>
-            A diferencia de la luz blanca común, el láser emite una luz de un solo color puro. Al atravesar el cristal se dobla en línea recta pero no se separa en arcoíris porque ya es un color único.
-          </p>
-        </div>
-      </div>
-
-      <!-- Tab: Secretos Cuánticos de Energía -->
-      <div class="journal-content-tab hidden" id="tab-secrets">
-        <div id="secrets-empty-notice" class="glass-pill pill-concept-box" style="margin-bottom: 12px; text-align: center; padding: 24px;">
-          <span style="font-size: 32px; display: block; margin-bottom: 8px;">🔮</span>
-          <span class="pill-concept-label" style="color: #38bdf8;">ORBES CUÁNTICOS DE ENERGÍA</span>
-          <p style="margin-top: 8px; color: var(--text-muted);">
-            Hay <b>7 orbes flotantes de energía</b> escondidos en las salas del museo. Cada orbe recolectado otorga <b>+25 XP</b> y desbloquea una curiosidad científica exclusiva aquí en tu diario.
-          </p>
-        </div>
-        <div id="secrets-facts-container"></div>
-      </div>
+      <div id="sala-modal-body"></div>
     </div>
   </div>
 
@@ -470,8 +321,8 @@
   <div id="fullscreen-map-modal" class="modal-overlay hidden" style="z-index: 195;" role="dialog" aria-modal="true">
     <div class="panel map-modal-card" style="position: relative; width: 90vw; height: 90vh; max-width: 1000px; padding: 24px; display: flex; flex-direction: column;">
       <button id="map-close-btn" style="position: absolute; top: 16px; right: 16px; font-size: 24px; cursor: pointer; color: #94a3b8; background: none; border: none; font-weight: bold;">✕</button>
-      <h2 style="color: #ffffff; font-size: 24px; font-weight: 800; margin-bottom: 24px; text-align: center;">MAPA DEL MUSEO (LAYOUT LINEAL)</h2>
-      <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 16px; overflow-y: auto;">
+      <h2 style="color: #ffffff; font-size: 24px; font-weight: 800; margin-bottom: 24px; text-align: center;">MAPA DEL MUSEO</h2>
+      <div style="flex: 1; display: flex; flex-direction: column; justify-content: flex-start; gap: 16px; overflow-y: auto;">
         <div id="map-sala-list" style="display: flex; flex-direction: column; gap: 12px;"></div>
       </div>
     </div>
@@ -498,7 +349,7 @@
       <div class="start-logo">🏛️</div>
       <h1 data-museo-nombre="upper">MUSEO VIRTUAL 7MO</h1>
       <p class="start-desc">
-        Una expedición científica interactiva en 3D sobre las <b>TRANSFORMACIONES DE LA ENERGÍA</b>. Recorré las 7 salas, cada una preparada por un grupo de 7mo, recolectá los orbes cuánticos y poné a prueba tu conocimiento.
+        Una expedición científica interactiva en 3D sobre las <b>TRANSFORMACIONES DE LA ENERGÍA</b>. Recorré las 10 salas —4 de 7mo A y 6 de 7mo B—, mirá el video de cada experimento y descubrí cómo investigó cada grupo.
       </p>
 
       <div class="student-input-container" style="margin: 18px auto 22px auto; max-width: 360px; text-align: left;">

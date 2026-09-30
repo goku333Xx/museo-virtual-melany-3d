@@ -75,12 +75,16 @@ export class InteractionSystem {
                         this.lastIsDone = isDone;
 
                         const isMobile = window.innerWidth <= 768 || ('ontouchstart' in window && !window.matchMedia('(pointer: fine)').matches);
-                        const badgeText = isRobot ? found.badge : (isDone ? "✅ ¡Misión Cumplida! (Medalla Ganada)" : found.badge);
+                        const badgeText = isRobot ? found.badge : (isDone ? `✅ Sala visitada · ${found.badge}` : found.badge);
 
                         let actionEText: string;
                         let actionRText: string;
 
-                        if (isRobot) {
+                        const strip = (t: string) => t.replace(/\s*\[[ER]\]\s*/, ' ');
+                        if (found.actionE || found.actionR) {
+                            actionEText = isMobile ? strip(found.actionE ?? '') : (found.actionE ?? '');
+                            actionRText = isMobile ? strip(found.actionR ?? '') : (found.actionR ?? '');
+                        } else if (isRobot) {
                             actionEText = isMobile ? "💬 Hablar con Mel-Bot" : "💬 [E] Hablar con Mel-Bot";
                             actionRText = isMobile ? "🚀 Pedir Guía" : "🚀 [R] Pedir Guía";
                         } else {

@@ -90,7 +90,7 @@ Este documento establece las reglas y directrices inquebrantables que todo compo
 
 ### 5.2 Materiales de Museo Real
 * **Hall central:** piso de losas de piedra caliza, paredes blanco cálido, abierto al lucernario (se ve el cielo).
-* **Salas y galería:** cielorraso a 6 m, piso de parquet, plintos blancos mates, riel de iluminación con proyectores y un banco.
+* **Salas (10: 4 de 7mo A y 6 de 7mo B) y galería:** cielorraso a 6 m, piso de parquet, plintos blancos mates, riel de iluminación con proyectores y un banco.
 * **Pintura por grupo:** las paredes de cada sala usan el `colorPared` de `src/salas.config.ts`. Usar tonos de museo (apagados), nunca fluorescentes.
 * **Señalética:** rótulos en vinilo sobre las puertas, cartela de sala junto a la entrada y etiqueta en el frente del plinto. Todos se generan desde `salas.config.ts`; no escribir nombres de sala a mano en el código.
 
@@ -99,9 +99,13 @@ Este documento establece las reglas y directrices inquebrantables que todo compo
 ### 6.1 Indicador de Dirección por Sala
 * **Regla:** Toda sala DEBE tener flecha en el piso ("OBSERVÁ DESDE ACÁ") + placa de bronce en el frente del pedestal.
 
-### 6.2 Sistema de Puertas Progresivas
-* **Regla:** Las salas se desbloquean secuencialmente. Las puertas cerradas muestran cartel "🔒 SALA BLOQUEADA - Completá la sala anterior".
-* **Mel-Bot contextual:** Si el jugador se acerca a una puerta bloqueada, Mel-Bot le avisa cuál sala debe completar primero.
+### 6.2 Salas abiertas
+* **Regla:** Las 10 salas están siempre abiertas, como en un museo real. El progreso se mide por salas visitadas (ver el video o leer la investigación).
+
+### 6.3 Contenido obligatorio de cada sala
+* Cartel sobre la puerta (experimento, curso, grupo) y placa de integrantes al costado de la puerta, del lado del pasillo.
+* Simulación en el pedestal central, pantalla de video en el muro del fondo y 4 paneles "Cómo investigamos" en los muros laterales.
+* **Audio del video:** se reproduce sin espacializar, a volumen completo, y silencia los efectos del museo mientras suena. Se pausa al salir de la sala.
 
 ## 7. ESTÁNDARES DE MODELOS 3D
 
