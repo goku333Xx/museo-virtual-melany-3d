@@ -184,10 +184,37 @@ export const SALAS: SalaConfig[] = [
         curso: '7mo A',
         grupo: 'Grupo 4',
         integrantes: ["Agostina Bianca D'Amico Snaiderman", 'Martina Urrutia Vela', 'Santiago Ángel Antelo'],
-        experimento: 'Experimento del Grupo 4',
-        transformacion: 'Energía ? → Energía ?',
-        icono: '🔬',
-        investigacion: investigacionPendiente(),
+        experimento: 'Pila de limón',
+        transformacion: 'Química → Eléctrica',
+        icono: '🍋',
+        // Fuente: "Grupo 1.docx" (número de la consigna; en el museo es 7mo A · Grupo 4)
+        investigacion: {
+            marcoTeorico: [
+                {
+                    titulo: '¿Qué es una pila?',
+                    texto: 'Una pila es una unidad mas chica de una batería que almacena energía y la convierte en electricidad. Tiene dos extremos, llamados electrodos y un medio intermedio llamado electrolito. Produce electricidad mediante una reacción química que oxida el ánodo el cual libera electrones que fluyen a través de un circuito externo.'
+                },
+                {
+                    titulo: '¿Qué tiene el jugo de limón que permite que circule la corriente eléctrica?',
+                    texto: 'El jugo de limón conduce electricidad porque contiene ácido cítrico, un compuesto que, al disolverse en agua, se disocia en iones libres capaces de transportar carga eléctrica'
+                },
+                {
+                    titulo: '¿Para qué se usan dos metales distintos, como el zinc y el cobre?',
+                    texto: 'Se usan dos metales distintos para generar electricidad mediante una reacción electroquímica. El zinc actúa como ánodo (el electrodo donde ocurre la oxidación, es decir, donde una sustancia pierde electrones.) liberando electrones al ser oxidado mientras que el cobre actúa como cátodo, aceptando a los electrones y reduciéndose.'
+                },
+                {
+                    titulo: '¿Qué pasa con el voltaje cuando se conectan varias pilas en serie?',
+                    texto: 'La combinación de la conexión en paralelo con la conexión en serie, será una duplicación de la tensión y de la capacidad. Lo que resulta en un mejor rendimiento y mayor flexibilidad para adaptarse a las necesidades específicas de cada circuito.'
+                }
+            ],
+            // Todavía no están en el documento del grupo
+            pregunta: '',
+            hipotesis: '',
+            materiales: [],
+            procedimiento: [],
+            resultados: '',
+            conclusion: ''
+        },
         video: '',
         simulacion: 'pendiente',
         colorPared: '#8a6a3b',
