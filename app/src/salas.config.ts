@@ -191,7 +191,7 @@ export const SALAS: SalaConfig[] = [
         investigacion: {
             marcoTeorico: [
                 {
-                    titulo: '¿Qué es una pila?',
+                    titulo: '¿Qué es una pila y cómo produce electricidad?',
                     texto: 'Una pila es una unidad mas chica de una batería que almacena energía y la convierte en electricidad. Tiene dos extremos, llamados electrodos y un medio intermedio llamado electrolito. Produce electricidad mediante una reacción química que oxida el ánodo el cual libera electrones que fluyen a través de un circuito externo.'
                 },
                 {
@@ -207,11 +207,24 @@ export const SALAS: SalaConfig[] = [
                     texto: 'La combinación de la conexión en paralelo con la conexión en serie, será una duplicación de la tensión y de la capacidad. Lo que resulta en un mejor rendimiento y mayor flexibilidad para adaptarse a las necesidades específicas de cada circuito.'
                 }
             ],
-            // Todavía no están en el documento del grupo
-            pregunta: '',
-            hipotesis: '',
-            materiales: [],
-            procedimiento: [],
+            pregunta: '¿Cuántos limones hacen falta para encender un LED?',
+            hipotesis: '', // Todavía no está en el documento del grupo
+            materiales: [
+                '4 limones',
+                '4 clavos galvanizados (o tornillos de zinc)',
+                '4 monedas de cobre o trozos de alambre de cobre',
+                '5 cables con pinzas cocodrilo',
+                '1 LED rojo',
+                '1 multímetro (si hay)',
+                'Cuchillo plástico'
+            ],
+            procedimiento: [
+                'Clavar en cada limón un clavo y una moneda, separados unos 2 cm.',
+                'Conectar los limones en serie (la moneda de uno con el clavo del siguiente) y probar encender el LED.',
+                'Repetir con 1, 2, 3 y 4 limones y registrar qué pasa.',
+                'Seguridad: no comer los limones usados.'
+            ],
+            // Todavía no los entregó el grupo (tabla de resultados y cadena de energía)
             resultados: '',
             conclusion: ''
         },
