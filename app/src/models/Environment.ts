@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { panelesInvestigacion, rutaPublica } from '../investigacion';
+import type { Seccion } from '../salas.config';
 import { SALAS, GALERIA, GALERIA_CENTRO, NOMBRE_MUSEO, SALA_PROFUNDIDAD, grupoSala, numeroSala, salaLayout } from '../salas.config';
 
 const WALL_HEIGHT = 6.0;
@@ -544,20 +546,22 @@ export class MuseumRoom {
         this.salaParts[i].screen = screen;
         this.salaParts[i].screenMat = screenMat;
 
-        // Paneles "Cómo investigamos": dos en cada muro lateral
+        // Paneles "Cómo investigamos": hasta 3 por muro lateral.
         // Recorrido: muro izquierdo (cerca → lejos) y luego muro derecho (lejos → cerca)
         const left = side < 0 ? { wallZ: zMax - 0.03, rotY: Math.PI } : { wallZ: zMin + 0.03, rotY: 0 };
         const right = side < 0 ? { wallZ: zMin + 0.03, rotY: 0 } : { wallZ: zMax - 0.03, rotY: Math.PI };
+        const grupos = panelesInvestigacion(i);
+        const slotsX: Record<number, number[]> = { 1: [12.6], 2: [9.3, 16.6], 3: [8.4, 12.6, 16.8] };
+        const nLeft = Math.ceil(grupos.length / 2);
+        const nRight = grupos.length - nLeft;
         const panelDefs = [
-            { ...left, x: side * 9.3, k: 0 },
-            { ...left, x: side * 16.6, k: 1 },
-            { ...right, x: side * 16.6, k: 2 },
-            { ...right, x: side * 9.3, k: 3 }
+            ...(slotsX[nLeft] ?? []).map((x, n) => ({ ...left, x: side * x, k: n })),
+            ...[...(slotsX[nRight] ?? [])].reverse().map((x, n) => ({ ...right, x: side * x, k: nLeft + n }))
         ];
         for (const p of panelDefs) {
             const panel = new THREE.Mesh(
                 new THREE.PlaneGeometry(2.6, 1.95),
-                new THREE.MeshBasicMaterial({ map: this.generatePanelTexture(i, p.k) })
+                new THREE.MeshBasicMaterial({ map: this.generatePanelTexture(i, p.k, grupos) })
             );
             panel.position.set(p.x, 1.75, p.wallZ);
             panel.rotation.y = p.rotY;
@@ -861,90 +865,102 @@ export class MuseumRoom {
         return tex;
     }
 
-    // Panel "Cómo investigamos" (k: 0 pregunta, 1 materiales, 2 procedimiento, 3 resultados)
-    private generatePanelTexture(i: number, k: number): THREE.CanvasTexture {
+    // Panel "Cómo investigamos": una o más secciones de la investigación del grupo.
+    // La letra se achica hasta que el texto entre; lo completo se lee con [E].
+    private generatePanelTexture(i: number, k: number, grupos: Seccion[][]): THREE.CanvasTexture {
         const sala = SALAS[i];
-        const inv = sala.investigacion;
+        const secciones = grupos[k];
         const W = 1040;
         const H = 780;
         const canvas = document.createElement('canvas');
         canvas.width = W;
         canvas.height = H;
         const ctx = canvas.getContext('2d')!;
-
-        ctx.fillStyle = '#f7f4ee';
-        ctx.fillRect(0, 0, W, H);
-        ctx.fillStyle = sala.colorPared;
-        ctx.fillRect(0, 0, W, 14);
-
-        const titles = ['La pregunta', 'Materiales', 'Procedimiento', 'Resultados y conclusión'];
-        const left = 60;
-        const maxW = W - 120;
-        ctx.textAlign = 'left';
-
-        ctx.font = '600 24px "Inter", system-ui, sans-serif';
-        ctx.fillStyle = this.darken(sala.colorAcento);
-        ctx.fillText(this.spaced(`CÓMO INVESTIGAMOS · ${k + 1} DE 4`), left, 74);
-        ctx.font = '500 58px Georgia, "Times New Roman", serif';
-        ctx.fillStyle = '#231f1c';
-        ctx.fillText(titles[k], left, 144);
-        ctx.fillStyle = '#cfc6b8';
-        ctx.fillRect(left, 170, 120, 2);
-
-        const bodyTop = 226;
-        const bottom = H - 84;
-        let y = bodyTop;
-        const para = (label: string | null, text: string) => {
-            if (label) {
-                ctx.font = '600 22px "Inter", system-ui, sans-serif';
-                ctx.fillStyle = '#7a6f64';
-                ctx.fillText(this.spaced(label.toUpperCase()), left, y);
-                y += 38;
-            }
-            ctx.font = '400 30px Georgia, "Times New Roman", serif';
-            ctx.fillStyle = '#3a342f';
-            for (const line of this.wrapText(ctx, text, maxW)) {
-                if (y > bottom) return;
-                ctx.fillText(line, left, y);
-                y += 42;
-            }
-            y += 18;
-        };
-        const list = (items: string[], numbered: boolean) => {
-            ctx.font = '400 30px Georgia, "Times New Roman", serif';
-            ctx.fillStyle = '#3a342f';
-            items.forEach((item, n) => {
-                const bullet = numbered ? `${n + 1}.` : '•';
-                const lines = this.wrapText(ctx, item, maxW - 50);
-                lines.forEach((line, li) => {
-                    if (y > bottom) return;
-                    if (li === 0) ctx.fillText(bullet, left, y);
-                    ctx.fillText(line, left + 50, y);
-                    y += 42;
-                });
-                y += 6;
-            });
-        };
-
-        if (k === 0) {
-            para(null, inv.pregunta);
-            para('Hipótesis', inv.hipotesis);
-        } else if (k === 1) {
-            list(inv.materiales, false);
-        } else if (k === 2) {
-            list(inv.procedimiento, true);
-        } else {
-            para('Resultados', inv.resultados);
-            para('Conclusión', inv.conclusion);
-        }
-
-        ctx.font = '500 22px "Inter", system-ui, sans-serif';
-        ctx.fillStyle = '#8a8076';
-        ctx.fillText('Tocá [E] para leer la investigación completa', left, H - 36);
-
         const tex = new THREE.CanvasTexture(canvas);
         tex.colorSpace = THREE.SRGBColorSpace;
         tex.anisotropy = 4;
+
+        const left = 60;
+        const imagen = secciones.find(s => s.imagen)?.imagen;
+        const imgBox = { x: W - 60 - 300, y: 34, w: 300, h: 190 };
+        const titleMaxW = imagen ? imgBox.x - left - 20 : W - 120;
+        const bodyTop = imagen ? imgBox.y + imgBox.h + 40 : 226;
+        const bottom = H - 80;
+        const maxW = W - 120;
+
+        // Simula (dry) o dibuja el cuerpo con un tamaño de letra; devuelve si entró todo
+        const body = (size: number, draw: boolean): boolean => {
+            const lh = Math.round(size * 1.38);
+            let y = bodyTop;
+            let fits = true;
+            const line = (txt: string, x: number) => {
+                if (y > bottom) { fits = false; return; }
+                if (draw) ctx.fillText(txt, x, y);
+                y += lh;
+            };
+            secciones.forEach((s, n) => {
+                if (n > 0) {
+                    y += Math.round(lh * 0.4);
+                    ctx.font = '600 22px "Inter", system-ui, sans-serif';
+                    ctx.fillStyle = '#7a6f64';
+                    line(this.spaced(s.titulo.toUpperCase()), left);
+                }
+                ctx.font = `400 ${size}px Georgia, "Times New Roman", serif`;
+                ctx.fillStyle = '#3a342f';
+                for (const p of (s.texto ?? '').split(/\n+/).filter(t => t.trim())) {
+                    for (const l of this.wrapText(ctx, p, maxW)) line(l, left);
+                    y += Math.round(lh * 0.3);
+                }
+                (s.lista ?? []).forEach((item, idx) => {
+                    const bullet = s.numerada ? `${idx + 1}.` : '•';
+                    this.wrapText(ctx, item, maxW - 44).forEach((l, li) => {
+                        if (li === 0 && draw && y <= bottom) ctx.fillText(bullet, left, y);
+                        line(l, left + 44);
+                    });
+                });
+            });
+            return fits;
+        };
+
+        const paint = () => {
+            ctx.fillStyle = '#f7f4ee';
+            ctx.fillRect(0, 0, W, H);
+            ctx.fillStyle = sala.colorPared;
+            ctx.fillRect(0, 0, W, 14);
+            ctx.textAlign = 'left';
+
+            ctx.font = '600 24px "Inter", system-ui, sans-serif';
+            ctx.fillStyle = this.darken(sala.colorAcento);
+            ctx.fillText(this.spaced(`CÓMO INVESTIGAMOS · ${k + 1} DE ${grupos.length}`), left, 74);
+            this.shrinkFont(ctx, secciones[0].titulo, 500, 58, 34, 'Georgia, "Times New Roman", serif', titleMaxW);
+            ctx.fillStyle = '#231f1c';
+            ctx.fillText(this.fitText(ctx, secciones[0].titulo, titleMaxW), left, 144);
+            ctx.fillStyle = '#cfc6b8';
+            ctx.fillRect(left, 170, 120, 2);
+
+            let size = 30;
+            while (size > 18 && !body(size, false)) size -= 1;
+            const complete = body(size, true);
+
+            ctx.font = '500 22px "Inter", system-ui, sans-serif';
+            ctx.fillStyle = '#8a8076';
+            ctx.fillText(complete ? 'Tocá [E] para leer la investigación completa' : '… Tocá [E] para leer el texto completo', left, H - 36);
+        };
+        paint();
+
+        if (imagen) {
+            const img = new Image();
+            img.onload = () => {
+                const r = Math.min(imgBox.w / img.width, imgBox.h / img.height);
+                const w = img.width * r;
+                const h = img.height * r;
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(imgBox.x, imgBox.y, imgBox.w, imgBox.h);
+                ctx.drawImage(img, imgBox.x + (imgBox.w - w) / 2, imgBox.y + (imgBox.h - h) / 2, w, h);
+                tex.needsUpdate = true;
+            };
+            img.src = rutaPublica(imagen);
+        }
         return tex;
     }
 

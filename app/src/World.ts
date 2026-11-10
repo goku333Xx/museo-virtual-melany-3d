@@ -4,6 +4,7 @@ import { OpticsExhibit } from './models/OpticsExhibit';
 import { RobotGuide } from './models/RobotGuide';
 import { crearSimulacion, type Simulacion } from './models/Simulaciones';
 import { SalaVideo } from './SalaVideo';
+import { investigacionHtml, panelesInvestigacion } from './investigacion';
 import { SoundSynthesizer } from './SoundSynthesizer';
 import { HUD } from './HUD';
 import type { QuizData } from './HUD';
@@ -90,18 +91,11 @@ export class World {
     /** Modal con la investigación completa del grupo */
     private abrirInvestigacion(i: number): void {
         const sala = SALAS[i];
-        const inv = sala.investigacion;
         const body = document.createElement('div');
         body.className = 'sala-investigacion';
-        const li = (items: string[]) => items.map(t => `<li>${esc(t)}</li>`).join('');
         body.innerHTML = `
             <p class="sala-inv-meta">${esc(sala.transformacion)}</p>
-            <section><h3>La pregunta</h3><p>${esc(inv.pregunta)}</p></section>
-            <section><h3>Hipótesis</h3><p>${esc(inv.hipotesis)}</p></section>
-            <section><h3>Materiales</h3><ul>${li(inv.materiales)}</ul></section>
-            <section><h3>Procedimiento</h3><ol>${li(inv.procedimiento)}</ol></section>
-            <section><h3>Resultados</h3><p>${esc(inv.resultados)}</p></section>
-            <section><h3>Conclusión</h3><p>${esc(inv.conclusion)}</p></section>
+            ${investigacionHtml(i)}
             <section class="sala-inv-integrantes"><h3>Integrantes · ${esc(grupoSala(i))}</h3><p>${sala.integrantes.map(esc).join(' · ')}</p></section>
         `;
         this.hud.openSalaModal(`${numeroSala(i)} · ${grupoSala(i)} · Cómo investigamos`, `${sala.icono} ${sala.experimento}`, body);
@@ -160,7 +154,7 @@ export class World {
             });
 
             // Paneles de investigación
-            const panelTitles = ['La pregunta', 'Materiales', 'Procedimiento', 'Resultados y conclusión'];
+            const panelTitles = panelesInvestigacion(i).map(g => g.map(s => s.titulo).join(' · '));
             parts[i].panels.forEach((panel, k) => {
                 this.interactables.push({
                     object: panel,

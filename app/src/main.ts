@@ -5,6 +5,7 @@ import { InteractionSystem } from './InteractionSystem';
 import { HUD } from './HUD';
 
 import { SoundSynthesizer } from './SoundSynthesizer';
+import { investigacionHtml } from './investigacion';
 import { SALAS, NOMBRE_MUSEO, GALERIA_CENTRO, grupoSala, numeroSala, salaLayout } from './salas.config';
 
 // --- TEXTOS DEL MUSEO Y DE CADA SALA (desde salas.config.ts) ---
@@ -51,18 +52,11 @@ if (journalTabs && journalContent) {
         `<button class="glass-pill journal-tab${i === 0 ? ' active' : ''}" data-tab="tab-sala-${i + 1}" style="cursor: pointer;">${escapeHtml(s.icono)} ${numeroSala(i)}</button>`
     ).join('');
     journalContent.innerHTML = SALAS.map((s, i) => {
-        const inv = s.investigacion;
-        const li = (xs: string[]) => xs.map(x => `<li>${escapeHtml(x)}</li>`).join('');
         return `<div class="journal-content-tab${i === 0 ? '' : ' hidden'}" id="tab-sala-${i + 1}"${i === 0 ? '' : ' style="display:none"'}>
             <div class="sala-investigacion">
                 <p class="sala-inv-meta">${numeroSala(i)} · ${escapeHtml(grupoSala(i))} · ${escapeHtml(s.transformacion)}</p>
                 <h2 style="margin: 0 0 12px;">${escapeHtml(s.icono)} ${escapeHtml(s.experimento)}</h2>
-                <section><h3>La pregunta</h3><p>${escapeHtml(inv.pregunta)}</p></section>
-                <section><h3>Hipótesis</h3><p>${escapeHtml(inv.hipotesis)}</p></section>
-                <section><h3>Materiales</h3><ul>${li(inv.materiales)}</ul></section>
-                <section><h3>Procedimiento</h3><ol>${li(inv.procedimiento)}</ol></section>
-                <section><h3>Resultados</h3><p>${escapeHtml(inv.resultados)}</p></section>
-                <section><h3>Conclusión</h3><p>${escapeHtml(inv.conclusion)}</p></section>
+                ${investigacionHtml(i)}
                 <section class="sala-inv-integrantes"><h3>Integrantes</h3><p>${s.integrantes.map(escapeHtml).join(' · ')}</p></section>
             </div></div>`;
     }).join('');
@@ -364,6 +358,9 @@ const onKeyDown = (event: KeyboardEvent) => {
             break;
         case 'KeyJ':
             hud.toggleJournal();
+            break;
+        case 'KeyM':
+            hud.togglePlano();
             break;
     }
 };

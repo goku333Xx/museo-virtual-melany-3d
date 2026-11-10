@@ -48,97 +48,24 @@
     
     <div id="door-blocked-toast" class="door-blocked-toast"></div>
 
-    <!-- Left / Center: Expedición Científica (Misiones del Museo) con XP y Rango integrados -->
-    <div class="panel mission-panel" id="mission-panel">
-      <div class="mission-header-bar">
-        <div class="mission-title-group">
-          <div class="eyebrow">📋 EXPEDICIÓN CIENTÍFICA</div>
-          <h2 class="mission-main-title">Misiones del Museo</h2>
+    <!-- Derecha: Plano del museo (ubicación, salas visitadas y progreso) -->
+    <div class="panel plano-panel" id="plano-panel" aria-label="Plano del museo">
+      <div class="plano-head">
+        <div>
+          <div class="plano-kicker">🗺️ PLANO DEL MUSEO</div>
+          <div class="plano-progress"><b id="plano-count">0 de 10</b> salas visitadas</div>
         </div>
-        <button id="mission-toggle-btn" class="glass-pill mission-counter-pill" aria-label="Progreso y alternar misiones">
-          <span id="mission-counter-badge">0/7</span>
-        </button>
+        <button id="plano-close" class="plano-close" aria-label="Cerrar plano" title="Cerrar plano [M]">✕</button>
       </div>
-
-      <!-- Stats unificadas de XP y Rango dentro de Expedición Científica -->
-      <div class="mission-stats-bar">
-        <div class="glass-pill xp-badge" id="score-text">⭐ 0 XP</div>
-        <div class="glass-pill rank-badge" id="rank-text">Nivel 1: Aprendiz</div>
-      </div>
-      
-      <div class="mission-body" id="mission-body">
-        <div class="mission-list">
-          <div class="task pending" id="mission-1">
-            <div class="dot">1</div>
-            <div class="task-info">
-              <span class="task-title">Pila de Papa</span>
-              <span class="task-status">Cerrá el circuito electroquímico (~1.94V)</span>
-            </div>
-          </div>
-
-          <div class="task pending" id="mission-2">
-            <div class="dot">2</div>
-            <div class="task-info">
-              <span class="task-title">Bobina de Tesla</span>
-              <span class="task-status">Transmití energía inalámbrica y encendé el tubo</span>
-            </div>
-          </div>
-
-          <div class="task pending" id="mission-3">
-            <div class="dot">3</div>
-            <div class="task-info">
-              <span class="task-title">Aerogenerador Faraday</span>
-              <span class="task-status">Generá energía eólica e iluminá la ciudad</span>
-            </div>
-          </div>
-
-          <div class="task pending" id="mission-4">
-            <div class="dot">4</div>
-            <div class="task-info">
-              <span class="task-title">Panel Solar Fotovoltaico</span>
-              <span class="task-status">Activá fotones y hacé girar la hélice</span>
-            </div>
-          </div>
-
-          <div class="task pending" id="mission-5">
-            <div class="dot">5</div>
-            <div class="task-info">
-              <span class="task-title">Generador Van de Graaff</span>
-              <span class="task-status">Acumulá 150.000V y hacé levitar las cintas</span>
-            </div>
-          </div>
-
-          <div class="task pending" id="mission-6">
-            <div class="dot">6</div>
-            <div class="task-info">
-              <span class="task-title">Cuna de Newton</span>
-              <span class="task-status">Probá la conservación de momento y choques</span>
-            </div>
-          </div>
-
-          <div class="task pending" id="mission-7">
-            <div class="dot">7</div>
-            <div class="task-info">
-              <span class="task-title">Dínamo Manual con Manivela</span>
-              <span class="task-status">Girá la manivela y encendé la lámpara Edison</span>
-            </div>
-          </div>
-        </div>
+      <div class="plano-bar"><span id="plano-bar-fill"></span></div>
+      <canvas id="minimapCanvas" width="220" height="300" aria-hidden="true"></canvas>
+      <div class="plano-here" id="plano-here">Usted está en el hall central</div>
+      <div class="plano-legend">
+        <span><i class="lg-here"></i> Usted está aquí</span>
+        <span><i class="lg-done">✓</i> Visitada</span>
       </div>
     </div>
-
-    <!-- Right: Squircle Minimap (Solo en PC) -->
-    <div class="panel map-panel pc-only" style="width: 210px;">
-      <div class="map-header">
-        <span class="glass-pill map-title">RADAR TÁCTICO 1:1</span>
-        <span class="live-dot"></span>
-      </div>
-      <canvas id="minimapCanvas" width="180" height="180"></canvas>
-      <div class="map-legend" style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 4px; font-size: 10px; margin-top: 6px;">
-        <span class="leg-item"><i style="background:#c9a86a;"></i> Sala</span>
-        <span class="leg-item"><i style="background:#4ade80;"></i> Visitada</span>
-      </div>
-    </div>
+    <button id="plano-open" class="glass-pill plano-open hidden" aria-label="Abrir plano del museo" title="Abrir plano [M]">🗺️ Plano · <span id="plano-open-count">0/10</span></button>
 
     <!-- Center Crosshair -->
     <div class="crosshair" id="crosshair"></div>
@@ -164,14 +91,9 @@
       <div class="card-pills-row bottom-row pc-only">
         <div class="card-actions-wrapper">
           <span class="glass-pill pill-action-e" id="card-action-e">⚡ [E] Interactuar</span>
-          <span class="glass-pill pill-action-r challenge-glow-pill" id="card-action-r">📝 [R] Responder Desafío (+100 XP)</span>
+          <span class="glass-pill pill-action-r challenge-glow-pill" id="card-action-r">📋 [R] Ver más</span>
         </div>
       </div>
-    </div>
-
-    <!-- Bottom Left: Room Location (Solo en PC) -->
-    <div class="panel location-panel pc-only" id="location-text">
-      <span class="glass-pill">📍 Pabellón Abierto de Ciencias · Vista al Cosmos</span>
     </div>
 
     <!-- Bottom Right: Controls Indicator (Solo en PC) -->
@@ -181,8 +103,9 @@
         <span class="ctrl-key">ESPACIO</span> Saltar &nbsp;·&nbsp; 
         <span class="ctrl-key">SHIFT</span> Correr<br>
         <span class="ctrl-key">E</span> Interactuar &nbsp;·&nbsp; 
-        <span class="ctrl-key">R</span> Responder Desafío &nbsp;·&nbsp; 
+        <span class="ctrl-key">R</span> Ver más &nbsp;·&nbsp; 
         <span class="ctrl-key">J</span> Diario &nbsp;·&nbsp;
+        <span class="ctrl-key">M</span> Plano &nbsp;·&nbsp;
         <span class="ctrl-key">ESC</span> Pausa
       </div>
     </div>
@@ -200,9 +123,9 @@
         <button id="touch-interact-btn" class="touch-action-btn interact-btn" aria-label="Interactuar con el experimento">
           <span>⚡</span> <span id="touch-interact-label">INTERACTUAR</span>
         </button>
-        <button id="touch-challenge-btn" class="touch-action-btn challenge-btn challenge-glow-pill" aria-label="Responder Desafío">
+        <button id="touch-challenge-btn" class="touch-action-btn challenge-btn challenge-glow-pill" aria-label="Ver más">
           <span>📝</span> 
-          <span id="touch-challenge-label">Responder Desafío</span>
+          <span id="touch-challenge-label">Ver más</span>
           <span class="touch-xp-chip">+100 XP</span>
         </button>
       </div>

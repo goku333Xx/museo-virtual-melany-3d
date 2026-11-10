@@ -40,7 +40,19 @@ export type TipoSimulacion =
     | 'pendiente'
     | 'papa' | 'tesla' | 'eolico' | 'solar' | 'vandegraaff' | 'newton' | 'dinamo';
 
+/** Sección libre de la investigación (por ejemplo, del marco teórico) */
+export interface Seccion {
+    titulo: string;
+    texto?: string;         // Párrafos separados por saltos de línea (\n)
+    lista?: string[];
+    numerada?: boolean;
+    imagen?: string;        // Archivo dentro de app/public/ (ej: 'salas/sala-01/foto.jpg')
+}
+
 export interface Investigacion {
+    /** Opcional: lo que el grupo investigó antes del experimento */
+    marcoTeorico?: Seccion[];
+    // Los campos vacíos ('' o []) no se muestran en el museo
     pregunta: string;
     hipotesis: string;
     materiales: string[];
@@ -81,10 +93,62 @@ export const SALAS: SalaConfig[] = [
         curso: '7mo A',
         grupo: 'Grupo 1',
         integrantes: ['Catalina Romano Palmero', 'Agostina Leo', 'Renzo Luciano Monti', 'Santiago Rafael Rago'],
-        experimento: 'Experimento del Grupo 1',
-        transformacion: 'Energía ? → Energía ?',
-        icono: '🔬',
-        investigacion: investigacionPendiente(),
+        experimento: 'Electroimán',
+        transformacion: 'Eléctrica → Magnética → Mecánica',
+        icono: '🧲',
+        // Fuente: electroiman.docx (investigación del grupo)
+        investigacion: {
+            marcoTeorico: [
+                {
+                    titulo: '¿Qué es un electroimán?',
+                    imagen: 'salas/sala-01/electroiman.jpg',
+                    texto: 'Un electroimán es un aparato/dispositivo que se comporta como un imán artificial y funciona gracias a la electricidad. Para eso, crea un campo magnético cuando circula una corriente eléctrica por un conductor. Por lo tanto, cuando la corriente eléctrica deja de circular, el campo magnético se elimina y el electroimán deja de actuar. Son muy útiles en máquinas, aparatos electrónicos y equipos industriales.\n' +
+                        'A diferencia de un imán convencional (común), este puede prenderse y apagarse, y su fuerza puede cambiar.'
+                },
+                {
+                    titulo: '¿Qué relación hay entre la electricidad y el magnetismo?',
+                    texto: 'La electricidad y el magnetismo son fenómenos separados pero interconectados asociados con la fuerza electromagnética. La relación es que la circulación de corrientes eléctricas puede originar efectos magnéticos. La electricidad puede producir magnetismo y el magnetismo puede producir electricidad. Ambos están relacionados con las cargas eléctricas. Las cargas eléctricas pueden producir campos eléctricos y cuando se mueven, también pueden producir campos magnéticos.\n' +
+                        'En 1820, el físico y médico Danes Hans y Christian Oersted observó que si se produce una corriente en un circuito eléctrico, se mueve el imán de una brújula que está en su proximidad. Gracias a ese hallazgo, se estableció una primera relación entre el magnetismo y la electricidad, que daría lugar más adelante a la rama de la física denominada electromagnetismo.\n' +
+                        'Excepto por el comportamiento debido a la fuerza de la gravedad, casi todos los acontecimientos en la vida diaria se derivan de la fuerza electromagnética. Es responsable de las interacciones entre los átomos y el flujo entre la materia y la energía.\n' +
+                        'La conclusión fundamental: la electricidad y el magnetismo no son fuerzas separadas, si no una única fuerza unificada llamada electromagnetismo.'
+                },
+                {
+                    titulo: '¿De qué depende la fuerza de un electroimán?',
+                    texto: 'La fuerza de los electroimanes dependen de la intensidad de la corriente eléctrica, el material del núcleo, el tamaño y la forma de la bobina, la distancia al objeto, la temperatura del cable y las vueltas del alambre, mientras más juntas y más vueltas mejor.'
+                },
+                {
+                    titulo: '¿Dónde se usan electroimanes en la vida cotidiana?',
+                    texto: 'Los electroimanes son fundamentales para la tecnología moderna. Si bien la mayoría de las personas nunca ven estos componentes directamente, los electroimanes operan en segundo plano para hacer posibles los dispositivos y la infraestructura de los que dependemos a diario. Algunos de estos ejemplos son:',
+                    lista: [
+                        'Grúas de chatarras: levantan piezas de acero o hierro y las sueltan al apagar la corriente.',
+                        'Timbres y cerraduras eléctricas: la corriente produce una fuerza que mueve una pieza.',
+                        'Motores eléctricos: los campos magnéticos ayudan a producir movimiento.',
+                        'Trenes de levitación magnética: usan fuerzas magnéticas para ayudar a sostener y mover el tren.',
+                        'Parlantes y auriculares: una bobina por la que circula corriente, interactúa con un campo magnético y hace vibrar una membrana que produce sonido.',
+                        'Equipos médicos: los equipos de resonancia magnética utilizan campos magnéticos muy intensos para obtener imágenes del interior del cuerpo.'
+                    ]
+                }
+            ],
+            pregunta: '¿Levanta más clips el electroimán si tiene más vueltas de cable?',
+            hipotesis: 'Si tiene más vueltas de cable, el electroimán va a levantar más clips porque retiene más energía que luego, al apagarse, tendrá una mayor cantidad de energía y tiempo que uno con menos vueltas de cables, para, levantar o hacer saltar más clips. Además, crea un campo magnético mucho más grande que uno con menor cantidad de vueltas de cable completadas',
+            materiales: [
+                '1 clavo grande de hierro (10 cm)',
+                '2 m de cable fino esmaltado o cable de teléfono pelado en las puntas',
+                '1 pila de 4,5 V (o 2 pilas AA con portapilas)',
+                'Cinta aisladora',
+                '1 caja de clips'
+            ],
+            procedimiento: [
+                'Enrollar el cable alrededor del clavo, dejando libres las dos puntas.',
+                'Conectar las puntas a la pila y acercar el clavo a los clips.',
+                'Probar con 10, 20 y 40 vueltas de cable y contar cuántos clips levanta en cada caso.',
+                'Desconectar la pila y observar qué pasa con los clips.',
+                'Seguridad: desconectar la pila entre prueba y prueba, porque el cable se calienta.'
+            ],
+            // Todavía no los entregó el grupo (tabla de resultados y cadena de energía)
+            resultados: '',
+            conclusion: ''
+        },
         video: '',
         simulacion: 'pendiente',
         colorPared: '#3f5e4b',

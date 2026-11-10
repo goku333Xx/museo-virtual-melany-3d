@@ -1,5 +1,5 @@
 import { SoundSynthesizer } from './SoundSynthesizer';
-import { SALAS, salaLayout, GALERIA_CENTRO } from './salas.config';
+import { SALAS, salaLayout } from './salas.config';
 
 const TOTAL_SALAS = SALAS.length;
 
@@ -14,8 +14,8 @@ export interface QuizData {
 
 export class HUD {
     // HUD Elements
-    private scoreText: HTMLElement;
-    private rankText: HTMLElement;
+    private scoreText: HTMLElement | null;
+    private rankText: HTMLElement | null;
     private progressText: HTMLElement | null;
     
     // Exhibit Card
@@ -112,12 +112,10 @@ export class HUD {
     private activeQuizOptions: HTMLButtonElement[] = [];
     private studentName: string = 'Científico';
 
-    private readonly roomWidth = 72;
-    private readonly roomDepth = 72;
 
     constructor() {
-        this.scoreText = document.getElementById('score-text') as HTMLElement;
-        this.rankText = document.getElementById('rank-text') as HTMLElement;
+        this.scoreText = document.getElementById('score-text');
+        this.rankText = document.getElementById('rank-text');
         this.progressText = document.getElementById('mission-progress-text');
 
         this.missionToggleBtn = document.getElementById('mission-toggle-btn') as HTMLButtonElement | null;
@@ -184,6 +182,7 @@ export class HUD {
 
         this.setupEventListeners();
         this.updateMissionPanel();
+        this.setupPlano();
     }
 
     private setupEventListeners() {
@@ -770,18 +769,18 @@ export class HUD {
 
     public addXP(amount: number) {
         this.xp += amount;
-        this.scoreText.innerText = `⭐ ${this.xp} XP`;
+        if (this.scoreText) this.scoreText.innerText = `⭐ ${this.xp} XP`;
 
         if (this.xp >= 1000) {
-            this.rankText.innerText = 'Nivel 5: ¡Gran Maestro de la Energía!';
+            if (this.rankText) this.rankText.innerText = 'Nivel 5: ¡Gran Maestro de la Energía!';
         } else if (this.xp >= 700) {
-            this.rankText.innerText = 'Nivel 4: Ingeniero Súper Renovable';
+            if (this.rankText) this.rankText.innerText = 'Nivel 4: Ingeniero Súper Renovable';
         } else if (this.xp >= 400) {
-            this.rankText.innerText = 'Nivel 3: Domador de Electrones';
+            if (this.rankText) this.rankText.innerText = 'Nivel 3: Domador de Electrones';
         } else if (this.xp >= 100) {
-            this.rankText.innerText = 'Nivel 2: Investigador Curioso';
+            if (this.rankText) this.rankText.innerText = 'Nivel 2: Investigador Curioso';
         } else {
-            this.rankText.innerText = 'Nivel 1: Aprendiz de la Energía';
+            if (this.rankText) this.rankText.innerText = 'Nivel 1: Aprendiz de la Energía';
         }
     }
 
@@ -810,6 +809,7 @@ export class HUD {
 
     private updateProgressText() {
         const count = this.completedMissions.size;
+        this.updatePlanoProgress();
         if (this.progressText) {
             this.progressText.innerText = count === TOTAL_SALAS 
                 ? '🏆 ¡EXPEDICIÓN COMPLETA! ¡Gran Maestro de la Energía!' 
@@ -1006,104 +1006,229 @@ export class HUD {
     }
 
     // --- SQUIRCLE MINIMAP (Optimizado 60+ FPS) ---
+    // --- PLANO DEL MUSEO (derecha): salas, "usted está aquí" y salas visitadas ---
+    private planoInit = false;
+    private planoLastRoom = '';
+
+    private setupPlano(): void {
+        if (this.planoInit) return;
+        this.planoInit = true;
+        const panel = document.getElementById('plano-panel');
+        const openBtn = document.getElementById('plano-open');
+        const closeBtn = document.getElementById('plano-close');
+        // En celulares arranca cerrado para no tapar la vista
+        let closed = window.innerWidth <= 768;
+        try {
+            const saved = localStorage.getItem('museo7mo.planoCerrado');
+            if (saved !== null) closed = saved === '1';
+        } catch { /* sin almacenamiento: usar el valor por defecto */ }
+
+        const apply = () => {
+            panel?.classList.toggle('hidden', closed);
+            openBtn?.classList.toggle('hidden', !closed);
+            try { localStorage.setItem('museo7mo.planoCerrado', closed ? '1' : '0'); } catch { /* ignorar */ }
+            if (!closed) this.forceRedraw();
+        };
+        this.togglePlano = () => { closed = !closed; apply(); };
+        closeBtn?.addEventListener('click', (e) => { e.stopPropagation(); closed = true; apply(); });
+        openBtn?.addEventListener('click', (e) => { e.stopPropagation(); closed = false; apply(); });
+        apply();
+        this.updatePlanoProgress();
+    }
+
+    /** Abre o cierra el plano (tecla [M]) */
+    public togglePlano: () => void = () => { /* se define en setupPlano */ };
+
+    private forceRedraw(): void {
+        this.lastMinimapTime = 0;
+        this.lastMinimapMissionsCount = -1;
+        this.redrawPlano();
+    }
+
+    private redrawPlano(): void {
+        const x = this.lastMinimapX === -9999 ? 0 : this.lastMinimapX;
+        const z = this.lastMinimapZ === -9999 ? 4.5 : this.lastMinimapZ;
+        const r = this.lastMinimapRot === -9999 ? 0 : this.lastMinimapRot;
+        this.lastMinimapX = -9999; // obliga a dibujar
+        this.updateMinimap(x, z, r);
+    }
+
+    private updatePlanoProgress(): void {
+        const count = this.completedMissions.size;
+        const countEl = document.getElementById('plano-count');
+        if (countEl) countEl.textContent = `${count} de ${TOTAL_SALAS}`;
+        const openCount = document.getElementById('plano-open-count');
+        if (openCount) openCount.textContent = `${count}/${TOTAL_SALAS}`;
+        const fill = document.getElementById('plano-bar-fill');
+        if (fill) fill.style.width = `${(count / TOTAL_SALAS) * 100}%`;
+        if (this.planoInit) this.forceRedraw();
+    }
+
+    /** Sala donde está el visitante: índice 0..9, 'galeria' o null (hall) */
+    private salaEn(x: number, z: number): number | 'galeria' | null {
+        if (z < -25.15) return 'galeria';
+        for (let i = 0; i < TOTAL_SALAS; i++) {
+            const l = salaLayout(i);
+            const ax = Math.abs(x);
+            if (Math.sign(x) === l.side && ax > 5.15 && ax < 22 && z > l.zMin && z < l.zMax) return i;
+        }
+        return null;
+    }
+
     public updateMinimap(playerX: number, playerZ: number, playerRotationY: number) {
         if (!this.ctx || !this.minimapCanvas) return;
-        // Evitar cálculos si el minimapa está oculto (móviles o resize)
-        if (this.minimapCanvas.offsetParent === null) return;
+        this.setupPlano();
+        if (this.minimapCanvas.offsetParent === null) return; // plano cerrado
 
         const now = performance.now();
         const moved = Math.abs(playerX - this.lastMinimapX) > 0.06 || Math.abs(playerZ - this.lastMinimapZ) > 0.06;
         const rotated = Math.abs(playerRotationY - this.lastMinimapRot) > 0.03;
         const missionsChanged = this.completedMissions.size !== this.lastMinimapMissionsCount;
-
-        // Si no hubo cambio y no pasaron al menos 800ms, omitir redibujado de canvas 2D
-        if (!missionsChanged && (!moved && !rotated) && (now - this.lastMinimapTime < 800)) return;
-        // Limitar frecuencia máxima de actualización a ~20 FPS (cada 50ms)
-        if (!missionsChanged && (now - this.lastMinimapTime < 50)) return;
-
+        if (!missionsChanged && !moved && !rotated && now - this.lastMinimapTime < 800) return;
+        if (!missionsChanged && now - this.lastMinimapTime < 50) return;
         this.lastMinimapTime = now;
         this.lastMinimapX = playerX;
         this.lastMinimapZ = playerZ;
         this.lastMinimapRot = playerRotationY;
         this.lastMinimapMissionsCount = this.completedMissions.size;
 
-        const width = this.minimapCanvas.width;
-        const height = this.minimapCanvas.height;
-
-        this.ctx.clearRect(0, 0, width, height);
-
-        // Fondo oscuro táctico
-        this.ctx.fillStyle = '#050c16';
-        this.ctx.fillRect(0, 0, width, height);
-
-        // Rejilla táctica
-        this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.08)';
-        this.ctx.lineWidth = 1;
-        const step = 20;
-        for (let x = 0; x <= width; x += step) {
-            this.ctx.beginPath(); this.ctx.moveTo(x, 0); this.ctx.lineTo(x, height); this.ctx.stroke();
+        // Lienzo nítido según la densidad de la pantalla
+        const cssW = this.minimapCanvas.clientWidth || 220;
+        const cssH = this.minimapCanvas.clientHeight || 300;
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        if (this.minimapCanvas.width !== Math.round(cssW * dpr) || this.minimapCanvas.height !== Math.round(cssH * dpr)) {
+            this.minimapCanvas.width = Math.round(cssW * dpr);
+            this.minimapCanvas.height = Math.round(cssH * dpr);
         }
-        for (let y = 0; y <= height; y += step) {
-            this.ctx.beginPath(); this.ctx.moveTo(0, y); this.ctx.lineTo(width, y); this.ctx.stroke();
-        }
+        const ctx = this.ctx;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-        // Límites del museo
-        this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.35)';
-        this.ctx.lineWidth = 1.5;
-        this.ctx.strokeRect(12, 12, width - 24, height - 24);
+        // Mundo visible: x -24..24, z -38..38 (norte = fondo del museo, arriba)
+        const s = Math.min(cssW / 48, cssH / 76);
+        const px = (x: number) => cssW / 2 + x * s;
+        const py = (z: number) => cssH / 2 + z * s;
+        const rect = (x0: number, z0: number, x1: number, z1: number): [number, number, number, number] =>
+            [px(Math.min(x0, x1)), py(Math.min(z0, z1)), Math.abs(x1 - x0) * s, Math.abs(z1 - z0) * s];
 
-        // Un punto por sala + galería especial
-        SALAS.forEach((s, i) => {
+        ctx.clearRect(0, 0, cssW, cssH);
+        ctx.fillStyle = '#0b1220';
+        ctx.fillRect(0, 0, cssW, cssH);
+
+        const actual = this.salaEn(playerX, playerZ);
+
+        // Hall central (pasillo + recepción)
+        ctx.fillStyle = '#2a3242';
+        ctx.fillRect(...rect(-5, -25, 5, 36));
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '700 9px Inter, system-ui, sans-serif';
+        ctx.fillText('ENTRADA', px(0), py(31));
+
+        // Galería especial
+        ctx.fillStyle = actual === 'galeria' ? '#4a3f2a' : '#262b38';
+        ctx.fillRect(...rect(-23, -36.5, 23, -25.15));
+        ctx.fillStyle = '#c9a86a';
+        ctx.fillText('GALERÍA ESPECIAL', px(0), py(-31));
+
+        // Salas
+        for (let i = 0; i < TOTAL_SALAS; i++) {
             const l = salaLayout(i);
-            this.drawExhibitDot(l.centerX, l.zc, s.colorAcento, this.completedMissions.has(i + 1));
-        });
-        this.drawExhibitDot(GALERIA_CENTRO.x, GALERIA_CENTRO.z, '#d946ef', true);
+            const sala = SALAS[i];
+            const done = this.completedMissions.has(i + 1);
+            const here = actual === i;
+            const [rx, ry, rw, rh] = rect(l.side * 5.3, l.zMin + 0.25, l.side * 22, l.zMax - 0.25);
 
-        // Jugador
-        const pX = ((playerX + this.roomWidth / 2) / this.roomWidth) * (width - 24) + 12;
-        const pZ = ((playerZ + this.roomDepth / 2) / this.roomDepth) * (height - 24) + 12;
+            ctx.globalAlpha = here ? 1 : 0.75;
+            ctx.fillStyle = sala.colorPared;
+            ctx.fillRect(rx, ry, rw, rh);
+            ctx.globalAlpha = 1;
+            ctx.lineWidth = here ? 2.5 : 1;
+            ctx.strokeStyle = here ? '#fde047' : 'rgba(255,255,255,0.35)';
+            ctx.strokeRect(rx + 0.5, ry + 0.5, rw - 1, rh - 1);
 
-        const clampedX = Math.max(16, Math.min(width - 16, pX));
-        const clampedZ = Math.max(16, Math.min(height - 16, pZ));
+            // Puerta hacia el pasillo
+            ctx.fillStyle = '#2a3242';
+            ctx.fillRect(...rect(l.side * 5, l.zc - 1.6, l.side * 5.6, l.zc + 1.6));
 
-        this.ctx.save();
-        this.ctx.translate(clampedX, clampedZ);
-        this.ctx.rotate(-playerRotationY);
+            // Número de sala y curso
+            const cx = rx + rw / 2 - (done ? 7 : 0);
+            const cy = ry + rh / 2;
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '800 12px Inter, system-ui, sans-serif';
+            ctx.fillText(String(i + 1).padStart(2, '0'), cx, cy - 5);
+            ctx.font = '600 8px Inter, system-ui, sans-serif';
+            ctx.fillStyle = 'rgba(255,255,255,0.85)';
+            ctx.fillText(sala.curso.replace('7mo ', '7° '), cx, cy + 7);
 
-        this.ctx.fillStyle = '#ffffff';
-        this.ctx.shadowColor = '#00f0ff';
-        this.ctx.shadowBlur = 8;
-        this.ctx.beginPath();
-        this.ctx.moveTo(0, -7);
-        this.ctx.lineTo(-4, 5);
-        this.ctx.lineTo(0, 3);
-        this.ctx.lineTo(4, 5);
-        this.ctx.closePath();
-        this.ctx.fill();
+            // Tilde de sala visitada
+            if (done) {
+                const tx = rx + rw - 12;
+                ctx.beginPath();
+                ctx.arc(tx, cy, 7, 0, Math.PI * 2);
+                ctx.fillStyle = '#4ade80';
+                ctx.fill();
+                ctx.strokeStyle = '#052e16';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(tx - 3.5, cy);
+                ctx.lineTo(tx - 1, cy + 3);
+                ctx.lineTo(tx + 4, cy - 3);
+                ctx.stroke();
+            }
+        }
 
-        this.ctx.restore();
-    }
+        // Usted está aquí: flecha con la dirección en la que mira
+        const ux = Math.max(8, Math.min(cssW - 8, px(playerX)));
+        const uy = Math.max(8, Math.min(cssH - 8, py(playerZ)));
+        ctx.save();
+        ctx.translate(ux, uy);
+        ctx.beginPath();
+        ctx.arc(0, 0, 9, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(253, 224, 71, 0.25)';
+        ctx.fill();
+        ctx.rotate(-playerRotationY);
+        ctx.beginPath();
+        ctx.moveTo(0, -7);
+        ctx.lineTo(-5, 5);
+        ctx.lineTo(0, 2.5);
+        ctx.lineTo(5, 5);
+        ctx.closePath();
+        ctx.fillStyle = '#fde047';
+        ctx.strokeStyle = '#1f2937';
+        ctx.lineWidth = 1;
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
 
-    private drawExhibitDot(worldX: number, worldZ: number, color: string, isDone: boolean) {
-        if (!this.ctx) return;
-        const width = this.minimapCanvas.width;
-        const height = this.minimapCanvas.height;
+        // Cartel "Usted está aquí" (arriba de la flecha, o abajo si no entra)
+        const label = 'Usted está aquí';
+        ctx.font = '800 10px Inter, system-ui, sans-serif';
+        const lw = ctx.measureText(label).width + 12;
+        const lh = 17;
+        let ly = uy - 14 - lh;
+        if (ly < 2) ly = uy + 13;
+        const lx = Math.max(2, Math.min(cssW - lw - 2, ux - lw / 2));
+        ctx.fillStyle = '#fde047';
+        ctx.beginPath();
+        ctx.roundRect(lx, ly, lw, lh, 6);
+        ctx.fill();
+        ctx.fillStyle = '#1f2937';
+        ctx.fillText(label, lx + lw / 2, ly + lh / 2 + 0.5);
 
-        const mX = ((worldX + this.roomWidth / 2) / this.roomWidth) * (width - 24) + 12;
-        const mZ = ((worldZ + this.roomDepth / 2) / this.roomDepth) * (height - 24) + 12;
-
-        this.ctx.save();
-        this.ctx.beginPath();
-        this.ctx.arc(mX, mZ, isDone ? 5 : 6, 0, Math.PI * 2);
-        this.ctx.fillStyle = isDone ? '#4ade80' : color;
-        this.ctx.shadowColor = isDone ? '#4ade80' : color;
-        this.ctx.shadowBlur = 10;
-        this.ctx.fill();
-
-        this.ctx.strokeStyle = '#ffffff';
-        this.ctx.lineWidth = 1;
-        this.ctx.stroke();
-        this.ctx.restore();
+        // Texto debajo del plano
+        const roomKey = actual === null ? 'hall' : String(actual);
+        if (roomKey !== this.planoLastRoom) {
+            this.planoLastRoom = roomKey;
+            const hereEl = document.getElementById('plano-here');
+            if (hereEl) {
+                hereEl.textContent = actual === null
+                    ? 'Usted está en el hall central'
+                    : actual === 'galeria'
+                        ? 'Usted está en la Galería especial'
+                        : `Usted está en la Sala ${String(actual + 1).padStart(2, '0')} · ${SALAS[actual].experimento}`;
+            }
+        }
     }
 
     public showDoorBlockedToast(message: string): void {
