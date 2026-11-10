@@ -6,7 +6,7 @@ import { HUD } from './HUD';
 
 import { SoundSynthesizer } from './SoundSynthesizer';
 import { investigacionHtml } from './investigacion';
-import { SALAS, NOMBRE_MUSEO, GALERIA_CENTRO, grupoSala, numeroSala, salaLayout } from './salas.config';
+import { SALAS, NOMBRE_MUSEO, grupoSala, numeroSala, salaLayout } from './salas.config';
 
 // --- TEXTOS DEL MUSEO Y DE CADA SALA (desde salas.config.ts) ---
 const escapeHtml = (s: string) => s.replace(/[&<>"']/g, ch => `&#${ch.charCodeAt(0)};`);
@@ -217,8 +217,7 @@ hud.onCloseModal = () => {
 // --- FÍSICAS DE ALTURA DINÁMICA & MESAS DE EXPERIMENTOS ---
 // Las mesas son de 2.4m x 2.4m, altura 1.2m
 const pedestals = [
-    ...SALAS.map((_s, i) => ({ x: salaLayout(i).centerX, z: salaLayout(i).zc })),
-    GALERIA_CENTRO
+    ...SALAS.map((_s, i) => ({ x: salaLayout(i).centerX, z: salaLayout(i).zc }))
 ].map(p => ({ minX: p.x - 1.2, maxX: p.x + 1.2, minZ: p.z - 1.2, maxZ: p.z + 1.2, height: 1.2 }));
 
 function getGroundHeight(x: number, z: number, currentCamY: number): number {

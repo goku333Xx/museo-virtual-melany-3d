@@ -1,11 +1,9 @@
 import * as THREE from 'three';
 import { MuseumRoom, type WallBox } from './models/Environment';
-import { OpticsExhibit } from './models/OpticsExhibit';
 import { RobotGuide } from './models/RobotGuide';
 import { crearSimulacion, type Simulacion } from './models/Simulaciones';
 import { SalaVideo } from './SalaVideo';
-import { investigacionHtml, panelesInvestigacion } from './investigacion';
-import { SoundSynthesizer } from './SoundSynthesizer';
+import { investigacionHtml, panelesInvestigacion, rutaPublica } from './investigacion';
 import { HUD } from './HUD';
 import type { QuizData } from './HUD';
 import { SALAS, GALERIA, GALERIA_CENTRO, nombreSala, numeroSala, grupoSala, salaLayout } from './salas.config';
@@ -39,7 +37,6 @@ export class World {
     private room!: MuseumRoom;
     private simulaciones: Simulacion[] = [];
     private videos: SalaVideo[] = [];
-    private optics!: OpticsExhibit;
     private robotGuide!: RobotGuide;
 
     private hud: HUD;
@@ -69,11 +66,6 @@ export class World {
             this.simulaciones.push(crearSimulacion(sala.simulacion, this.scene, l.centerX, l.zc, sala.experimento, sala.icono));
             this.videos.push(new SalaVideo(sala.video, parts[i], this.hud, sala.experimento, `${numeroSala(i)} · ${grupoSala(i)} · Video`));
         });
-
-        // Galería especial: prisma óptico
-        this.optics = new OpticsExhibit();
-        this.optics.getMesh().position.set(GALERIA_CENTRO.x, 1.2, GALERIA_CENTRO.z);
-        this.scene.add(this.optics.getMesh());
 
         // Mel-Bot en el hall
         this.robotGuide = new RobotGuide();
@@ -185,25 +177,37 @@ export class World {
             });
         });
 
-        // Galería especial: prisma óptico (fuera de las misiones)
-        const cycleOptics = () => {
-            const newMode = this.optics.cycleMode();
-            SoundSynthesizer.getInstance().playLaserCycle(newMode.id);
-            this.hud.setCardModePill(`LÁSER: ${newMode.name.toUpperCase()}`);
-        };
-        this.optics.getInteractables().forEach(mesh => {
+        // Galería fotográfica de trabajo: cada cuadro se ve en grande (fuera de las misiones)
+        this.room.getGaleriaFotos().forEach(({ mesh, foto }, k) => {
+            const ver = () => {
+                if (!foto) {
+                    this.hud.showAchievementToast('Foto próximamente', 'Este lugar de la galería todavía no tiene foto.', '📷');
+                    return;
+                }
+                const fig = document.createElement('figure');
+                fig.className = 'galeria-foto';
+                const img = document.createElement('img');
+                img.src = rutaPublica(foto.archivo);
+                img.alt = foto.epigrafe ?? `Foto ${k + 1}`;
+                fig.appendChild(img);
+                if (foto.epigrafe) {
+                    const cap = document.createElement('figcaption');
+                    cap.textContent = foto.epigrafe;
+                    fig.appendChild(cap);
+                }
+                this.hud.openSalaModal(`${GALERIA.titulo} · Foto ${k + 1}`, foto.epigrafe ?? GALERIA.titulo, fig);
+            };
             this.interactables.push({
                 object: mesh,
                 id: GALERIA_ID,
-                title: `Galería especial: ${GALERIA.titulo}`,
-                tag: '🌈 EL SECRETO DE LA LUZ',
-                description: 'Isaac Newton descubrió que la luz blanca tiene todos los colores mezclados. Al atravesar el prisma, cada color se desvía distinto y aparece el arcoíris.',
-                badge: '✨ Galería especial',
-                getModeText: () => `LÁSER: ${this.optics.getCurrentModeInfo().name.toUpperCase()}`,
-                actionE: '⚡ [E] Cambiar la luz',
-                actionR: '⚡ [R] Cambiar la luz',
-                onInteract: cycleOptics,
-                onChallenge: cycleOptics
+                title: foto?.epigrafe ?? (foto ? `Foto ${k + 1}` : 'Foto próximamente'),
+                tag: `${GALERIA.icono} GALERÍA FOTOGRÁFICA DE TRABAJO`,
+                description: foto ? 'Los chicos de 7mo trabajando en sus experimentos.' : 'Este lugar de la galería todavía no tiene foto.',
+                badge: '📷 Galería fotográfica',
+                actionE: foto ? '🔍 [E] Ver la foto en grande' : '📷 [E] Foto próximamente',
+                actionR: foto ? '🔍 [R] Ver la foto en grande' : '📷 [R] Foto próximamente',
+                onInteract: ver,
+                onChallenge: ver
             });
         });
 
@@ -249,10 +253,10 @@ export class World {
                 };
 
                 if (isAllCompleted) {
-                    speech = `🎉 ¡Felicitaciones, <b>${esc(name)}</b>! Recorriste las ${total} salas del museo.<br><br>¿Vamos a la <b>Galería especial</b> a ver el prisma de Newton? 🌈`;
+                    speech = `🎉 ¡Felicitaciones, <b>${esc(name)}</b>! Recorriste las ${total} salas del museo.<br><br>¿Vamos a la <b>Galería fotográfica</b> a ver las fotos de los chicos trabajando? 📷`;
                     btn1Label = 'Ir a la Galería';
                     btn1Action = () => {
-                        this.robotGuide.startGuiding(GALERIA_ID, 'Galería especial', new THREE.Vector3(0, 1.75, -32.5), true);
+                        this.robotGuide.startGuiding(GALERIA_ID, 'Galería fotográfica', new THREE.Vector3(0, 1.75, -30.5), true);
                     };
                 } else if (currentRoom && !this.hud.isMissionCompleted(currentRoom.id)) {
                     speech = `¡Estamos en la <b>${esc(currentRoom.name)}</b>, <b>${esc(name)}</b>! 🔬<br><br>Mirá el <b>video</b> en la pantalla del fondo y leé los <b>paneles</b> de las paredes para saber cómo investigó el grupo.`;
@@ -318,9 +322,6 @@ export class World {
             if (active) this.simulaciones[i].update(time, delta, playerPos);
         }
 
-        const galeriaIdx = SALAS.length;
-        this.optics.setSleep(activeRoomIdx !== galeriaIdx);
-        if (activeRoomIdx === galeriaIdx) this.optics.update(time);
 
         if (playerPos && this.robotGuide) this.robotGuide.update(time, playerPos, delta);
     }

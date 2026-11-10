@@ -356,13 +356,28 @@ export const SALAS: SalaConfig[] = [
     }
 ];
 
-// Galería especial del fondo (no pertenece a ningún grupo)
+// -----------------------------------------------------------------------------
+// GALERÍA FOTOGRÁFICA DE TRABAJO (al fondo del hall)
+// -----------------------------------------------------------------------------
+// Para agregar una foto:
+//   1. Copiarla a app/public/galeria/ (JPG o PNG, idealmente menos de 1 MB).
+//   2. Agregar una línea en "fotos" con el nombre del archivo y, si se quiere,
+//      un epígrafe corto. Ejemplo:
+//        { archivo: 'galeria/7moA-grupo1-electroiman.jpg', epigrafe: '7mo A · Grupo 1 armando el electroimán' },
+// Las fotos se cuelgan en orden: primero la pared del fondo y después la de la
+// entrada. Entran hasta 23. Mientras no haya fotos se ven marcos vacíos.
+export interface FotoGaleria {
+    archivo: string;
+    epigrafe?: string;
+}
+
 export const GALERIA = {
-    titulo: 'Prisma Óptico',
-    subtitulo: 'Galería especial · La luz blanca y sus colores',
-    icono: '🌈',
-    colorPared: '#2e2e38',
-    colorAcento: '#c9a86a'
+    titulo: 'Galería fotográfica de trabajo',
+    subtitulo: '7mo A y 7mo B investigando',
+    icono: '📷',
+    colorPared: '#4a4540',
+    colorAcento: '#c9a86a',
+    fotos: [] as FotoGaleria[]
 };
 
 /** "Sala 01", "Sala 02", ... */
@@ -401,4 +416,4 @@ export function salaLayout(i: number): SalaLayout {
     return { side, zc, zMin: zc - 4.85, zMax: zc + 4.85, centerX: side * 13.5 };
 }
 
-export const GALERIA_CENTRO = { x: 0, z: -35 };
+export const GALERIA_CENTRO = { x: 0, z: -30.5 }; // centro de la galería (luces y plano)

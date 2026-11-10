@@ -1129,7 +1129,7 @@ export class HUD {
         ctx.fillStyle = actual === 'galeria' ? '#4a3f2a' : '#262b38';
         ctx.fillRect(...rect(-23, -36.5, 23, -25.15));
         ctx.fillStyle = '#c9a86a';
-        ctx.fillText('GALERÍA ESPECIAL', px(0), py(-31));
+        ctx.fillText('GALERÍA FOTOGRÁFICA', px(0), py(-31));
 
         // Salas
         for (let i = 0; i < TOTAL_SALAS; i++) {
@@ -1225,7 +1225,7 @@ export class HUD {
                 hereEl.textContent = actual === null
                     ? 'Usted está en el hall central'
                     : actual === 'galeria'
-                        ? 'Usted está en la Galería especial'
+                        ? 'Usted está en la Galería fotográfica'
                         : `Usted está en la Sala ${String(actual + 1).padStart(2, '0')} · ${SALAS[actual].experimento}`;
             }
         }

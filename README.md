@@ -41,7 +41,7 @@ Instrucciones para los videos: [`app/public/videos/LEEME.txt`](app/public/videos
 - **[J]**: Diario de la visita, con la investigación de las 10 salas.
 - **[M]**: abre o cierra el plano del museo (arriba a la derecha): muestra dónde está el visitante ("Usted está aquí"), tilda las salas visitadas y cuenta el progreso (por ejemplo, 1 de 10).
 - **Misiones**: una sala queda "visitada" al ver su video o leer su investigación. Al completar las 10 hay celebración final.
-- **Galería especial** al fondo del hall: prisma de Newton.
+- **Galería fotográfica de trabajo** al fondo del hall: fotos de los chicos trabajando. Se agregan copiando la imagen a `app/public/galeria/` y sumándola en `GALERIA.fotos` (en `salas.config.ts`); con [E] se ven en grande.
 - Los joysticks y botones táctiles solo aparecen en celulares y tablets.
 
 ---

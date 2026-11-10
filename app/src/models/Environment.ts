@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { panelesInvestigacion, rutaPublica } from '../investigacion';
-import type { Seccion } from '../salas.config';
+import type { FotoGaleria, Seccion } from '../salas.config';
 import { SALAS, GALERIA, GALERIA_CENTRO, NOMBRE_MUSEO, SALA_PROFUNDIDAD, grupoSala, numeroSala, salaLayout } from '../salas.config';
 
 const WALL_HEIGHT = 6.0;
@@ -31,6 +31,7 @@ export class MuseumRoom {
     private activeRoomIndex: number = 0;
     private clouds: Array<{sprite: THREE.Sprite; speed: number; originalX: number}> = [];
     private pigeons: Array<{sprite: THREE.Sprite; isPerched: boolean; speed: number; angle: number; radius: number; baseY: number; wingPhase: number}> = [];
+    private galeriaFotos: { mesh: THREE.Mesh; foto: FotoGaleria | null }[] = [];
     private salaParts: SalaParts[] = SALAS.map(() => ({ panels: [] } as unknown as SalaParts));
 
     constructor() {
@@ -341,7 +342,7 @@ export class MuseumRoom {
             this.salaParts[i].plaque = plaque;
         });
 
-        addPortal(0, -25, 0, 'GALERÍA ESPECIAL', GALERIA.titulo, GALERIA.subtitulo, GALERIA.colorAcento);
+        addPortal(0, -25, 0, 'GALERÍA', GALERIA.titulo, GALERIA.subtitulo, GALERIA.colorAcento);
 
         // Nombre del museo en lo alto del muro norte, visible desde el hall
         const titleTex = this.generateMuseumTitleTexture();
@@ -576,6 +577,7 @@ export class MuseumRoom {
         this.createTrackLight(salaLayout(i).centerX, zc, 6);
     }
 
+    // --- GALERÍA FOTOGRÁFICA DE TRABAJO: marcos con fotos en la pared del fondo y la de la entrada ---
     private decorateGaleria() {
         const paintMat = new THREE.MeshStandardMaterial({
             color: new THREE.Color(GALERIA.colorPared),
@@ -589,17 +591,129 @@ export class MuseumRoom {
         const back = new THREE.Mesh(new THREE.PlaneGeometry(72, paintH), paintMat);
         back.position.set(0, 0.14 + paintH / 2, -35.99);
         this.group.add(back);
+        // Pared de la entrada (lado galería), a ambos lados de la puerta
+        for (const sx of [-1, 1]) {
+            const front = new THREE.Mesh(new THREE.PlaneGeometry(34.4, paintH), paintMat);
+            front.position.set(sx * 18.8, 0.14 + paintH / 2, -25.16);
+            front.rotation.y = Math.PI;
+            this.group.add(front);
+        }
 
         const titleTex = this.generateWallTitleTexture(GALERIA.titulo, GALERIA.subtitulo, GALERIA.colorAcento);
         const title = new THREE.Mesh(
             new THREE.PlaneGeometry(9, 2.25),
             new THREE.MeshBasicMaterial({ map: titleTex, transparent: true, depthWrite: false })
         );
-        title.position.set(0, 3.9, -35.96);
+        title.position.set(0, 4.75, -35.96);
         this.group.add(title);
 
-        this.createBench(0, -30, 0);
-        this.createTrackLight(0, -35, 10);
+        // Lugares para cuadros: 13 en la pared del fondo y 10 en la de la entrada (del centro hacia afuera)
+        const fondo = [0, -3.25, 3.25, -6.5, 6.5, -9.75, 9.75, -13, 13, -16.25, 16.25, -19.5, 19.5]
+            .map(x => ({ x, z: -35.95, rotY: 0 }));
+        const entrada = [-4.5, 4.5, -7.75, 7.75, -11, 11, -14.25, 14.25, -17.5, 17.5]
+            .map(x => ({ x, z: -25.2, rotY: Math.PI }));
+        const lugares = [...fondo, ...entrada];
+        const cantidad = Math.min(lugares.length, Math.max(GALERIA.fotos.length, 7));
+        for (let k = 0; k < cantidad; k++) {
+            const foto = GALERIA.fotos[k] ?? null;
+            const l = lugares[k];
+            const marco = this.createPhotoFrame(foto, k);
+            marco.group.position.set(l.x, 2.1, l.z);
+            marco.group.rotation.y = l.rotY;
+            this.group.add(marco.group);
+            this.galeriaFotos.push({ mesh: marco.hit, foto });
+        }
+
+        this.createBench(-5, -30.5, 0);
+        this.createBench(5, -30.5, 0);
+        this.createTrackLight(0, -30.5, 8);
+    }
+
+    // Marco negro con paspartú blanco; la foto se ajusta sin deformarse
+    private createPhotoFrame(foto: FotoGaleria | null, k: number): { group: THREE.Group; hit: THREE.Mesh } {
+        const group = new THREE.Group();
+        const W = 2.3;
+        const H = 1.75;
+        const frame = new THREE.Mesh(
+            new THREE.BoxGeometry(W + 0.12, H + 0.12, 0.05),
+            new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.5, metalness: 0.2 })
+        );
+        frame.position.z = 0.025;
+        group.add(frame);
+        const mat = new THREE.Mesh(new THREE.PlaneGeometry(W, H), new THREE.MeshBasicMaterial({ color: 0xf7f5f0 }));
+        mat.position.z = 0.052;
+        group.add(mat);
+
+        const maxW = W - 0.24;
+        const maxH = H - 0.24;
+        const imgMat = new THREE.MeshBasicMaterial({ map: this.generatePhotoPlaceholder(k, !!foto), toneMapped: false });
+        const img = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), imgMat);
+        img.scale.set(maxW, maxH, 1);
+        img.position.z = 0.055;
+        group.add(img);
+
+        if (foto) {
+            new THREE.TextureLoader().load(rutaPublica(foto.archivo), tex => {
+                tex.colorSpace = THREE.SRGBColorSpace;
+                tex.anisotropy = 4;
+                const im = tex.image as { width: number; height: number };
+                const r = Math.min(maxW / im.width, maxH / im.height);
+                img.scale.set(im.width * r, im.height * r, 1);
+                imgMat.map = tex;
+                imgMat.needsUpdate = true;
+            });
+
+            if (foto.epigrafe) {
+                const c = document.createElement('canvas');
+                c.width = 768;
+                c.height = 96;
+                const ctx = c.getContext('2d')!;
+                ctx.fillStyle = '#f7f4ee';
+                ctx.fillRect(0, 0, 768, 96);
+                ctx.fillStyle = '#2b2622';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                this.shrinkFont(ctx, foto.epigrafe, 500, 36, 20, 'Georgia, "Times New Roman", serif', 730);
+                ctx.fillText(this.fitText(ctx, foto.epigrafe, 730), 384, 50);
+                const t = new THREE.CanvasTexture(c);
+                t.colorSpace = THREE.SRGBColorSpace;
+                const label = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 0.225), new THREE.MeshBasicMaterial({ map: t }));
+                label.position.set(0, -H / 2 - 0.28, 0.01);
+                group.add(label);
+            }
+        }
+        return { group, hit: frame };
+    }
+
+    private generatePhotoPlaceholder(k: number, cargando: boolean): THREE.CanvasTexture {
+        const c = document.createElement('canvas');
+        c.width = 512;
+        c.height = 384;
+        const ctx = c.getContext('2d')!;
+        ctx.fillStyle = '#e4e0d8';
+        ctx.fillRect(0, 0, 512, 384);
+        ctx.strokeStyle = '#b9b2a6';
+        ctx.lineWidth = 4;
+        ctx.setLineDash([16, 10]);
+        ctx.strokeRect(20, 20, 472, 344);
+        ctx.setLineDash([]);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = '64px serif';
+        ctx.fillText('📷', 256, 150);
+        ctx.fillStyle = '#6b625a';
+        ctx.font = '600 30px Inter, system-ui, sans-serif';
+        ctx.fillText(cargando ? 'Cargando foto…' : 'Foto próximamente', 256, 245);
+        ctx.font = '400 22px Inter, system-ui, sans-serif';
+        ctx.fillText(`Lugar ${k + 1}`, 256, 290);
+        const t = new THREE.CanvasTexture(c);
+        t.colorSpace = THREE.SRGBColorSpace;
+        return t;
+    }
+
+    /** Cuadros de la galería fotográfica (para verlos en grande con [E]) */
+    public getGaleriaFotos(): { mesh: THREE.Mesh; foto: FotoGaleria | null }[] {
+        return this.galeriaFotos;
     }
 
     private createBench(x: number, z: number, rotY: number) {
@@ -1106,8 +1220,7 @@ export class MuseumRoom {
         const revealGeom = new THREE.BoxGeometry(pedestalWidth - 0.06, 0.06, pedestalDepth - 0.06);
 
         const positions = [
-            ...SALAS.map((_s, i) => [salaLayout(i).centerX, salaLayout(i).zc]),
-            [GALERIA_CENTRO.x, GALERIA_CENTRO.z]
+            ...SALAS.map((_s, i) => [salaLayout(i).centerX, salaLayout(i).zc])
         ];
 
         positions.forEach(pos => {
@@ -1416,8 +1529,7 @@ export class MuseumRoom {
                     pos: [l.centerX, l.zc],
                     viewDir: [-l.side, 0]
                 };
-            }),
-            { name: `${GALERIA.icono} ${GALERIA.titulo}`, sub: 'Galería especial', pos: [GALERIA_CENTRO.x, GALERIA_CENTRO.z], viewDir: [0, 1] }
+            })
         ];
 
         for (const room of roomData) {

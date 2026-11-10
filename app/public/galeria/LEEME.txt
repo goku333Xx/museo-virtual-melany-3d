@@ -1,0 +1,2 @@
+Fotos de la Galería fotográfica de trabajo.
+Copiá acá las fotos (JPG o PNG) y agregalas en GALERIA.fotos, en app/src/salas.config.ts.
