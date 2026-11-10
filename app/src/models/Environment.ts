@@ -744,9 +744,20 @@ export class MuseumRoom {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        ctx.font = '600 34px "Inter", system-ui, sans-serif';
-        ctx.fillStyle = this.darken(accent);
-        ctx.fillText(this.spaced(kicker), 512, 60);
+        // Número de sala en una etiqueta oscura con letras blancas, legible de lejos
+        const kick = this.spaced(kicker);
+        this.shrinkFont(ctx, kick, 800, 46, 30, '"Inter", system-ui, sans-serif', 900);
+        const kw = ctx.measureText(kick).width + 56;
+        const kh = 66;
+        ctx.fillStyle = '#1c1916';
+        ctx.beginPath();
+        ctx.roundRect(512 - kw / 2, 58 - kh / 2, kw, kh, 14);
+        ctx.fill();
+        ctx.strokeStyle = accent;
+        ctx.lineWidth = 4;
+        ctx.stroke();
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(kick, 512, 60);
 
         ctx.font = '500 92px Georgia, "Times New Roman", serif';
         ctx.fillStyle = '#2b2622';
