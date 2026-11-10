@@ -324,7 +324,7 @@ export class MuseumRoom {
             const rotY = l.side < 0 ? Math.PI / 2 : -Math.PI / 2;
             addPortal(
                 l.side * 5, l.zc, rotY,
-                `${numeroSala(i).toUpperCase()} · ${sala.curso.toUpperCase()} · ${sala.grupo.toUpperCase()}`,
+                `${numeroSala(i).toUpperCase()} · ${sala.curso.toUpperCase()}`,
                 sala.experimento,
                 sala.transformacion,
                 sala.colorAcento
@@ -744,20 +744,20 @@ export class MuseumRoom {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        // Número de sala en una etiqueta oscura con letras blancas, legible de lejos
+        // Número de sala: letras doradas con contorno negro grueso, legible de lejos
         const kick = this.spaced(kicker);
-        this.shrinkFont(ctx, kick, 800, 46, 30, '"Inter", system-ui, sans-serif', 900);
-        const kw = ctx.measureText(kick).width + 56;
-        const kh = 66;
-        ctx.fillStyle = '#1c1916';
-        ctx.beginPath();
-        ctx.roundRect(512 - kw / 2, 58 - kh / 2, kw, kh, 14);
-        ctx.fill();
-        ctx.strokeStyle = accent;
-        ctx.lineWidth = 4;
-        ctx.stroke();
-        ctx.fillStyle = '#ffffff';
-        ctx.fillText(kick, 512, 60);
+        this.shrinkFont(ctx, kick, 900, 60, 34, '"Inter", system-ui, sans-serif', 940);
+        ctx.lineJoin = 'round';
+        ctx.miterLimit = 2;
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 12;
+        ctx.strokeText(kick, 512, 56);
+        const gold = ctx.createLinearGradient(0, 28, 0, 84);
+        gold.addColorStop(0, '#ffe08a');
+        gold.addColorStop(0.5, '#e0b13c');
+        gold.addColorStop(1, '#b8860b');
+        ctx.fillStyle = gold;
+        ctx.fillText(kick, 512, 56);
 
         ctx.font = '500 92px Georgia, "Times New Roman", serif';
         ctx.fillStyle = '#2b2622';
