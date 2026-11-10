@@ -171,52 +171,10 @@ export const SALAS: SalaConfig[] = [
         curso: '7mo A',
         grupo: 'Grupo 3',
         integrantes: ['Catalina García López', 'Enzo Santino Polisicchio', 'Thiago Valiante'],
-        experimento: 'Auto a globo',
-        transformacion: 'Potencial elástica → Cinética',
-        icono: '🎈',
-        // Fuente: "Documento.docx" + consigna "Grupo 5: Auto a globo" (en el museo es 7mo A · Grupo 3)
-        investigacion: {
-            marcoTeorico: [
-                {
-                    titulo: '¿Qué es la energía potencial elástica?',
-                    texto: 'La energía potencial elástica es energía almacenada que busca aplicar una fuerza para cambiar la forma de el objeto elástico ,tal como el estiramiento de un resorte.'
-                },
-                {
-                    titulo: '¿Qué dice el principio de acción y reacción?',
-                    texto: 'La tercera ley de Newton establece que para cada acción ,hay una reacción igual y opuesta ,por ejemplo los propulsores del cohete se disparan hacia abajo pero el cohete se dispara hacia abajo .'
-                },
-                {
-                    titulo: '¿Cómo se mueve un cohete?',
-                    texto: 'Los cohetes se mueven expulsando gases hacia abajo (acción),experimenta una fuerza en la dirección opuesta, es decir, hacia arriba (reacción),lo que propulsa al cohete hacia adelante.'
-                },
-                {
-                    titulo: '¿Qué es el rozamiento y por qué frena a los objetos?',
-                    texto: 'El rozamiento es lo mismo que la fricción. Esta es una fuerza que surge cuando entra en contacto dos cuerpos y se deslizan e intentan deslizarse una sobre la otra.\n' +
-                        'La fricción frena objetos porque siempre actúa de forma contraria al movimiento del centro.'
-                }
-            ],
-            pregunta: '¿Recorre más distancia el auto si el globo está más inflado?',
-            hipotesis: '', // Todavía no está en el documento del grupo
-            materiales: [
-                '1 botella plástica chica o caja de cartón',
-                '4 tapitas de gaseosa',
-                '2 palitos de brochette',
-                '2 sorbetes',
-                '3 globos',
-                'Cinta adhesiva',
-                'Cinta métrica',
-                'Cronómetro'
-            ],
-            procedimiento: [
-                'Armar el auto: los sorbetes pegados debajo de la botella sirven de ejes, los palitos pasan por adentro y las tapitas son las ruedas.',
-                'Pegar un sorbete al globo y fijarlo arriba del auto.',
-                'Inflar el globo con 2, 4 y 6 soplidos, soltar el auto y medir la distancia recorrida.',
-                'Seguridad: cada alumno usa su propio sorbete para inflar.'
-            ],
-            // Todavía no los entregó el grupo (tabla de resultados y cadena de energía)
-            resultados: '',
-            conclusion: ''
-        },
+        experimento: 'Experimento del Grupo 3',
+        transformacion: 'Energía ? → Energía ?',
+        icono: '🔬',
+        investigacion: investigacionPendiente(),
         video: '',
         simulacion: 'pendiente',
         colorPared: '#4c6670',
@@ -306,10 +264,52 @@ export const SALAS: SalaConfig[] = [
         curso: '7mo B',
         grupo: 'Grupo 3',
         integrantes: ['Agustina Soto Balzaretti', 'Ana Schoijet', 'Kristina Elizabeth Mendoza Añez', 'Sabrina Azul Sariaga'],
-        experimento: 'Experimento del Grupo 3',
-        transformacion: 'Energía ? → Energía ?',
-        icono: '🔬',
-        investigacion: investigacionPendiente(),
+        experimento: 'Auto a globo',
+        transformacion: 'Potencial elástica → Cinética',
+        icono: '🎈',
+        // Fuente: "Documento.docx" + consigna "Grupo 5: Auto a globo" (en el museo es 7mo B · Grupo 3)
+        investigacion: {
+            marcoTeorico: [
+                {
+                    titulo: '¿Qué es la energía potencial elástica?',
+                    texto: 'La energía potencial elástica es energía almacenada que busca aplicar una fuerza para cambiar la forma de el objeto elástico ,tal como el estiramiento de un resorte.'
+                },
+                {
+                    titulo: '¿Qué dice el principio de acción y reacción?',
+                    texto: 'La tercera ley de Newton establece que para cada acción ,hay una reacción igual y opuesta ,por ejemplo los propulsores del cohete se disparan hacia abajo pero el cohete se dispara hacia abajo .'
+                },
+                {
+                    titulo: '¿Cómo se mueve un cohete?',
+                    texto: 'Los cohetes se mueven expulsando gases hacia abajo (acción),experimenta una fuerza en la dirección opuesta, es decir, hacia arriba (reacción),lo que propulsa al cohete hacia adelante.'
+                },
+                {
+                    titulo: '¿Qué es el rozamiento y por qué frena a los objetos?',
+                    texto: 'El rozamiento es lo mismo que la fricción. Esta es una fuerza que surge cuando entra en contacto dos cuerpos y se deslizan e intentan deslizarse una sobre la otra.\n' +
+                        'La fricción frena objetos porque siempre actúa de forma contraria al movimiento del centro.'
+                }
+            ],
+            pregunta: '¿Recorre más distancia el auto si el globo está más inflado?',
+            hipotesis: '', // Todavía no está en el documento del grupo
+            materiales: [
+                '1 botella plástica chica o caja de cartón',
+                '4 tapitas de gaseosa',
+                '2 palitos de brochette',
+                '2 sorbetes',
+                '3 globos',
+                'Cinta adhesiva',
+                'Cinta métrica',
+                'Cronómetro'
+            ],
+            procedimiento: [
+                'Armar el auto: los sorbetes pegados debajo de la botella sirven de ejes, los palitos pasan por adentro y las tapitas son las ruedas.',
+                'Pegar un sorbete al globo y fijarlo arriba del auto.',
+                'Inflar el globo con 2, 4 y 6 soplidos, soltar el auto y medir la distancia recorrida.',
+                'Seguridad: cada alumno usa su propio sorbete para inflar.'
+            ],
+            // Todavía no los entregó el grupo (tabla de resultados y cadena de energía)
+            resultados: '',
+            conclusion: ''
+        },
         video: '',
         simulacion: 'pendiente',
         colorPared: '#7a3f35',
