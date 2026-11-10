@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { panelesInvestigacion, rutaPublica } from '../investigacion';
+import { crearEscultura, type TipoEscultura } from './Esculturas';
 import type { FotoGaleria, Seccion } from '../salas.config';
 import { SALAS, GALERIA, GALERIA_CENTRO, NOMBRE_MUSEO, SALA_PROFUNDIDAD, grupoSala, numeroSala, salaLayout } from '../salas.config';
 
@@ -45,6 +46,7 @@ export class MuseumRoom {
         this.buildCeilingTruss();
         this.buildPedestals();
         this.buildViewingIndicators();
+        this.buildEsculturas();
         this.buildLightingAndDecor();
         this.createRealisticSky();
     }
@@ -858,18 +860,18 @@ export class MuseumRoom {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        // Número de sala: letras doradas con contorno negro grueso, legible de lejos
+        // Número de sala: letras en el mismo bronce dorado de la placa, con contorno negro
         const kick = this.spaced(kicker);
-        this.shrinkFont(ctx, kick, 900, 60, 34, '"Inter", system-ui, sans-serif', 940);
+        this.shrinkFont(ctx, kick, 800, 60, 34, '"Inter", system-ui, sans-serif', 940);
         ctx.lineJoin = 'round';
         ctx.miterLimit = 2;
-        ctx.strokeStyle = '#000000';
-        ctx.lineWidth = 12;
+        ctx.strokeStyle = '#15120e';
+        ctx.lineWidth = 9;
         ctx.strokeText(kick, 512, 56);
         const gold = ctx.createLinearGradient(0, 28, 0, 84);
-        gold.addColorStop(0, '#ffe08a');
-        gold.addColorStop(0.5, '#e0b13c');
-        gold.addColorStop(1, '#b8860b');
+        gold.addColorStop(0, '#c3a06a');
+        gold.addColorStop(0.5, '#a88450');
+        gold.addColorStop(1, '#7d5f34');
         ctx.fillStyle = gold;
         ctx.fillText(kick, 512, 56);
 
@@ -1602,6 +1604,36 @@ export class MuseumRoom {
     }
 
     // Las salas ya no se bloquean: todas las puertas quedan abiertas
+    // --- ESCULTURAS GEOMÉTRICAS EN LAS ESQUINAS (hall de entrada, pasillo y galería) ---
+    private buildEsculturas(): void {
+        const ubicaciones: { x: number; z: number; tipo: TipoEscultura; rotY: number; escala?: number }[] = [
+            // Hall de entrada
+            { x: -30, z: 31, tipo: 'nudo', rotY: 0.4, escala: 1.8 },
+            { x: 30, z: 31, tipo: 'icosaedro', rotY: -0.4, escala: 1.8 },
+            { x: -14, z: 32.5, tipo: 'cubos', rotY: 0, escala: 1.6 },
+            { x: 14, z: 32.5, tipo: 'anillos', rotY: 0.6, escala: 1.6 },
+            // Final del pasillo, junto a la puerta de la galería
+            { x: -3.9, z: -23.6, tipo: 'columna', rotY: 0 },
+            { x: 3.9, z: -23.6, tipo: 'arco', rotY: Math.PI / 2 },
+            // Esquinas de la galería fotográfica
+            { x: -30, z: -33.4, tipo: 'anillos', rotY: 0, escala: 1.5 },
+            { x: 30, z: -33.4, tipo: 'cubos', rotY: 0.3, escala: 1.5 }
+        ];
+        for (const u of ubicaciones) {
+            const e = crearEscultura(u.tipo);
+            e.group.position.set(u.x, 0, u.z);
+            e.group.rotation.y = u.rotY;
+            const s = u.escala ?? 1;
+            e.group.scale.setScalar(s);
+            this.group.add(e.group);
+            const h = e.half * s + 0.05;
+            this.internalWallBoxes.push({ minX: u.x - h, maxX: u.x + h, minZ: u.z - h, maxZ: u.z + h });
+            const sombra = this.createDropShadow(0.75 * s, 0.35);
+            sombra.position.set(u.x, 0.012, u.z);
+            this.group.add(sombra);
+        }
+    }
+
     public getDoorBarriers(): THREE.Mesh[] {
         return [];
     }
