@@ -89,11 +89,21 @@ export class MuseumRoom {
         this.group.add(backWall);
         this.collidables.push(backWall);
 
-        const frontWall = new THREE.Mesh(wallGeomX, wallMaterial);
-        frontWall.position.set(0, height / 2, depth / 2 + wallThickness / 2);
-        frontWall.receiveShadow = true;
-        this.group.add(frontWall);
-        this.collidables.push(frontWall);
+        // Fachada con el vano de la puerta de entrada (x -2.2..2.2, alto 3.62)
+        const vanoW = 2.2;
+        const vanoH = 3.62;
+        const zFront = depth / 2 + wallThickness / 2;
+        for (const sx of [-1, 1]) {
+            const ancho = width / 2 - vanoW;
+            const lado = new THREE.Mesh(new THREE.BoxGeometry(ancho, height, wallThickness), wallMaterial);
+            lado.position.set(sx * (vanoW + ancho / 2), height / 2, zFront);
+            lado.receiveShadow = true;
+            this.group.add(lado);
+            this.collidables.push(lado);
+        }
+        const dintel = new THREE.Mesh(new THREE.BoxGeometry(vanoW * 2, height - vanoH, wallThickness), wallMaterial);
+        dintel.position.set(0, vanoH + (height - vanoH) / 2, zFront);
+        this.group.add(dintel);
 
         const leftWall = new THREE.Mesh(wallGeomZ, wallMaterial);
         leftWall.position.set(-width / 2 - wallThickness / 2, height / 2, 0);
@@ -267,26 +277,228 @@ export class MuseumRoom {
         addWoodFloor(-36, 36, -36, -25.15); // Galería especial
     }
 
-    // --- MOSTRADOR DE INFORMACIÓN EN EL HALL ---
+    // --- VESTÍBULO DE ENTRADA: puertas de vidrio, mostrador de Informes y vereda exterior ---
+    // El vestíbulo ocupa x -8..8, z 25..36 y conecta con el pasillo central.
+    private puertasVidrio: { hoja: THREE.Group; x0: number; dir: number }[] = [];
+
     private buildCentralAtriumBeacon() {
-        const beaconGroup = new THREE.Group();
-        beaconGroup.position.set(0, 0, 15);
+        const wallMat = new THREE.MeshStandardMaterial({ color: 0xf5f3ef, roughness: 0.9, metalness: 0.0 });
+        const zocaloMat = new THREE.MeshStandardMaterial({ color: 0x3b3531, roughness: 0.6, metalness: 0.0 });
+        const H = WALL_HEIGHT;
 
-        const baseGeom = new THREE.BoxGeometry(2.4, 0.47, 2.4);
-        const baseMat = new THREE.MeshStandardMaterial({
-            color: 0x5c4033,
-            roughness: 0.8,
-            metalness: 0.05
+        // Muros laterales del vestíbulo (cierran el resto del hall)
+        for (const sx of [-1, 1]) {
+            const x0 = sx < 0 ? -8.15 : 7.85;
+            const muro = new THREE.Mesh(new THREE.BoxGeometry(0.3, H, 10.85), wallMat);
+            muro.position.set(x0 + 0.15, H / 2, 30.575);
+            muro.receiveShadow = true;
+            this.group.add(muro);
+            this.collidables.push(muro);
+            const zocalo = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.14, 10.85), zocaloMat);
+            zocalo.position.set(x0 + 0.15, 0.07, 30.575);
+            this.group.add(zocalo);
+            this.internalWallBoxes.push({ minX: x0, maxX: x0 + 0.3, minZ: 25.15, maxZ: 36 });
+        }
+
+        // Cielorraso del vestíbulo
+        const techo = new THREE.Mesh(
+            new THREE.PlaneGeometry(16, 10.85),
+            new THREE.MeshStandardMaterial({ color: 0xf2f0ec, roughness: 0.95, side: THREE.DoubleSide })
+        );
+        techo.rotation.x = Math.PI / 2;
+        techo.position.set(0, H, 30.575);
+        this.group.add(techo);
+
+        // Felpudo frente a la puerta
+        const felpudo = new THREE.Mesh(
+            new THREE.PlaneGeometry(4.2, 1.6),
+            new THREE.MeshStandardMaterial({ color: 0x2a2623, roughness: 1.0, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })
+        );
+        felpudo.rotation.x = -Math.PI / 2;
+        felpudo.position.set(0, 0.012, 35.0);
+        this.group.add(felpudo);
+
+        // Puertas de vidrio corredizas (dos hojas) en el muro de la fachada
+        const marcoMat = new THREE.MeshStandardMaterial({ color: 0x2b2b2e, roughness: 0.4, metalness: 0.6 });
+        const vidrioMat = new THREE.MeshStandardMaterial({
+            color: 0xcfe3e8, roughness: 0.05, metalness: 0.1, transparent: true, opacity: 0.22, depthWrite: false
         });
+        const hojaW = 2.2;
+        const hojaH = 3.5;
+        for (const dir of [-1, 1]) {
+            const hoja = new THREE.Group();
+            const vidrio = new THREE.Mesh(new THREE.PlaneGeometry(hojaW - 0.1, hojaH - 0.1), vidrioMat);
+            vidrio.renderOrder = 2;
+            hoja.add(vidrio);
+            const perfil = (w: number, h: number, x: number, y: number) => {
+                const p = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.07), marcoMat);
+                p.position.set(x, y, 0);
+                hoja.add(p);
+            };
+            perfil(hojaW, 0.08, 0, hojaH / 2 - 0.04);
+            perfil(hojaW, 0.12, 0, -hojaH / 2 + 0.06);
+            perfil(0.08, hojaH, -hojaW / 2 + 0.04, 0);
+            perfil(0.08, hojaH, hojaW / 2 - 0.04, 0);
+            // Manija vertical de acero
+            const manija = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.0, 10), marcoMat);
+            manija.position.set(-dir * (hojaW / 2 - 0.22), 0, 0.08);
+            hoja.add(manija);
+            const x0 = dir * hojaW / 2;
+            hoja.position.set(x0, hojaH / 2, 36.75);
+            this.group.add(hoja);
+            this.puertasVidrio.push({ hoja, x0, dir });
+        }
+        // Marco del vano
+        const vanoTop = new THREE.Mesh(new THREE.BoxGeometry(4.6, 0.12, 1.52), marcoMat);
+        vanoTop.position.set(0, hojaH + 0.06, 36.75);
+        this.group.add(vanoTop);
+        for (const sx of [-1, 1]) {
+            const jamba = new THREE.Mesh(new THREE.BoxGeometry(0.12, hojaH + 0.12, 1.52), marcoMat);
+            jamba.position.set(sx * 2.26, (hojaH + 0.12) / 2, 36.75);
+            this.group.add(jamba);
+        }
 
-        const base = new THREE.Mesh(baseGeom, baseMat);
-        base.position.set(0, 0.225, 0);
-        base.castShadow = true;
-        base.receiveShadow = true;
-        beaconGroup.add(base);
-        this.collidables.push(base);
+        // Mostrador de Informes a la derecha de quien entra (+x)
+        const mostrador = new THREE.Group();
+        mostrador.position.set(5.3, 0, 31);
+        const maderaMat = new THREE.MeshStandardMaterial({ color: 0x7a5a3c, roughness: 0.55, metalness: 0.0 });
+        const tapaMat = new THREE.MeshStandardMaterial({ color: 0xf4f2ee, roughness: 0.5, metalness: 0.0 });
+        const frente = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.05, 3.8), maderaMat);
+        frente.position.y = 0.525;
+        frente.castShadow = true;
+        mostrador.add(frente);
+        const tapa = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.06, 3.95), tapaMat);
+        tapa.position.y = 1.08;
+        mostrador.add(tapa);
+        const bronceMat = new THREE.MeshStandardMaterial({ color: 0xa88450, roughness: 0.35, metalness: 0.6 });
+        const filete = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.05, 3.8), bronceMat);
+        filete.position.set(-0.46, 0.85, 0);
+        mostrador.add(filete);
+        // Letrero en el frente del mostrador (mira hacia el centro del vestíbulo)
+        const frenteTex = this.generateInformesTexture(false);
+        const cartelFrente = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 0.42), new THREE.MeshBasicMaterial({ map: frenteTex, transparent: true }));
+        cartelFrente.position.set(-0.455, 0.6, 0);
+        cartelFrente.rotation.y = -Math.PI / 2;
+        mostrador.add(cartelFrente);
+        this.group.add(mostrador);
+        this.internalWallBoxes.push({ minX: 4.8, maxX: 5.85, minZ: 29.05, maxZ: 32.95 });
 
-        this.group.add(beaconGroup);
+        // Cartel grande "INFORMES" en la pared, detrás del mostrador
+        const cartelPared = new THREE.Mesh(
+            new THREE.PlaneGeometry(3.4, 0.95),
+            new THREE.MeshBasicMaterial({ map: this.generateInformesTexture(true), transparent: true, depthWrite: false })
+        );
+        cartelPared.position.set(7.83, 3.3, 31);
+        cartelPared.rotation.y = -Math.PI / 2;
+        this.group.add(cartelPared);
+
+        // Luz del vestíbulo
+        const luz = new THREE.PointLight(0xfff4e5, 1.1, 16, 1.3);
+        luz.position.set(0, H - 0.5, 30.5);
+        this.group.add(luz);
+
+        // ---------- Exterior: vereda, escalón, marquesina y nombre en la fachada ----------
+        const piedra = this.createStoneTileTexture();
+        piedra.repeat.set(30, 12);
+        const vereda = new THREE.Mesh(
+            new THREE.PlaneGeometry(120, 46),
+            new THREE.MeshStandardMaterial({ map: piedra, color: 0xb8b2a8, roughness: 0.8 })
+        );
+        vereda.rotation.x = -Math.PI / 2;
+        vereda.position.set(0, -0.02, 37.5 + 23);
+        vereda.receiveShadow = true;
+        this.group.add(vereda);
+        const escalon = new THREE.Mesh(new THREE.BoxGeometry(8, 0.04, 1.4), new THREE.MeshStandardMaterial({ color: 0xd6d0c4, roughness: 0.7 }));
+        escalon.position.set(0, 0.0, 38.2);
+        this.group.add(escalon);
+
+        const marquesina = new THREE.Mesh(new THREE.BoxGeometry(7, 0.22, 2.6), marcoMat);
+        marquesina.position.set(0, 4.3, 38.8);
+        marquesina.castShadow = true;
+        this.group.add(marquesina);
+        for (const sx of [-1, 1]) {
+            const tensor = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 2.2, 8), marcoMat);
+            tensor.position.set(sx * 3.2, 5.2, 38.6);
+            tensor.rotation.x = 0.85;
+            this.group.add(tensor);
+            // Maceta con arbusto a cada lado de la entrada
+            const maceta = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.7, 1.1), new THREE.MeshStandardMaterial({ color: 0x3a3836, roughness: 0.8 }));
+            maceta.position.set(sx * 4.6, 0.35, 39.2);
+            this.group.add(maceta);
+            const arbusto = new THREE.Mesh(new THREE.IcosahedronGeometry(0.62, 1), new THREE.MeshStandardMaterial({ color: 0x4f6b3a, roughness: 0.9, flatShading: true }));
+            arbusto.position.set(sx * 4.6, 1.15, 39.2);
+            this.group.add(arbusto);
+        }
+
+        const nombre = new THREE.Mesh(
+            new THREE.PlaneGeometry(14, 2.5),
+            new THREE.MeshBasicMaterial({ map: this.generateFachadaTexture(), transparent: true, depthWrite: false })
+        );
+        nombre.position.set(0, 7.2, 37.53);
+        this.group.add(nombre);
+    }
+
+    /** Abre (1) o cierra (0) las puertas de vidrio de la entrada */
+    public setPuertasAbiertas(t: number): void {
+        const k = THREE.MathUtils.clamp(t, 0, 1);
+        const e = k * k * (3 - 2 * k);
+        for (const p of this.puertasVidrio) {
+            p.hoja.position.x = p.x0 + p.dir * 2.05 * e;
+        }
+    }
+
+    private generateInformesTexture(grande: boolean): THREE.CanvasTexture {
+        const c = document.createElement('canvas');
+        c.width = 1024;
+        c.height = grande ? 286 : 180;
+        const ctx = c.getContext('2d')!;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        if (!grande) {
+            ctx.fillStyle = '#5f4630';
+            ctx.fillRect(0, 0, c.width, c.height);
+        }
+        const texto = this.spaced('INFORMES');
+        ctx.font = `800 ${grande ? 150 : 104}px "Inter", system-ui, sans-serif`;
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = '#15120e';
+        ctx.lineWidth = grande ? 12 : 8;
+        ctx.strokeText(texto, 512, c.height * (grande ? 0.42 : 0.5));
+        const gold = ctx.createLinearGradient(0, 0, 0, c.height);
+        gold.addColorStop(0, '#c3a06a');
+        gold.addColorStop(0.5, '#a88450');
+        gold.addColorStop(1, '#7d5f34');
+        ctx.fillStyle = gold;
+        ctx.fillText(texto, 512, c.height * (grande ? 0.42 : 0.5));
+        if (grande) {
+            ctx.font = 'italic 46px Georgia, "Times New Roman", serif';
+            ctx.fillStyle = '#5a524b';
+            ctx.fillText('Bienvenida y orientación', 512, 245);
+        }
+        const t = new THREE.CanvasTexture(c);
+        t.colorSpace = THREE.SRGBColorSpace;
+        t.anisotropy = 4;
+        return t;
+    }
+
+    private generateFachadaTexture(): THREE.CanvasTexture {
+        const c = document.createElement('canvas');
+        c.width = 1400;
+        c.height = 250;
+        const ctx = c.getContext('2d')!;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const nombre = this.spaced(NOMBRE_MUSEO.toUpperCase());
+        this.shrinkFont(ctx, nombre, 500, 130, 60, 'Georgia, "Times New Roman", serif', 1340);
+        ctx.fillStyle = '#2b2622';
+        ctx.fillText(nombre, 700, 105);
+        ctx.font = '600 34px "Inter", system-ui, sans-serif';
+        ctx.fillStyle = '#7a6f64';
+        ctx.fillText(this.spaced('TRANSFORMACIONES DE LA ENERGÍA'), 700, 205);
+        const t = new THREE.CanvasTexture(c);
+        t.colorSpace = THREE.SRGBColorSpace;
+        t.anisotropy = 4;
+        return t;
     }
 
     // --- CARTEL SOBRE CADA PUERTA Y PLACA DE INTEGRANTES AL COSTADO ---
@@ -1607,11 +1819,10 @@ export class MuseumRoom {
     // --- ESCULTURAS GEOMÉTRICAS EN LAS ESQUINAS (hall de entrada, pasillo y galería) ---
     private buildEsculturas(): void {
         const ubicaciones: { x: number; z: number; tipo: TipoEscultura; rotY: number; escala?: number }[] = [
-            // Hall de entrada
-            { x: -30, z: 31, tipo: 'nudo', rotY: 0.4, escala: 1.8 },
-            { x: 30, z: 31, tipo: 'icosaedro', rotY: -0.4, escala: 1.8 },
-            { x: -14, z: 32.5, tipo: 'cubos', rotY: 0, escala: 1.6 },
-            { x: 14, z: 32.5, tipo: 'anillos', rotY: 0.6, escala: 1.6 },
+            // Vestíbulo de entrada (lado izquierdo; a la derecha está Informes)
+            { x: -6.6, z: 34.2, tipo: 'nudo', rotY: 0.4, escala: 1.25 },
+            { x: -6.6, z: 27.2, tipo: 'cubos', rotY: 0, escala: 1.15 },
+            { x: 6.7, z: 34.4, tipo: 'anillos', rotY: 0.6, escala: 1.0 },
             // Final del pasillo, junto a la puerta de la galería
             { x: -3.9, z: -23.6, tipo: 'columna', rotY: 0 },
             { x: 3.9, z: -23.6, tipo: 'arco', rotY: Math.PI / 2 },

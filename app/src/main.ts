@@ -89,7 +89,8 @@ if (isTouchDevice) {
     camera.updateProjectionMatrix();
 }
 // Spawn del jugador a escala humana (1.68m de altura)
-camera.position.set(0, 1.68, 4.5);
+// El visitante arranca afuera, frente a las puertas de vidrio de la entrada
+camera.position.set(0, 1.68, 43);
 camera.rotation.order = 'YXZ';
 
 const renderer = new THREE.WebGLRenderer({ 
@@ -124,9 +125,59 @@ const controls = new PointerLockControls(camera, document.body);
 let gameStarted = false;
 
 // Inicio de la experiencia
-playBtn.addEventListener('click', () => {
-    SoundSynthesizer.getInstance().init();
+// --- ENTRADA AL MUSEO: se abren las puertas de vidrio y el visitante camina hasta el vestíbulo ---
+let intro: { t: number; nombre: string } | null = null;
+const INTRO_Z0 = 43;      // afuera, en la vereda
+const INTRO_Z1 = 31.5;    // adentro, frente a Informes
+const suave = (x: number) => { const k = Math.min(1, Math.max(0, x)); return k * k * (3 - 2 * k); };
+
+const bienvenidaHtml = (nombre: string) => {
+    const tecla = (k: string) => `<span class="kbd-hint" style="display:inline-block; min-width:22px; text-align:center;">${k}</span>`;
+    const fila = (k: string, t: string) => `<div style="display:flex; gap:10px; align-items:center; margin:4px 0;">${k}<span>${t}</span></div>`;
+    const pc = [
+        fila(`${tecla('W')} ${tecla('A')} ${tecla('S')} ${tecla('D')}`, 'o las flechas: caminar'),
+        fila(tecla('🖱️'), 'mover el mouse: mirar alrededor'),
+        fila(tecla('Shift'), 'correr · ' + tecla('Espacio') + ' saltar'),
+        fila(tecla('E'), 'ver un video, leer un panel o hablar conmigo'),
+        fila(tecla('R'), 'ver más (investigación completa o video en grande)'),
+        fila(tecla('M'), 'abrir o cerrar el plano del museo'),
+        fila(tecla('J'), 'diario de la visita · ' + tecla('Esc') + ' pausa')
+    ].join('');
+    const celu = [
+        fila('🕹️', 'joystick de la izquierda: caminar'),
+        fila('👆', 'deslizar el dedo en la pantalla: mirar alrededor'),
+        fila('⚡', 'botón INTERACTUAR: ver videos y paneles'),
+        fila('📋', 'botón VER MÁS: investigación completa'),
+        fila('🗺️', 'botón Plano: ver dónde estás')
+    ].join('');
+    return `¡Bienvenido/a al <b>Museo Virtual 7mo</b>, <b>${nombre.replace(/[<>&"]/g, '')}</b>! 🏛️<br>
+        Soy Mel-Bot, de <b>Informes</b>. El museo tiene <b>10 salas</b>: 4 de 7mo A a la izquierda del pasillo y 6 de 7mo B. Al fondo está la <b>Galería fotográfica</b>.
+        <div style="margin-top:12px; padding:10px 12px; border-radius:10px; background:rgba(15,23,42,0.55); border:1px solid rgba(201,168,106,0.35); font-size:13px; line-height:1.5;">
+            <div style="font-weight:800; color:#c9a86a; margin-bottom:6px;">CÓMO MOVERTE POR EL MUSEO</div>
+            ${isTouchDevice ? celu : pc}
+        </div>
+        <div style="margin-top:10px;">Arriba a la derecha está el <b>plano</b>: te marca dónde estás y qué salas ya visitaste. ¡Que disfrutes el recorrido!</div>`;
+};
+
+const terminarIntro = () => {
+    if (!intro) return;
+    const nombre = intro.nombre;
+    intro = null;
+    world.abrirPuertas(0);
+    camera.position.set(0, 1.68, INTRO_Z1);
     gameStarted = true;
+    if (isTouchDevice) {
+        targetRotationY = camera.rotation.y;
+        targetRotationX = camera.rotation.x;
+        if (touchControlsEl) touchControlsEl.classList.remove('hidden');
+    }
+    // Al cerrar la bienvenida se toma el control del mouse (en PC) y arranca el recorrido
+    hud.openMelDialog(bienvenidaHtml(nombre), () => { /* empezar */ }, () => hud.openMapModal(), ['¡Empezar el recorrido!', 'Ver mapa de salas']);
+};
+
+playBtn.addEventListener('click', () => {
+    if (intro || gameStarted) return;
+    SoundSynthesizer.getInstance().init();
     startScreen.classList.add('hidden');
 
     const nameInput = document.getElementById('student-name-input') as HTMLInputElement | null;
@@ -134,14 +185,13 @@ playBtn.addEventListener('click', () => {
     hud.setStudentName(studentName);
     world.setStudentName(studentName);
     world.setIsMobile(isTouchDevice);
+    world.saludoDeBienvenida(studentName);
 
-    if (isTouchDevice) {
-        targetRotationY = camera.rotation.y;
-        targetRotationX = camera.rotation.x;
-        if (touchControlsEl) touchControlsEl.classList.remove('hidden');
-    } else {
-        controls.lock();
-    }
+    camera.position.set(0, 1.68, INTRO_Z0);
+    camera.rotation.set(0, 0, 0);
+    intro = { t: 0, nombre: studentName };
+    // Quien prefiere menos movimiento entra directo
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) terminarIntro();
 });
 
 // Permitir iniciar presionando Enter en el campo de texto del nombre
@@ -552,6 +602,18 @@ function animate() {
     const time = performance.now();
     let delta = (time - prevTime) / 1000;
     if (delta > 0.05) delta = 0.05; // Protección contra desfasaje de físicas
+
+    // Entrada: puertas que se abren, caminata hasta el vestíbulo y giro hacia Informes
+    if (intro) {
+        intro.t += delta;
+        const t = intro.t;
+        world.abrirPuertas(t / 1.1);
+        const k = suave((t - 0.6) / 2.8);
+        camera.position.set(0, 1.68 + Math.sin(k * Math.PI * 6) * 0.025, INTRO_Z0 + (INTRO_Z1 - INTRO_Z0) * k);
+        camera.rotation.set(0, -0.55 * suave((t - 2.9) / 1.2), 0);
+        if (t > 3.2) world.abrirPuertas(1 - (t - 3.2) / 1.0);
+        if (t > 4.3) terminarIntro();
+    }
 
     const isSimActive = controls.isLocked || (isTouchDevice && gameStarted && !hud.isModalOpen);
 

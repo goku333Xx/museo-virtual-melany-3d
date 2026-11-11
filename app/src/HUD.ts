@@ -1116,14 +1116,17 @@ export class HUD {
 
         const actual = this.salaEn(playerX, playerZ);
 
-        // Hall central (pasillo + recepción)
+        // Pasillo central y vestíbulo de entrada
         ctx.fillStyle = '#2a3242';
-        ctx.fillRect(...rect(-5, -25, 5, 36));
+        ctx.fillRect(...rect(-5, -25, 5, 25));
+        ctx.fillRect(...rect(-8, 25, 8, 36));
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = '#94a3b8';
         ctx.font = '700 9px Inter, system-ui, sans-serif';
-        ctx.fillText('ENTRADA', px(0), py(31));
+        ctx.fillText('ENTRADA', px(0), py(33.5));
+        ctx.fillStyle = '#c9a86a';
+        ctx.fillText('i', px(5.3), py(31));
 
         // Galería especial
         ctx.fillStyle = actual === 'galeria' ? '#4a3f2a' : '#262b38';

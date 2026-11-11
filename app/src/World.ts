@@ -69,7 +69,9 @@ export class World {
 
         // Mel-Bot en el hall
         this.robotGuide = new RobotGuide();
-        this.robotGuide.getMesh().position.set(1.5, 1.4, 2.0);
+        // Mel-Bot espera detrás del mostrador de Informes, en el vestíbulo
+        this.robotGuide.getMesh().position.set(6.7, 1.6, 31);
+        this.robotGuide.getMesh().rotation.y = -Math.PI / 2;
         this.scene.add(this.robotGuide.getMesh());
 
         this.setupInteractivity();
@@ -323,7 +325,19 @@ export class World {
         }
 
 
-        if (playerPos && this.robotGuide) this.robotGuide.update(time, playerPos, delta);
+        // Mientras el visitante está afuera (entrando), Mel-Bot espera en Informes
+        if (playerPos && this.robotGuide && playerPos.z < 36.5) this.robotGuide.update(time, playerPos, delta);
+    }
+
+    /** Puertas de vidrio de la entrada: 0 cerradas, 1 abiertas */
+    public abrirPuertas(t: number): void {
+        this.room.setPuertasAbiertas(t);
+    }
+
+    /** Saludo de Mel-Bot desde el mostrador de Informes */
+    public saludoDeBienvenida(nombre: string): void {
+        this.robotGuide.renderEyes('happy');
+        this.robotGuide.updateSpeechBubble(`¡Bienvenido/a, ${nombre}! Acercate a Informes`, '#c9a86a');
     }
 
     public setStudentName(name: string): void {
